@@ -1,0 +1,46 @@
+name: 构建权威扩展校验工具
+description: 从指定宿主版本构建 extension-tool，复用 Rust 清单、ABI 与视图运行时规则
+inputs:
+  ref:
+    description: 已推送的宿主提交或分支；发布时应固定为已审核提交
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v7
+      with:
+        repository: YanChao001/tauri-desktop-starter
+        ref: ${{ inputs.ref }}
+        path: .host
+        persist-credentials: false
+        submodules: false
+    - name: 安装宿主 Linux 系统依赖
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+    - uses: pnpm/action-setup@v6
+      with:
+        package_json_file: .host/package.json
+    - name: 安装宿主前端依赖并构建
+      shell: bash
+      working-directory: .host
+      run: |
+        pnpm install --frozen-lockfile
+        pnpm exec vite build
+    - name: 使用宿主锁定工具链
+      shell: bash
+      working-directory: .host
+      run: |
+        rustup toolchain install
+        node --input-type=module -e 'import fs from "node:fs"; const toolchain=fs.readFileSync("rust-toolchain.toml","utf8").match(/^channel\s*=\s*"([^"]+)"/m)?.[1]; if(!toolchain)throw Error("Missing host toolchain"); fs.appendFileSync(process.env.GITHUB_ENV,`RUSTUP_TOOLCHAIN=${toolchain}\n`);'
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: .host/src-tauri
+    - name: 构建无界面宿主工具并记录版本
+      shell: bash
+      run: |
+        cargo build --locked --manifest-path .host/src-tauri/Cargo.toml --bin extension-tool
+        rustup target add wasm32-unknown-unknown
+        echo "STARTER_EXTENSION_TOOL=$GITHUB_WORKSPACE/.host/src-tauri/target/debug/extension-tool" >> "$GITHUB_ENV"
+        echo "Validated with host $(git -C .host rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"

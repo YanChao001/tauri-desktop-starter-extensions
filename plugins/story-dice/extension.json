@@ -1,0 +1,25 @@
+{
+  "formatVersion": 3,
+  "apiVersion": 2,
+  "minHostVersion": "0.1.4",
+  "id": "market.story-dice",
+  "version": "1.0.0",
+  "name": "故事骰子 · Story Dice",
+  "author": "Tauri Desktop Starter",
+  "description": "掷出人物、地点、冲突、物件与转折，锁定灵感继续掷骰。中英词库、可复现种子、历史、草稿和 Markdown 导出均可离线使用；可选私有存储仅保存手动收藏。",
+  "icon": "notebook",
+  "commands": [
+    {
+      "id": "story",
+      "title": "打开故事骰子",
+      "function": "story",
+      "inputFormat": "json",
+      "resultFormat": "view",
+      "ui": { "sidebar": true, "window": true },
+      "permissions": []
+    }
+  ],
+  "permissions": [],
+  "optionalPermissions": ["storage"],
+  "network": []
+}

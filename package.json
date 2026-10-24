@@ -10,6 +10,7 @@
   "scripts": {
     "test": "node --test scripts/*.test.mjs",
     "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
     "verify": "node scripts/verify.mjs"
   }
 }

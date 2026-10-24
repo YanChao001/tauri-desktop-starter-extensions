@@ -1,0 +1,25 @@
+{
+  "formatVersion": 3,
+  "apiVersion": 2,
+  "minHostVersion": "0.1.4",
+  "id": "market.arcade-2048",
+  "version": "1.0.0",
+  "name": "2048 · 合并游乐场 / Merge Arcade",
+  "author": "Tauri Desktop Starter",
+  "description": "可重放种子的 2048：方向操作、撤销、分数与可选私有纪录。Seeded 2048 with undo, scores and optional private best-score storage.",
+  "icon": "gamepad",
+  "commands": [
+    {
+      "id": "play",
+      "title": "玩 2048 / Play 2048",
+      "function": "play",
+      "inputFormat": "json",
+      "resultFormat": "view",
+      "ui": { "sidebar": true, "window": true },
+      "permissions": []
+    }
+  ],
+  "permissions": [],
+  "optionalPermissions": ["storage"],
+  "network": []
+}

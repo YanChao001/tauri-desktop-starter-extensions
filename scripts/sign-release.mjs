@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { publicKey, signCatalog } from "./signing.mjs";
-import { hash } from "./build.mjs";
+import { hash, validateListings } from "./build.mjs";
 import { CATALOG_LIFETIME, validateCatalog } from "./protocol.mjs";
 
 const directory = process.argv[2];
@@ -25,6 +25,7 @@ const catalog = JSON.parse(
 const listings = JSON.parse(
   await readFile(join(root, "listings.json"), "utf8"),
 );
+validateListings(listings);
 if (
   catalog.repository !== listings.repository ||
   catalog.schemaVersion !== 2 ||

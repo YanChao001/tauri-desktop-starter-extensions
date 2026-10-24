@@ -115,8 +115,8 @@ export function validateManifest(manifest) {
     !nonempty(manifest.author, 120) ||
     !nonempty(manifest.description, 1000) ||
     !Array.isArray(manifest.permissions) ||
-    (manifest.optionalPermissions !== undefined &&
-      !Array.isArray(manifest.optionalPermissions)) ||
+    !Array.isArray(manifest.optionalPermissions) ||
+    !Array.isArray(manifest.network) ||
     !Array.isArray(manifest.commands) ||
     manifest.commands.length < 1 ||
     manifest.commands.length > 32
@@ -151,8 +151,7 @@ export function validateManifest(manifest) {
       !/^[A-Za-z0-9_.-]+$/.test(command.function) ||
       !["text", "json"].includes(command.inputFormat) ||
       !["text", "json", "markdown", "view"].includes(command.resultFormat) ||
-      (command.permissions !== undefined &&
-        !Array.isArray(command.permissions)) ||
+      !Array.isArray(command.permissions) ||
       !unique(command.permissions ?? []) ||
       (command.permissions ?? []).some(
         (permission) => !declared.includes(permission),
