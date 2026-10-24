@@ -1,0 +1,21 @@
+name: 市场检查
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: 签名与包回归
+        run: node --test scripts/*.test.mjs
+      - name: 安装 Rust 工具链
+        run: rustup show && rustup target add wasm32-unknown-unknown
+      - name: 检查示例
+        run: cargo fmt --manifest-path plugins/text-tools/Cargo.toml --check && cargo build --locked --release --target wasm32-unknown-unknown --manifest-path plugins/text-tools/Cargo.toml

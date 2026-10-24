@@ -1,0 +1,6 @@
+{
+  "repository": "YanChao001/tauri-desktop-starter-extensions",
+  "plugins": [
+    { "directory": "text-tools", "category": "text", "featured": true }
+  ]
+}

@@ -1,0 +1,74 @@
+name: 发布市场
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 单调递增的目录修订号，留空使用当前 Unix 秒
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: publish-market
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      revision: ${{ steps.metadata.outputs.revision }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: 确定目录修订号
+        id: metadata
+        env:
+          REQUESTED_REVISION: ${{ inputs.revision }}
+        run: |
+          export MARKET_REVISION="${REQUESTED_REVISION:-$(date +%s)}"
+          node --input-type=module -e 'const n=Number(process.env.MARKET_REVISION);if(!Number.isInteger(n)||n<=0||n>0xffffffff)throw Error("Invalid revision")'
+          echo "revision=$MARKET_REVISION" >> "$GITHUB_OUTPUT"
+          echo "MARKET_REVISION=$MARKET_REVISION" >> "$GITHUB_ENV"
+      - name: 安装 Rust 工具链
+        run: rustup show && rustup target add wasm32-unknown-unknown
+      - name: 回归
+        run: node --test scripts/*.test.mjs
+      - name: 构建插件（无签名密钥）
+        run: node scripts/build.mjs
+      - uses: actions/upload-artifact@v6
+        with:
+          name: market-packages
+          path: dist/
+          if-no-files-found: error
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      MARKET_REVISION: ${{ needs.build.outputs.revision }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v7
+        with:
+          name: market-packages
+          path: dist/
+      - name: 签名并核对附件（不执行插件构建）
+        env:
+          MARKET_SIGNING_PRIVATE_KEY: ${{ secrets.MARKET_SIGNING_PRIVATE_KEY }}
+        run: |
+          node scripts/sign-release.mjs "dist/market-$MARKET_REVISION"
+          node scripts/verify.mjs "dist/market-$MARKET_REVISION"
+      - name: 发布已验证的附件
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish.mjs "dist/market-$MARKET_REVISION"
