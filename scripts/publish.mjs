@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { verifyCatalog } from "./signing.mjs";
+import { validateCatalog, validRepository } from "./protocol.mjs";
 
 export function publish(
   directory,
@@ -24,9 +25,10 @@ export function publish(
   publishCatalog(catalog, directory, run);
 }
 export function publishCatalog(catalog, directory, run) {
+  validateCatalog(catalog);
   const repository = catalog.repository;
   if (
-    !/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(repository) ||
+    !validRepository(repository) ||
     !Number.isInteger(catalog.revision) ||
     catalog.revision <= 0 ||
     catalog.revision > 0xffffffff

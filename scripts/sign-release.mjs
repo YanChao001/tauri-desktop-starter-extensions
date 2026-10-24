@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { publicKey, signCatalog } from "./signing.mjs";
 import { hash } from "./build.mjs";
+import { CATALOG_LIFETIME, validateCatalog } from "./protocol.mjs";
 
 const directory = process.argv[2];
 if (!directory)
@@ -26,13 +27,17 @@ const listings = JSON.parse(
 );
 if (
   catalog.repository !== listings.repository ||
-  catalog.schemaVersion !== 1 ||
+  catalog.schemaVersion !== 2 ||
   !Number.isInteger(catalog.revision) ||
   catalog.revision <= 0 ||
   catalog.revision > 0xffffffff ||
   catalog.entries.length !== listings.plugins.length
 )
   throw new Error("Invalid unsigned catalog");
+// 以签名时刻为有效期起点，避免构建排队缩短发布后可用时间。
+catalog.issuedAt = Math.floor(Date.now() / 1000);
+catalog.expiresAt = catalog.issuedAt + CATALOG_LIFETIME;
+validateCatalog(catalog);
 const ids = new Set();
 for (let index = 0; index < catalog.entries.length; index++) {
   const entry = catalog.entries[index];

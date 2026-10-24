@@ -13,7 +13,7 @@ const catalog = verifyCatalog(
 );
 const assets = await readdir(directory);
 if (
-  catalog.schemaVersion !== 1 ||
+  catalog.schemaVersion !== 2 ||
   !Number.isInteger(catalog.revision) ||
   catalog.revision <= 0 ||
   catalog.entries.length > 100

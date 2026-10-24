@@ -3,17 +3,17 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  CATALOG_LIFETIME,
+  validRepository,
+  validateCatalog,
+  validateManifest,
+} from "./protocol.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 export const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export function packagePlugin(manifest, wasm) {
-  if (
-    manifest.formatVersion !== 2 ||
-    manifest.apiVersion !== 1 ||
-    !/^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+$/.test(manifest.id) ||
-    !/^\d+\.\d+\.\d+$/.test(manifest.version)
-  )
-    throw new Error("Invalid extension identity or API");
+  validateManifest(manifest);
   if (
     wasm.length > 16 * 1024 * 1024 ||
     !wasm.subarray(0, 8).equals(Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]))
@@ -35,7 +35,7 @@ export async function build({ revision, runBuild = true }) {
   const listings = JSON.parse(
     await readFile(join(root, "listings.json"), "utf8"),
   );
-  if (!/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(listings.repository))
+  if (!validRepository(listings.repository))
     throw new Error("Invalid market repository");
   const output = join(root, "dist", `market-${revision}`);
   await mkdir(join(root, "dist"), { recursive: true });
@@ -111,11 +111,14 @@ export async function build({ revision, runBuild = true }) {
     });
   }
   const catalog = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     revision,
     repository: listings.repository,
+    issuedAt: Math.floor(Date.now() / 1000),
+    expiresAt: Math.floor(Date.now() / 1000) + CATALOG_LIFETIME,
     entries,
   };
+  validateCatalog(catalog);
   await writeFile(
     join(output, "catalog-unsigned.json"),
     JSON.stringify(catalog, null, 2) + "\n",
