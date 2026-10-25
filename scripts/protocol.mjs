@@ -84,6 +84,35 @@ function publicHost(host) {
       )
   );
 }
+export function validateUiPreview(preview) {
+  const expected = new Set(
+    preview.manifest.commands
+      .map((command) => command.ui?.document)
+      .filter((id) => id != null),
+  );
+  const documents = preview.uiDocuments ?? [];
+  if (
+    !Array.isArray(documents) ||
+    documents.length > 32 ||
+    documents.length !== expected.size ||
+    new Set(documents.map((document) => document?.id)).size !== documents.length
+  )
+    throw new Error("Invalid UI document preview");
+  let total = 0;
+  for (const document of documents) {
+    if (
+      !knownFields(document, ["id", "sha256", "bytes"]) ||
+      !expected.has(document.id) ||
+      !hash(document.sha256) ||
+      !Number.isInteger(document.bytes) ||
+      document.bytes < 1 ||
+      document.bytes > 512 * 1024
+    )
+      throw new Error("Invalid UI document metadata");
+    total += document.bytes;
+  }
+  if (total > 2 * 1024 * 1024) throw new Error("UI documents exceed 2 MiB");
+}
 export function validateManifest(manifest) {
   if (
     !knownFields(manifest, [
@@ -159,9 +188,12 @@ export function validateManifest(manifest) {
       (command.resultFormat === "view" && command.inputFormat !== "json") ||
       (command.ui != null && command.resultFormat !== "view") ||
       (command.ui != null &&
-        (!knownFields(command.ui, ["sidebar", "window"]) ||
+        (!knownFields(command.ui, ["sidebar", "window", "document"]) ||
           typeof command.ui.sidebar !== "boolean" ||
-          typeof command.ui.window !== "boolean")) ||
+          typeof command.ui.window !== "boolean" ||
+          (command.ui.document != null &&
+            (typeof command.ui.document !== "string" ||
+              !/^[a-z0-9-]{1,64}$/.test(command.ui.document))))) ||
       (command.inputFormat === "text" &&
         (command.permissions ?? []).some((permission) =>
           ["files:read", "network:https", "network:local"].includes(permission),
@@ -272,10 +304,16 @@ export function validateCatalog(catalog, now = Math.floor(Date.now() / 1000)) {
         "packageSha256",
         "packageBytes",
       ]) ||
-      !knownFields(entry.package, ["manifest", "sha256", "bytes"])
+      !knownFields(entry.package, [
+        "manifest",
+        "sha256",
+        "bytes",
+        "uiDocuments",
+      ])
     )
       throw new Error("Invalid catalog entry metadata");
     validateManifest(entry.package?.manifest);
+    validateUiPreview(entry.package);
     if (
       ids.has(entry.package.manifest.id) ||
       !hash(entry.package.sha256) ||

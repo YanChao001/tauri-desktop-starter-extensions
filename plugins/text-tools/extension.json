@@ -2,7 +2,7 @@
   "formatVersion": 3,
   "apiVersion": 2,
   "id": "market.text-tools",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "name": "文本工具箱",
   "author": "Tauri Desktop Starter",
   "description": "离线文本工坊：Unicode 统计、清理空白、去重排序、大小写与安全文件导出。无需权限即可手动输入，可选授权后显式发送宿主文本。",
@@ -10,11 +10,15 @@
   "commands": [
     {
       "id": "workshop",
-      "title": "文本工坊 / Text workshop",
+      "title": "文本工坊",
       "function": "workshop",
       "inputFormat": "json",
       "resultFormat": "view",
-      "ui": { "sidebar": true, "window": true },
+      "ui": {
+        "sidebar": true,
+        "window": true,
+        "document": "main"
+      },
       "permissions": []
     },
     {

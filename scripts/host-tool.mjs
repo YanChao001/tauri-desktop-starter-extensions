@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { access, mkdtemp, open, rm, writeFile } from "node:fs/promises";
+import { access, lstat, mkdtemp, open, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 
@@ -77,6 +77,7 @@ export async function resolveHostTool(environment = process.env) {
 function runTool(executable, action, paths, run) {
   const args = [action, "--manifest", paths.manifest, "--wasm", paths.wasm];
   if (action === "test") args.push("--fixture", paths.fixture);
+  if (paths.ui) args.push("--ui", paths.ui);
   const result = run(executable, args, {
     cwd: root,
     env: buildEnvironment(),
@@ -101,6 +102,7 @@ export async function validatePlugin({
   manifestPath,
   wasmPath,
   fixturePath,
+  uiDirectory,
   executable,
   run = spawnSync,
 }) {
@@ -110,6 +112,42 @@ export async function validatePlugin({
     readBounded(fixturePath, limits.fixture),
   ]);
   const manifest = JSON.parse(manifestBytes.toString("utf8"));
+  const documentIds = [
+    ...new Set(
+      (manifest.commands ?? [])
+        .map((command) => command.ui?.document)
+        .filter((id) => id != null),
+    ),
+  ];
+  const documents = [];
+  if (documentIds.length) {
+    if (
+      !uiDirectory ||
+      documentIds.length > 32 ||
+      documentIds.some(
+        (id) => typeof id !== "string" || !/^[a-z0-9-]{1,64}$/.test(id),
+      )
+    )
+      throw new Error("Invalid UI source directory or document identifier");
+    const metadata = await lstat(uiDirectory);
+    if (!metadata.isDirectory() || metadata.isSymbolicLink())
+      throw new Error("UI source directory must not be a link");
+    let total = 0;
+    for (const id of documentIds.sort()) {
+      const path = join(uiDirectory, `${id}.html`),
+        metadata = await lstat(path);
+      if (!metadata.isFile() || metadata.isSymbolicLink())
+        throw new Error("UI sources must be regular files");
+      const bytes = await readBounded(path, 512 * 1024);
+      total += bytes.length;
+      if (total > 2 * 1024 * 1024) throw new Error("UI sources exceed 2 MiB");
+      documents.push([
+        id,
+        new TextDecoder("utf-8", { fatal: true }).decode(bytes),
+      ]);
+    }
+  }
+  const uiDocuments = Object.fromEntries(documents);
   const fixture = JSON.parse(fixtureBytes.toString("utf8"));
   const fixtures = Array.isArray(fixture) ? fixture : [fixture];
   if (
@@ -132,11 +170,13 @@ export async function validatePlugin({
       manifest: join(temporary, "manifest.json"),
       wasm: join(temporary, "module.wasm"),
       fixture: join(temporary, "smoke.json"),
+      ...(documents.length ? { ui: join(temporary, "ui.json") } : {}),
     };
     await Promise.all([
       writeFile(paths.manifest, manifestBytes),
       writeFile(paths.wasm, wasm),
       writeFile(paths.fixture, fixtureBytes),
+      paths.ui && writeFile(paths.ui, JSON.stringify(uiDocuments)),
     ]);
     const validated = runTool(executable, "validate", paths, run);
     const tested = runTool(executable, "test", paths, run);
@@ -156,7 +196,7 @@ export async function validatePlugin({
     console.log(
       `Validated ${manifest.id}: ${fixtures.length} real Wasm smoke case(s)`,
     );
-    return { manifest, wasm };
+    return { manifest, wasm, uiDocuments };
   } finally {
     // The target is a fresh directory created by this call, directly inside the OS temporary directory.
     if (

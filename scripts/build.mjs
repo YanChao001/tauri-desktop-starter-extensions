@@ -16,6 +16,7 @@ import {
   validRepository,
   validateCatalog,
   validateManifest,
+  validateUiPreview,
 } from "./protocol.mjs";
 import {
   buildEnvironment,
@@ -25,21 +26,46 @@ import {
 
 const root = resolve(import.meta.dirname, "..");
 export const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
-export function packagePlugin(manifest, wasm) {
+export function packagePlugin(manifest, wasm, uiDocuments = {}) {
   validateManifest(manifest);
   if (
     wasm.length > 16 * 1024 * 1024 ||
     !wasm.subarray(0, 8).equals(Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]))
   )
     throw new Error("Invalid Wasm module");
+  if (
+    !uiDocuments ||
+    typeof uiDocuments !== "object" ||
+    Array.isArray(uiDocuments) ||
+    Object.values(uiDocuments).some((value) => typeof value !== "string")
+  )
+    throw new Error("Invalid UI documents");
+  const documents = Object.entries(uiDocuments)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([id, html]) => ({
+      id,
+      sha256: hash(Buffer.from(html)),
+      bytes: Buffer.byteLength(html),
+    }));
+  const preview = {
+    manifest,
+    sha256: hash(wasm),
+    bytes: wasm.length,
+    ...(documents.length ? { uiDocuments: documents } : {}),
+  };
+  validateUiPreview(preview);
   const content = Buffer.from(
-    JSON.stringify({ manifest, wasm: wasm.toString("base64") }) + "\n",
+    JSON.stringify({
+      manifest,
+      wasm: wasm.toString("base64"),
+      ...(documents.length ? { uiDocuments } : {}),
+    }) + "\n",
   );
   if (content.length > 24 * 1024 * 1024)
     throw new Error("Extension package exceeds 24 MiB");
   return {
     content,
-    preview: { manifest, sha256: hash(wasm), bytes: wasm.length },
+    preview,
   };
 }
 export function validateListings(listings) {
@@ -140,10 +166,11 @@ export async function build({ revision, runBuild = true }) {
       ).artifact;
       if (!/^[a-z][a-z0-9_]*\.wasm$/.test(artifact))
         throw new Error("Invalid artifact name");
-      const { manifest, wasm } = await validatePlugin({
+      const { manifest, wasm, uiDocuments } = await validatePlugin({
         executable,
         manifestPath: join(plugin, "extension.json"),
         fixturePath: join(plugin, "smoke.json"),
+        uiDirectory: join(plugin, "ui"),
         wasmPath: join(
           root,
           "target",
@@ -155,7 +182,7 @@ export async function build({ revision, runBuild = true }) {
       });
       if (ids.has(manifest.id)) throw new Error("Duplicate extension ID");
       ids.add(manifest.id);
-      const { content, preview } = packagePlugin(manifest, wasm);
+      const { content, preview } = packagePlugin(manifest, wasm, uiDocuments);
       const asset = `${manifest.id}-${manifest.version}.starter-extension.json`;
       await writeFile(join(staging, asset), content, { flag: "wx" });
       entries.push({

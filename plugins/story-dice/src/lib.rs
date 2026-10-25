@@ -374,6 +374,8 @@ struct State {
     pending: bool,
     favorites_revision: Option<i32>,
     status: String,
+    #[serde(default)]
+    persisted: bool,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -582,11 +584,13 @@ pub fn process(input: &str) -> Result<String, String> {
             pending: false,
             favorites_revision: None,
             status: String::new(),
+            persisted: false,
         }
     } else {
         serde_json::from_str(&request.state).map_err(|_| "Invalid story state")?
     };
     validate_state(&state)?;
+    state.persisted = false;
     let previous_roll = state.roll.clone();
     let action = request.action.as_deref();
     if state.pending != (action == Some("host-result"))
@@ -760,6 +764,7 @@ pub fn process(input: &str) -> Result<String, String> {
                 if confirmed < 0 || confirmed > i32::MAX as i64 || !value["values"].is_object() {
                     return Err("Invalid successful storage receipt".into());
                 }
+                state.persisted = true;
                 state.status = tr(
                     zh,
                     "收藏变更已由宿主确认保存",
@@ -995,6 +1000,11 @@ mod tests {
         host(&mut request, 7, json!({}));
         let pending = run(&request);
         assert_eq!(pending["effects"][0]["expectedRevision"], 7);
+        assert!(
+            !serde_json::from_str::<State>(pending["state"].as_str().unwrap())
+                .unwrap()
+                .persisted
+        );
         let values = pending["effects"][0]["changes"].clone();
         let mut callback = next(&pending, "host-result");
         host(&mut callback, 8, values.clone());
@@ -1002,6 +1012,11 @@ mod tests {
             json!([{"id":"write-favorites","value":{"revision":8,"values":values},"error":null}]);
         let confirmed = run(&callback);
         assert!(confirmed["effects"].as_array().unwrap().is_empty());
+        assert!(
+            serde_json::from_str::<State>(confirmed["state"].as_str().unwrap())
+                .unwrap()
+                .persisted
+        );
         assert!(
             confirmed["blocks"][1]["text"]
                 .as_str()
@@ -1038,6 +1053,11 @@ mod tests {
         callback["results"] = json!([{"id":"write-favorites","value":null,"error":{"code":"CONFLICT","message":"another window wrote","retryable":false}}]);
         let failed = run(&callback);
         assert!(failed["effects"].as_array().unwrap().is_empty());
+        assert!(
+            !serde_json::from_str::<State>(failed["state"].as_str().unwrap())
+                .unwrap()
+                .persisted
+        );
         assert!(
             failed["blocks"][1]["text"]
                 .as_str()

@@ -4,8 +4,8 @@
 
 ## 工作边界
 
-- 本仓库维护收录插件、构建脚本、目录签名与 Release 发布；宿主维护运行时、权限 broker、声明式渲染器与数据保护。协议与 DTO 以 [宿主扩展指南](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md) 及其 Rust 实现为准，不在市场脚本复制另一套运行规则。
-- 当前构建入口固定 Rust / Cargo，依赖使用提交的锁文件；其他语言需要先实现受审核的构建流程。插件输出文本或声明式 JSON，不引入任意网页脚本、HTML 或远程页面。
+- 本仓库维护收录插件、构建脚本、目录签名与 Release 发布；宿主维护运行时、权限 broker、通用视图、隔离 UI 与数据保护。协议与 DTO 以 [宿主扩展指南](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md) 及其 Rust 实现为准，不在市场脚本复制另一套运行规则。
+- 当前构建入口固定 Rust / Cargo，依赖使用提交的锁文件；其他语言需要先实现受审核的构建流程。插件业务输出文本或视图 JSON；复杂界面可交付清单引用的本地单文件 HTML / CSS / JavaScript。界面必须使用宿主隔离与消息桥，不直接访问宿主 DOM、原生 IPC 或远程页面。
 - 修改源码、清单和手写 fixture，不手改 `dist/`、`target/` 或已签名目录。新增依赖说明用途、许可、构建和平台影响，不借机全量升级。
 - 插件自行校验动作、导入状态与业务数据。可选权限不阻塞无关的离线功能；存储写入使用 revision 与匹配的效果回执，处理失败、冲突和未来版本，保留用户原始数据。
 - `extension-tool` 是清单、ABI 与运行校验的权威入口；市场 JSON 检查不能替代它。合成宿主上下文的离线 fixture 不能冒充真实网络、私有存储或凭据操作已验收。

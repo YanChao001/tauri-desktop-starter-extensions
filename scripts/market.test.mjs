@@ -5,7 +5,7 @@ import { publicKey, signCatalog, verifyCatalog } from "./signing.mjs";
 import { hash, packagePlugin, validateListings } from "./build.mjs";
 import { buildEnvironment, validatePlugin } from "./host-tool.mjs";
 import { verifyRelease } from "./verify.mjs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -262,6 +262,127 @@ test("host checks use a shared byte snapshot even if source files change between
     validatePlugin({ ...paths, executable: "test-only-tool", run }),
     /does not cover command/,
   );
+});
+
+test("UI documents remain in the validated byte snapshot when source HTML changes", async (context) => {
+  const directory = await temporary(context),
+    source = manifest();
+  source.commands = [
+    {
+      ...source.commands[0],
+      inputFormat: "json",
+      resultFormat: "view",
+      ui: { sidebar: true, window: true, document: "main" },
+    },
+  ];
+  const paths = {
+    manifestPath: join(directory, "manifest.json"),
+    wasmPath: join(directory, "module.wasm"),
+    fixturePath: join(directory, "smoke.json"),
+    uiDirectory: join(directory, "ui"),
+  };
+  await mkdir(paths.uiDirectory);
+  const html = "<!doctype html><main>Original UI 中文</main>",
+    wasm = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]);
+  await Promise.all([
+    writeFile(paths.manifestPath, JSON.stringify(source)),
+    writeFile(paths.wasmPath, wasm),
+    writeFile(
+      paths.fixturePath,
+      JSON.stringify({
+        command: "convert",
+        input: {},
+        expectJsonSubset: { version: 2 },
+      }),
+    ),
+    writeFile(join(paths.uiDirectory, "main.html"), html),
+  ]);
+  const actions = [];
+  const result = await validatePlugin({
+    ...paths,
+    executable: "test-only-tool",
+    run: (_executable, args) => {
+      actions.push(args[0]);
+      assert.deepEqual(
+        JSON.parse(readFileSync(args[args.indexOf("--ui") + 1], "utf8")),
+        { main: html },
+      );
+      writeFileSync(
+        join(paths.uiDirectory, "main.html"),
+        "<main>Changed UI</main>",
+      );
+      return {
+        status: 0,
+        stdout: JSON.stringify({
+          id: source.id,
+          version: source.version,
+          validated: true,
+          smoke: { command: "convert", passed: true },
+        }),
+      };
+    },
+  });
+  assert.deepEqual(actions, ["validate", "test"]);
+  assert.deepEqual(result.uiDocuments, { main: html });
+  await writeFile(join(paths.uiDirectory, "main.html"), Buffer.from([0xff]));
+  await assert.rejects(
+    validatePlugin({ ...paths, executable: "unused" }),
+    /encoded data|encoding/i,
+  );
+});
+
+test("signed UI metadata binds exact HTML independently of the Wasm hash", async (context) => {
+  const directory = await temporary(context),
+    extension = manifest();
+  extension.commands = [
+    {
+      ...extension.commands[0],
+      inputFormat: "json",
+      resultFormat: "view",
+      ui: { sidebar: true, window: true, document: "main" },
+    },
+  ];
+  const wasm = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]),
+    html = "<!doctype html><main>Original UI</main>";
+  const packed = packagePlugin(extension, wasm, { main: html });
+  assert.equal(packed.preview.uiDocuments[0].sha256, hash(Buffer.from(html)));
+  assert.throws(() => packagePlugin(extension, wasm, {}));
+  assert.throws(() =>
+    packagePlugin(extension, wasm, { main: html, unused: "extra" }),
+  );
+  assert.throws(() =>
+    packagePlugin(extension, wasm, { main: "x".repeat(512 * 1024 + 1) }),
+  );
+  const asset = extension.id + "-1.0.0.starter-extension.json",
+    privateKey = key();
+  const entry = {
+    package: packed.preview,
+    category: "tools",
+    featured: false,
+    releaseTag: "market-1",
+    asset,
+    packageSha256: hash(packed.content),
+    packageBytes: packed.content.length,
+  };
+  const catalog = { ...emptyCatalog(), entries: [entry] };
+  const options = () => ({
+    envelope: signCatalog(catalog, privateKey),
+    encodedKey: publicKey(privateKey),
+  });
+  await writeFile(join(directory, asset), packed.content);
+  await verifyRelease(directory, options());
+  const changed = Buffer.from(
+    packed.content.toString().replace("Original UI", "Changed UI"),
+  );
+  await writeFile(join(directory, asset), changed);
+  await assert.rejects(
+    verifyRelease(directory, options()),
+    /Package hash mismatch/,
+  );
+  // Even a separately re-signed package byte hash must match the preview's UI digest.
+  entry.packageSha256 = hash(changed);
+  entry.packageBytes = changed.length;
+  await assert.rejects(verifyRelease(directory, options()), /mismatch/);
 });
 
 test("compilation and host processes never inherit signing credentials", () => {
