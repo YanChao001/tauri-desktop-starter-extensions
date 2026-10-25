@@ -2,7 +2,7 @@
 
 离线 Rust / Extism 插件，使用包格式 3、API 2 和视图 2。`workshop` 提供侧栏与独立窗口入口；`uppercase`、`lowercase` 保留直接处理宿主文本的普通命令。
 
-工坊可以手动输入、统计、选择转换、将结果作为下一次输入，或生成 TXT / Markdown 文件。所有计算都在 Wasm 中完成，不访问网络、文件系统、时钟、随机数或私有存储。生成文件后仍需用户在宿主中选择保存位置。
+[ui/main.html](./ui/main.html) 将输入与结果放在相邻区域，模式选择与主处理按钮就近排列，Ctrl / Command + Enter 可提交。工坊可以手动输入、统计、选择转换、将结果作为下一次输入，或生成 TXT / Markdown 文件。所有计算都在 Wasm 中完成，不访问网络、文件系统、时钟、随机数或私有存储。生成文件后仍需用户在宿主中选择保存位置。
 
 ## 文本规则
 
@@ -26,6 +26,6 @@ cargo test --manifest-path plugins/text-tools/Cargo.toml --locked --target-dir t
 cargo build --manifest-path plugins/text-tools/Cargo.toml --release --locked --target wasm32-unknown-unknown --target-dir target/text-tools
 ```
 
-在宿主仓库根目录，以生成的 Wasm 和本目录的 `smoke.json` 执行宿主 `extension:test`。fixture 覆盖 Unicode 大小写、中文初始化、排序、TXT / Markdown 导出、显式授权输入和非法动作拒绝；宿主 CLI 会真实调用 Wasm 并校验返回视图。
+使用生成的 Wasm、本目录 ui/ 和 smoke.json，按 [测试规范](../../docs/testing.md#聚焦单个插件) 的快照入口执行宿主 validate / test。fixture 覆盖 Unicode 大小写、中文初始化、排序、TXT / Markdown 导出、显式授权输入和非法动作拒绝；宿主 CLI 会真实调用 Wasm 并校验返回视图。
 
 原生单测覆盖业务语义与错误边界，Wasm PDK 导出只在 `wasm32` 编译，避免原生单测链接到不存在的 Extism host imports。`build.json` 中维护发布所需 Wasm 文件名，编译结果不进入 Git。

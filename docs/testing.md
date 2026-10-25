@@ -55,7 +55,7 @@ node scripts/check.mjs
 使用未被本地 `dist/` 占用的新修订号。同一秒重跑可能重名，重复目录会被拒绝，不能把这一错误解释为插件校验失败。完整流程会：
 
 1. 对 `listings.json` 的每个插件执行 `cargo fmt -- --check`，使用其锁文件编译 `wasm32-unknown-unknown` 发布模块。
-2. 将清单、Wasm 和 fixture 读入有界快照，调用同一个宿主工具执行 `validate` 和 `test`，打包使用的就是已检查字节。
+2. 将清单、Wasm、被引用的 UI 文档和 fixture 读入有界快照，调用同一个宿主工具执行 `validate` 和 `test`，打包使用的就是已检查字节。
 3. 检查每条清单命令都被 1–32 个 fixture 中至少一个用例覆盖，核对返回 ID / 版本以及各项通过结果。
 4. 所有插件成功后才完成 `dist/market-<revision>`，失败清理本次暂存目录，不覆盖已有产物。
 5. 使用一次性内存密钥签名并验签完整目录及包哈希，不读取生产私钥，不修改 `public-key.txt`，不产生可发布的签名 `catalog.json`。
@@ -70,21 +70,13 @@ node scripts/check.mjs
 cargo build --locked --release --target wasm32-unknown-unknown --manifest-path plugins/text-tools/Cargo.toml --target-dir target/text-tools
 ```
 
-然后直接调用工具，仅验证该插件。PowerShell：
-
-```powershell
-& $env:STARTER_EXTENSION_TOOL validate --manifest plugins/text-tools/extension.json --wasm target/text-tools/wasm32-unknown-unknown/release/starter_extism_text.wasm
-& $env:STARTER_EXTENSION_TOOL test --manifest plugins/text-tools/extension.json --wasm target/text-tools/wasm32-unknown-unknown/release/starter_extism_text.wasm --fixture plugins/text-tools/smoke.json
-```
-
-macOS / Linux 从**市场仓库根目录**执行：
+然后从市场根目录使用相同的快照校验入口，PowerShell / macOS / Linux 均可执行：
 
 ```sh
-"$STARTER_EXTENSION_TOOL" validate --manifest plugins/text-tools/extension.json --wasm target/text-tools/wasm32-unknown-unknown/release/starter_extism_text.wasm
-"$STARTER_EXTENSION_TOOL" test --manifest plugins/text-tools/extension.json --wasm target/text-tools/wasm32-unknown-unknown/release/starter_extism_text.wasm --fixture plugins/text-tools/smoke.json
+node --input-type=module -e 'import {validatePlugin,resolveHostTool} from "./scripts/host-tool.mjs"; await validatePlugin({manifestPath:"plugins/text-tools/extension.json",wasmPath:"target/text-tools/wasm32-unknown-unknown/release/starter_extism_text.wasm",fixturePath:"plugins/text-tools/smoke.json",uiDirectory:"plugins/text-tools/ui",executable:await resolveHostTool()});'
 ```
 
-模块路径以 `build.json` 和实际 `--target-dir` 为准。工具成功返回 JSON，包含 `validated: true`；`test` 还包含通过的 smoke 报告。不要使用旧模块证明修改后的源码通过，源码变化后应先重新编译。
+模块路径以 build.json 和实际 target-dir 为准。入口把同一份清单 / Wasm / HTML / fixture 快照传给原生 validate / test；不能省略自定义 UI 文档或用旧二进制证明新源码已通过。
 
 ### 编写可发现回归的断言
 
@@ -126,7 +118,7 @@ fixture 数组不会自动把上一条输出 state / fields 传给下一条，�
 
 ## 合成宿主上下文与真实效果
 
-离线 fixture 可以构造 `host.permissions`、`host.storage` 和 `action: "host-result"` / `results`，真实执行插件生成或消费这些数据的逻辑。例如 [2048 fixture](../plugins/arcade-2048/smoke.json) 同时检查 storage 请求、成功 revision 回执和 `CONFLICT` 回执。它证明 Wasm 会按协议处理这些输入，**不会真的写入宿主存储或执行网络请求**。
+离线 fixture 可以构造 `host.permissions`、`host.storage` 和 `action: "host-result"` / `results`，真实执行插件生成或消费这些数据的逻辑。例如 [数字合并 fixture](../plugins/arcade-2048/smoke.json) 同时检查 storage 请求、成功 revision 回执和 `CONFLICT` 回执。它证明 Wasm 会按协议处理这些输入，**不会真的写入宿主存储或执行网络请求**。
 
 真实应用中，这些保留字段由宿主注入，页面请求不能自行伪造。需要同时验证：
 
@@ -140,7 +132,7 @@ fixture 数组不会自动把上一条输出 state / fields 传给下一条，�
 
 ## 界面与安装验收
 
-插件没有自己的网页，UI 由宿主渲染器绘制；测试时仍需考虑数据和布局。中文与英文分别检查初始化及关键动作，在窄屏和常见桌面宽度下确认长文本、网格、线索、错误信息与保存入口可读。用键盘检查 Tab 顺序、焦点、表单提交和操作按钮；普通文本应保持字面内容，Markdown 和生成文件遵循宿主安全边界。
+普通视图由宿主绘制，自定义 HTML 由插件组织；两种路线都需检查数据和布局。中文与英文分别检查初始化及关键动作，在窄屏和常见桌面宽度下确认长文本、网格、线索、错误信息与保存入口可读。用键盘检查 Tab 顺序、焦点、表单提交和操作按钮；普通文本应保持字面内容，Markdown 和生成文件遵循宿主安全边界。
 
 宿主浏览器测试默认使用无头模式，不抢占正在工作的桌面。已有生产构建和 Playwright 用例可从**宿主仓库根目录**运行：
 
@@ -157,3 +149,7 @@ pnpm test:ui
 [`ci.yml`](../.github/workflows/ci.yml) 在 PR 和 `main` 推送时使用 Ubuntu，先运行市场脚本回归，再检出指定宿主、构建工具、编译所有插件并执行离线 `check`。CI 的新工作区使用固定测试修订号，不代表本地可以反复复用同一产物目录。宿主由 `STARTER_HOST_REF` 仓库变量选择，未配置时为 `develop`；应在跨仓库协议修改时固定到已经推送且审核过的兼容提交。
 
 CI 配置存在不表示某次已经成功运行，也不表示 Windows / macOS、真实桌面或正式 Release 已通过。PR 描述记录本次实际的宿主提交、平台、执行命令及结果，说明未验证范围。发布前还要核对生产公钥、目录有效期、增量修订号、完整附件和线上 latest，步骤统一维护在 [发布指南](./publishing.md)。
+
+## 自定义界面无头回归
+
+构建 CLI、内置包与市场 Wasm 后，在宿主根目录运行 pnpm test:extensions:ui，覆盖真实 HTML / SDK / 离线 Wasm、主题、键盘、草稿重载、无障碍与隔离负例。浏览器使用替代协议 / 对话框边界，不代表真实 Tauri IPC、原生窗口或全部平台已验收。具体准备和产物见 [宿主测试说明](https://github.com/YanChao001/tauri-desktop-starter/blob/feature/workflows-and-extensions/docs/testing.md#自定义扩展界面)。

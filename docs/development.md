@@ -18,16 +18,17 @@ node --test scripts/*.test.mjs
 
 主要目录的职责如下：
 
-| 路径                                           | 用途                                         |
-| ---------------------------------------------- | -------------------------------------------- |
-| `plugins/<directory>/src/`                     | 插件逻辑、PDK 导出与规则单测                 |
-| `plugins/<directory>/Cargo.toml`、`Cargo.lock` | 插件包元数据和固定依赖                       |
-| `plugins/<directory>/extension.json`           | 宿主清单：ID、版本、命令、权限和最低宿主版本 |
-| `plugins/<directory>/build.json`               | Cargo 编译后的 Wasm 文件名                   |
-| `plugins/<directory>/smoke.json`               | 由真实宿主 worker 执行的手写验收             |
-| `listings.json`                                | 收录目录、分类和推荐标记                     |
-| `scripts/`                                     | 构建、校验、签名与发布工具                   |
-| `target/`、`dist/`                             | 忽略的编译和打包输出，不手工修改或提交       |
+| 路径                                           | 用途                                              |
+| ---------------------------------------------- | ------------------------------------------------- |
+| `plugins/<directory>/src/`                     | 插件逻辑、PDK 导出与规则单测                      |
+| `plugins/<directory>/Cargo.toml`、`Cargo.lock` | 插件包元数据和固定依赖                            |
+| `plugins/<directory>/extension.json`           | 宿主清单：ID、版本、命令、权限和最低宿主版本      |
+| `plugins/<directory>/ui/<id>.html`             | 自定义界面的单文件源码，按命令的 ui.document 引用 |
+| `plugins/<directory>/build.json`               | Cargo 编译后的 Wasm 文件名                        |
+| `plugins/<directory>/smoke.json`               | 由真实宿主 worker 执行的手写验收                  |
+| `listings.json`                                | 收录目录、分类和推荐标记                          |
+| `scripts/`                                     | 构建、校验、签名与发布工具                        |
+| `target/`、`dist/`                             | 忽略的编译和打包输出，不手工修改或提交            |
 
 ## 准备宿主校验工具
 
@@ -144,7 +145,15 @@ cargo test --locked --manifest-path plugins/my-plugin/Cargo.toml --target-dir ta
 
 JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或浏览器页面。不要使用 Node 内置模块、DOM 或自行调用宿主 IPC 来获取能力。网络、持久化和用户文件等交给声明式请求及宿主授权处理。需要把 JS / TS 插件正式纳入市场时，需同时扩展受审查的构建流程并保留同样的宿主验证、fixture、打包和签名步骤。
 
-当前界面由插件返回视图 JSON、由宿主统一绘制，无需随包提供 `index.html` 或 CSS。能实现什么、为何暂不加载插件 HTML，以及图表、图片和生成文件的边界，统一见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
+## 自定义界面开发
+
+简单命令不需要 HTML；复杂应用在视图命令 ui 中设置 document，例如 main，并建立 `ui/main.html`。自包含 HTML 内嵌 CSS、JavaScript、数据图片和字体；可用普通 DOM / Canvas，也可让框架构建为单文件。保留键盘、焦点、减少动效、主题和窄屏；不要引用 CDN、外部脚本或远程网页。
+
+宿主在作者代码之前注入 SDK，HTML 不需要导入脚本。starter.onChange 接收当前 view、fields、checkpoint、忙碌、语言和主题；starter.run 请求本命令动作，starter.setFields 只更新字段，starter.checkpoint 报告草稿及是否未保存，starter.saveArtifact 请求保存已生成产物。异步失败保留输入并显示可理解的反馈，保存取消返回 false，不能标成已保存。完整类型与示例见 [宿主界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/feature/workflows-and-extensions/sdk)，不要复制一套 DTO。
+
+本仓库 build 自动读取被引用的 `ui/<id>.html`，检查目录与文件不是链接、UTF-8 和额度，固定同一快照传给原生工具并打包。只修改 HTML 也必须提高插件版本；完整 JSON 包和 UI 文档摘要都会改变。界面重载恢复本窗口字段与检查点，不重新初始化 Wasm；未上报的局部状态无法保留。不同示例见各插件的 `ui/main.html`。
+
+UI 与 Wasm 是不同上下文。界面不会获得宿主 DOM、可用 Tauri IPC、任意路径或凭据原文；网络和持久化由 Wasm 返回受控 effects。界面脚本不要使用 Node API 或偷偷另建浏览器存储。路线选择与边界见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
 
 ## 提交前
 

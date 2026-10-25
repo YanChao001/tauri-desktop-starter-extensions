@@ -31,11 +31,17 @@ export async function verifyRelease(directory, { envelope, encodedKey } = {}) {
     )
       throw new Error("Package hash mismatch");
     const pkg = JSON.parse(bytes);
+    if (
+      Object.keys(pkg).some(
+        (key) => !["manifest", "wasm", "uiDocuments"].includes(key),
+      )
+    )
+      throw new Error("Unknown package metadata");
     if (typeof pkg.wasm !== "string") throw new Error("Invalid Wasm base64");
     const module = Buffer.from(pkg.wasm, "base64");
     if (module.toString("base64") !== pkg.wasm)
       throw new Error("Noncanonical Wasm base64");
-    const checked = packagePlugin(pkg.manifest, module);
+    const checked = packagePlugin(pkg.manifest, module, pkg.uiDocuments ?? {});
     if (JSON.stringify(checked.preview) !== JSON.stringify(entry.package))
       throw new Error("Package manifest or module mismatch");
   }

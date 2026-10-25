@@ -3,19 +3,23 @@
   "apiVersion": 2,
   "minHostVersion": "0.1.4",
   "id": "market.nonogram",
-  "version": "1.0.0",
-  "name": "数织画室 / Nonogram Studio",
+  "version": "1.1.0",
+  "name": "数织",
   "author": "Tauri Desktop Starter",
   "description": "三个唯一解 5×5 数织谜题，含行列线索、填充和叉号、撤销、提示、校验及可选进度存储。Three unique 5×5 picture puzzles with clues, marks, undo, hints and optional progress storage.",
   "icon": "gamepad",
   "commands": [
     {
       "id": "play",
-      "title": "打开数织画室 / Open Nonogram Studio",
+      "title": "数织",
       "function": "play",
       "inputFormat": "json",
       "resultFormat": "view",
-      "ui": { "sidebar": true, "window": true },
+      "ui": {
+        "sidebar": true,
+        "window": true,
+        "document": "main"
+      },
       "permissions": []
     }
   ],
