@@ -85,6 +85,8 @@ PR / main CI 使用 `STARTER_HOST_REF` 仓库变量，默认是 `develop`；发�
 
 `Release source must be a complete 40-character commit SHA` 表示发布没有可靠的源码身份。Actions 使用市场仓库的 `GITHUB_SHA`；本地必须提供 `MARKET_SOURCE_SHA`。若两个变量同时存在，前者优先。核对 SHA 已在远端存在，并对应包的已审核市场源码，不使用宿主 SHA、短 SHA 或可变分支名。
 
+`Release tag does not match the reviewed source commit` 表示拟发布的同名标签实际指向另一提交，`--target` 不会覆盖它。脚本在创建草稿前和公开为 latest 前分别检查，包括带注释标签的最终 commit；异常结构、无法解引用或读取失败也会阻止继续。先核对标签历史和已审核来源，使用未占用的更高修订重新构建，或由维护者按已确认的草稿恢复方案处理。不要强制移动已经公开使用的标签，也不要把 API 错误忽略为“不存在”。
+
 ### 上传失败或只看到草稿
 
 脚本先创建 draft，再上传全部附件，最后才公开并设置 latest。网络、附件冲突或权限失败时草稿可能仍在。检查运行日志、草稿及完整附件，按 [发布流程](./publishing.md#actions-生产发布) 处理，不能手动公开不完整草稿来消除错误。
