@@ -9,6 +9,7 @@ import {
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { validateCatalog } from "./protocol.mjs";
 
 const packet = (key) => {
   const raw = createPublicKey(key)
@@ -29,7 +30,12 @@ export function generateKey(path) {
   writeFileSync(path, pem, { flag: "wx", mode: 0o600 });
   return publicKey(pem);
 }
-export function signCatalog(catalog, privateKey) {
+export function signCatalog(
+  catalog,
+  privateKey,
+  now = Math.floor(Date.now() / 1000),
+) {
+  validateCatalog(catalog, now);
   const payload = Buffer.from(JSON.stringify(catalog));
   const key = createPrivateKey(privateKey);
   const publicPacket = packet(key);
@@ -56,7 +62,11 @@ export function signCatalog(catalog, privateKey) {
     ].join("\n"),
   };
 }
-export function verifyCatalog(envelope, encodedKey) {
+export function verifyCatalog(
+  envelope,
+  encodedKey,
+  now = Math.floor(Date.now() / 1000),
+) {
   const publicPacket = Buffer.from(encodedKey, "base64");
   const lines = envelope.signature.split("\n");
   const signature = Buffer.from(lines[1] ?? "", "base64");
@@ -88,7 +98,11 @@ export function verifyCatalog(envelope, encodedKey) {
     )
   )
     throw new Error("Invalid market signature");
-  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(payload));
+  const catalog = JSON.parse(
+    new TextDecoder("utf-8", { fatal: true }).decode(payload),
+  );
+  validateCatalog(catalog, now);
+  return catalog;
 }
 if (
   process.argv[1] &&

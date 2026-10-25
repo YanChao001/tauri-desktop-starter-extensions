@@ -1,6 +1,9 @@
 {
   "repository": "YanChao001/tauri-desktop-starter-extensions",
   "plugins": [
-    { "directory": "text-tools", "category": "text", "featured": true }
+    { "directory": "text-tools", "category": "text", "featured": true },
+    { "directory": "arcade-2048", "category": "games", "featured": true },
+    { "directory": "nonogram", "category": "games", "featured": false },
+    { "directory": "story-dice", "category": "tools", "featured": true }
   ]
 }

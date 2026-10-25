@@ -1,18 +1,41 @@
 {
-  "formatVersion": 2,
-  "apiVersion": 1,
+  "formatVersion": 3,
+  "apiVersion": 2,
   "id": "market.text-tools",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "name": "文本工具箱",
   "author": "Tauri Desktop Starter",
-  "description": "使用实际 Extism Wasm 模块转换 Unicode 文本大小写，演示市场下载安装与显式文本授权。",
-  "inputFormat": "text",
-  "resultFormat": "text",
+  "description": "离线文本工坊：Unicode 统计、清理空白、去重排序、大小写与安全文件导出。无需权限即可手动输入，可选授权后显式发送宿主文本。",
   "icon": "puzzle",
   "commands": [
-    { "id": "uppercase", "title": "转为大写", "function": "uppercase" },
-    { "id": "lowercase", "title": "转为小写", "function": "lowercase" }
+    {
+      "id": "workshop",
+      "title": "文本工坊 / Text workshop",
+      "function": "workshop",
+      "inputFormat": "json",
+      "resultFormat": "view",
+      "ui": { "sidebar": true, "window": true },
+      "permissions": []
+    },
+    {
+      "id": "uppercase",
+      "title": "转为大写",
+      "function": "uppercase",
+      "inputFormat": "text",
+      "resultFormat": "text",
+      "permissions": ["text:read"]
+    },
+    {
+      "id": "lowercase",
+      "title": "转为小写",
+      "function": "lowercase",
+      "inputFormat": "text",
+      "resultFormat": "text",
+      "permissions": ["text:read"]
+    }
   ],
-  "permissions": ["text:read"],
-  "allowedHosts": []
+  "permissions": [],
+  "minHostVersion": "0.1.4",
+  "optionalPermissions": ["text:read"],
+  "network": []
 }

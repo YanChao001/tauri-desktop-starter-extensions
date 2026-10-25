@@ -1,0 +1,153 @@
+# 插件开发指南
+
+本指南面向向市场提交插件的作者。市场仓库负责插件源码、收录清单和构建；宿主负责权限、视图协议、Wasm 运行与安装。先了解 [架构与边界](./architecture.md)，再按本页准备环境。验证要求见 [测试规范](./testing.md)，上架与签名见 [发布指南](./publishing.md)。
+
+## 环境与目录
+
+市场脚本只使用 Node 内置模块，没有需要安装的 npm 运行依赖。Node 要求以 [`package.json`](../package.json) 为准，目前为 24 或以上；首次还要编译宿主工具，应选择同时满足宿主 `package.json` engines 的 Node 版本，并使用其中指定的 pnpm。不要直接把宿主 `.nvmrc` 的默认版本用于市场：两个仓库的支持范围并不完全相同。
+
+Rust 使用本仓库 [`rust-toolchain.toml`](../rust-toolchain.toml) 钉住的工具链，插件依赖以各自 `Cargo.lock` 为准。宿主工具构建还需要对应平台的 Tauri 编译依赖；按 [宿主环境说明](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/development.md#环境要求) 安装。即使工具本身不启动窗口，其所属 Rust crate 仍依赖这些库。
+
+从市场仓库根目录准备插件工具链：
+
+```sh
+rustup toolchain install
+rustup target add wasm32-unknown-unknown
+node --test scripts/*.test.mjs
+```
+
+主要目录的职责如下：
+
+| 路径                                           | 用途                                         |
+| ---------------------------------------------- | -------------------------------------------- |
+| `plugins/<directory>/src/`                     | 插件逻辑、PDK 导出与规则单测                 |
+| `plugins/<directory>/Cargo.toml`、`Cargo.lock` | 插件包元数据和固定依赖                       |
+| `plugins/<directory>/extension.json`           | 宿主清单：ID、版本、命令、权限和最低宿主版本 |
+| `plugins/<directory>/build.json`               | Cargo 编译后的 Wasm 文件名                   |
+| `plugins/<directory>/smoke.json`               | 由真实宿主 worker 执行的手写验收             |
+| `listings.json`                                | 收录目录、分类和推荐标记                     |
+| `scripts/`                                     | 构建、校验、签名与发布工具                   |
+| `target/`、`dist/`                             | 忽略的编译和打包输出，不手工修改或提交       |
+
+## 准备宿主校验工具
+
+市场构建需要与当前协议一致的 `extension-tool`。它是宿主提供的专用无界面二进制，支持 `validate` 和 `test`，不初始化桌面应用。不要使用主应用可执行文件代替它，也不要为绕过失败而跳过权威校验。
+
+### 作为宿主子模块开发
+
+市场源码位于宿主的 `marketplace/`。以下 PowerShell 命令从**宿主仓库根目录**运行；执行完后当前目录是市场根目录：
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm build
+cargo build --locked --manifest-path src-tauri/Cargo.toml --bin extension-tool
+$env:STARTER_EXTENSION_TOOL = (Resolve-Path src-tauri/target/debug/extension-tool.exe).Path
+Set-Location marketplace
+rustup toolchain install
+rustup target add wasm32-unknown-unknown
+```
+
+macOS / Linux 的对应命令同样从**宿主仓库根目录**运行：
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+cargo build --locked --manifest-path src-tauri/Cargo.toml --bin extension-tool
+export STARTER_EXTENSION_TOOL="$PWD/src-tauri/target/debug/extension-tool"
+cd marketplace
+rustup toolchain install
+rustup target add wasm32-unknown-unknown
+```
+
+标准子模块布局会自动探测 `../src-tauri/target/debug/extension-tool(.exe)`；显式设置变量便于确认正在使用哪个宿主。如果设置过 `CARGO_TARGET_DIR`，请改用实际输出位置。宿主协议代码变化后重新构建工具，变量指向旧二进制不会自动更新其行为。
+
+### 独立检出市场仓库
+
+独立 clone 不带宿主源码，也不提供预编译宿主工具。准备一个与市场协议匹配的宿主 checkout，按上一节前四步构建工具，再通过 `STARTER_EXTENSION_TOOL` 传递**绝对路径**。两个仓库不要求存在父子关系。
+
+例如，宿主与市场目录位于同一工作目录下，并分别命名为 `tauri-desktop-starter` 和 `tauri-desktop-starter-extensions`。PowerShell 从**市场仓库根目录**执行：
+
+```powershell
+Push-Location ../tauri-desktop-starter
+pnpm install --frozen-lockfile
+pnpm build
+cargo build --locked --manifest-path src-tauri/Cargo.toml --bin extension-tool
+$env:STARTER_EXTENSION_TOOL = (Resolve-Path src-tauri/target/debug/extension-tool.exe).Path
+Pop-Location
+rustup toolchain install
+rustup target add wasm32-unknown-unknown
+```
+
+macOS / Linux 也从**市场仓库根目录**执行：
+
+```sh
+market_root="$PWD"
+cd ../tauri-desktop-starter
+pnpm install --frozen-lockfile
+pnpm build
+cargo build --locked --manifest-path src-tauri/Cargo.toml --bin extension-tool
+export STARTER_EXTENSION_TOOL="$PWD/src-tauri/target/debug/extension-tool"
+cd "$market_root"
+rustup toolchain install
+rustup target add wasm32-unknown-unknown
+```
+
+变量只作用于当前 shell 及其子进程。另开终端需要重新设置；Windows 文件名必须为 `extension-tool.exe`，其他平台为 `extension-tool`。具体探测与检查见 [`scripts/host-tool.mjs`](../scripts/host-tool.mjs)。
+
+## 首次完整离线检查
+
+从**市场仓库根目录**运行以下 PowerShell 命令：
+
+```powershell
+$env:MARKET_REVISION = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds().ToString()
+node scripts/check.mjs
+```
+
+macOS / Linux 从**市场仓库根目录**运行：
+
+```sh
+export MARKET_REVISION="$(date -u +%s)"
+node scripts/check.mjs
+```
+
+`MARKET_REVISION` 必须为正 u32。Unix 秒适合日常生成不重复的本地目录；同一秒重复执行仍会冲突，请生成一个未使用的值。工具不覆盖已有 `dist/market-<revision>`，也不会把本地修订号自动登记为线上最新版本。生产目录必须满足比线上已发布修订更高的要求，见 [发布指南](./publishing.md)。
+
+`check` 检查所有收录插件的 Rust 格式，按锁文件编译 Wasm，调用宿主 `validate` / `test`，再打包并用一次性内存密钥进行完整离线验签。成功时输出包目录及离线回归通过提示；输出包含 `catalog-unsigned.json` 和可本地导入的 `.starter-extension.json`，不生成可发布的签名 `catalog.json`，不读取生产私钥或修改 `public-key.txt`。
+
+仅需构建和真实 Wasm 校验时也可在设置新修订号后，从**市场仓库根目录**运行 `node scripts/build.mjs`。`check` 已包含该步骤，不要先用相同修订号运行 `build` 再运行 `check`。
+
+## 新增一个插件
+
+当前四个市场示例都使用官方 Extism Rust PDK。初次开发可复制 [`text-tools`](../plugins/text-tools/) 作为最小的文本与视图参考，或复制更接近需求的完整插件。复制后先修改身份和说明，再编写逻辑，避免提交同 ID 的另一个包。
+
+1. 建立 `plugins/<directory>/`。目录名使用小写字母开头的小写字母、数字和连字符，最长 64 字符；不要复制 `target/` 或 `dist/`。
+2. 修改 `Cargo.toml` 的包名、版本与许可。保留 `cdylib` 产物类型，新增依赖时审阅 Wasm 支持、许可、体积和维护情况。只为新插件生成或更新自身的 `Cargo.lock`，不要顺带升级其他插件。
+3. 修改 `extension.json`。使用独立稳定 ID，版本为数字 `major.minor.patch`；为每条命令选择输入、输出、导出函数和需要的权限，视图命令按需要设置侧栏 / 窗口入口。必需权限与可选权限按实际工作流拆分，不为无关能力申请授权。
+4. 修改 `build.json` 的 `artifact`，使其等于 Cargo 输出的 Wasm 基名。例如包名 `starter-extism-my-plugin` 默认对应 `starter_extism_my_plugin.wasm`。这里只允许文件名，不能填写任意路径。
+5. 实现逻辑和 PDK 导出，保证导出名与清单的 `function` 一致。参考现有插件将 PDK 导出限制在 `wasm32`，让普通 Rust 单测测试规则函数；每次调用使用传入的 state / fields / host 上下文恢复状态，不依赖实例全局变量长期保留。
+6. 手写 `smoke.json`，覆盖每条清单命令，以及主要动作、拒绝授权、非法输入和效果回执。fixture 格式与分层边界见 [测试规范](./testing.md#真实-wasm-与手写-fixture)。补齐本插件 `README.md` 的玩法、输入额度、权限用途、存储版本、导出语义和已知限制。
+7. 在 [`listings.json`](../listings.json) 增加 `{ "directory": "my-plugin", "category": "tools", "featured": false }`。分类只支持 `text`、`data`、`tools`、`games`；目录和扩展 ID 均不得重复。是否推荐由收录评审决定。
+
+例如，新插件已经建立并修改为 `my-plugin` 后，从**市场仓库根目录**运行：
+
+```sh
+cargo generate-lockfile --manifest-path plugins/my-plugin/Cargo.toml
+cargo fmt --manifest-path plugins/my-plugin/Cargo.toml
+cargo test --locked --manifest-path plugins/my-plugin/Cargo.toml --target-dir target/my-plugin-native
+```
+
+`my-plugin` 是需要替换的示例名，不是仓库已有插件。依赖未变化的已有插件不要重复生成锁文件。随后按上一节生成新的 `MARKET_REVISION`，执行完整离线检查；检查通过后，在宿主中手动导入生成的包，验收授权、安装与真实交互。自动检查通过的范围见 [测试规范](./testing.md)。
+
+## Rust、JavaScript、TypeScript 与界面
+
+宿主并不限于 Rust：其开发示例同时提供 JavaScript 和 TypeScript 经 Extism JS PDK 编译为 Wasm 的路线，参见 [宿主 JS / TS 构建说明](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md#构建-javascript-和-typescript-示例)。这些是宿主仓库的示例；市场当前的统一 `build.mjs` 固定调用 Cargo，仅直接构建 Rust 插件，不能只在收录清单填入一个 `.js` 文件。
+
+JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或浏览器页面。不要使用 Node 内置模块、DOM 或自行调用宿主 IPC 来获取能力。网络、持久化和用户文件等交给声明式请求及宿主授权处理。需要把 JS / TS 插件正式纳入市场时，需同时扩展受审查的构建流程并保留同样的宿主验证、fixture、打包和签名步骤。
+
+当前界面由插件返回视图 JSON、由宿主统一绘制，无需随包提供 `index.html` 或 CSS。能实现什么、为何暂不加载插件 HTML，以及图表、图片和生成文件的边界，统一见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
+
+## 提交前
+
+按 [测试规范](./testing.md) 选择与改动相称的检查，在 PR 中说明实际执行的平台、命令、结果、权限与数据影响。不要把本地离线验签写成线上发布，也不要提交生成包、编译目录、密钥或用户安装数据。
+
+市场是独立仓库：先在市场分支提交、评审和推送，再由宿主更新子模块引用。普通开发提交不会更新应用读取的 Release，发布需单独按 [发布指南](./publishing.md) 执行。

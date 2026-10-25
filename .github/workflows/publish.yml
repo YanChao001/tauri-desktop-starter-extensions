@@ -6,6 +6,10 @@ on:
         description: 单调递增的目录修订号，留空使用当前 Unix 秒
         required: false
         type: string
+      host_ref:
+        description: 已推送并审核的宿主提交，留空使用 STARTER_HOST_REF 仓库变量或 develop
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -14,7 +18,7 @@ concurrency:
 jobs:
   build:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       revision: ${{ steps.metadata.outputs.revision }}
     steps:
@@ -33,12 +37,13 @@ jobs:
           node --input-type=module -e 'const n=Number(process.env.MARKET_REVISION);if(!Number.isInteger(n)||n<=0||n>0xffffffff)throw Error("Invalid revision")'
           echo "revision=$MARKET_REVISION" >> "$GITHUB_OUTPUT"
           echo "MARKET_REVISION=$MARKET_REVISION" >> "$GITHUB_ENV"
-      - name: 安装 Rust 工具链
-        run: rustup show && rustup target add wasm32-unknown-unknown
       - name: 回归
         run: node --test scripts/*.test.mjs
-      - name: 构建插件（无签名密钥）
-        run: node scripts/build.mjs
+      - uses: ./.github/actions/host-tool
+        with:
+          ref: ${{ inputs.host_ref || vars.STARTER_HOST_REF || 'develop' }}
+      - name: 编译、真实 Wasm 回归与离线验签（无生产签名密钥）
+        run: node scripts/check.mjs
       - uses: actions/upload-artifact@v6
         with:
           name: market-packages

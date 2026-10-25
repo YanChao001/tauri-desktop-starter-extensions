@@ -7,15 +7,20 @@ permissions:
   contents: read
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: 签名与包回归
         run: node --test scripts/*.test.mjs
-      - name: 安装 Rust 工具链
-        run: rustup show && rustup target add wasm32-unknown-unknown
-      - name: 检查示例
-        run: cargo fmt --manifest-path plugins/text-tools/Cargo.toml --check && cargo build --locked --release --target wasm32-unknown-unknown --manifest-path plugins/text-tools/Cargo.toml
+      - uses: ./.github/actions/host-tool
+        with:
+          ref: ${{ vars.STARTER_HOST_REF || 'develop' }}
+      - name: 编译全部插件、真实 Wasm 回归与离线验签
+        env:
+          MARKET_REVISION: 1
+        run: node scripts/check.mjs

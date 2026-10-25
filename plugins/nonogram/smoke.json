@@ -1,0 +1,220 @@
+[
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "version": 2,
+      "display": "Nonogram Studio · Heart",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"ready\",\"pending\":false}",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "zh-CN"
+    },
+    "expectJsonSubset": {
+      "display": "数织画室 · 爱心",
+      "description": "读行列线索，画出藏起来的小图案。",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "cell-0",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"ready\",\"pending\":false}",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[{\"cell\":0,\"value\":1}],\"tool\":\"fill\",\"notice\":\"changed\",\"pending\":false}",
+      "description": "Mark updated. Click again with the same tool to clear it.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "hint",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[{\"cell\":0,\"value\":1}],\"tool\":\"fill\",\"notice\":\"changed\",\"pending\":false}",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[{\"cell\":0,\"value\":1},{\"cell\":0,\"value\":2}],\"tool\":\"fill\",\"notice\":\"hint\",\"pending\":false}",
+      "description": "A hint corrected a conflicting mark or revealed one unknown cell. Hints use the unique solution and can be undone.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "undo",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[{\"cell\":0,\"value\":1}],\"tool\":\"fill\",\"notice\":\"changed\",\"pending\":false}",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"undone\",\"pending\":false}",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "check",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[{\"cell\":0,\"value\":1}],\"tool\":\"fill\",\"notice\":\"changed\",\"pending\":false}",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "description": "Some filled cells or crosses conflict with the clues. Undo or use a hint to correct one cell.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "save",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"ready\",\"pending\":false}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": [
+          "storage"
+        ],
+        "storage": {
+          "revision": 4,
+          "values": {}
+        }
+      }
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"ready\",\"pending\":true}",
+      "effects": [
+        {
+          "kind": "storage",
+          "id": "save-progress",
+          "expectedRevision": 4,
+          "changes": {
+            "progress": {
+              "schema": 1,
+              "puzzle": 0,
+              "history": [],
+              "tool": "fill",
+              "notice": "ready",
+              "pending": false
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"ready\",\"pending\":true}",
+      "fields": {},
+      "locale": "en",
+      "results": [
+        {
+          "id": "save-progress",
+          "value": {
+            "revision": 5,
+            "values": {
+              "progress": {
+                "schema": 1,
+                "puzzle": 0,
+                "history": [],
+                "tool": "fill",
+                "notice": "ready",
+                "pending": false
+              }
+            }
+          },
+          "error": null
+        }
+      ],
+      "host": {
+        "permissions": [
+          "storage"
+        ],
+        "storage": {
+          "revision": 5,
+          "values": {
+            "progress": {
+              "schema": 1,
+              "puzzle": 0,
+              "history": [],
+              "tool": "fill",
+              "notice": "ready",
+              "pending": false
+            }
+          }
+        }
+      }
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"saved\",\"pending\":false}",
+      "description": "Progress saved to this plugin's private storage.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "load",
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[],\"tool\":\"fill\",\"notice\":\"ready\",\"pending\":false}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": [
+          "storage"
+        ],
+        "storage": {
+          "revision": 5,
+          "values": {
+            "progress": {
+              "schema": 1,
+              "puzzle": 0,
+              "history": [
+                {
+                  "cell": 0,
+                  "value": 1
+                }
+              ],
+              "tool": "fill",
+              "notice": "ready",
+              "pending": false
+            }
+          }
+        }
+      }
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":1,\"puzzle\":0,\"history\":[{\"cell\":0,\"value\":1}],\"tool\":\"fill\",\"notice\":\"loaded\",\"pending\":false}",
+      "description": "The saved puzzle and move history were restored.",
+      "effects": []
+    }
+  }
+]
