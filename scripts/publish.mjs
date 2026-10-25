@@ -22,9 +22,20 @@ export function publish(
   ).repository;
   if (catalog.repository !== repository)
     throw new Error("Invalid release repository");
-  publishCatalog(catalog, directory, run);
+  publishCatalog(
+    catalog,
+    directory,
+    process.env.GITHUB_SHA ?? process.env.MARKET_SOURCE_SHA,
+    run,
+  );
 }
-export function publishCatalog(catalog, directory, run) {
+export function publishCatalog(catalog, directory, sourceSha, run) {
+  if (
+    typeof sourceSha !== "string" ||
+    sourceSha.length !== 40 ||
+    !/^[a-f0-9]{40}$/i.test(sourceSha)
+  )
+    throw new Error("Release source must be a complete 40-character commit SHA");
   validateCatalog(catalog);
   const repository = catalog.repository;
   if (
@@ -71,6 +82,8 @@ export function publishCatalog(catalog, directory, run) {
     tag,
     "--repo",
     repository,
+    "--target",
+    sourceSha,
     "--draft",
     "--title",
     `市场目录 ${catalog.revision}`,

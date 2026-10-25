@@ -316,6 +316,49 @@ test("offline release verification binds signed metadata to the exact packaged m
     /Package hash mismatch/,
   );
 });
+const releaseSourceSha = "0123456789abcdef0123456789abcdef01234567";
+
+test("publication requires a complete source SHA before contacting GitHub", () => {
+  const calls = [];
+  for (const sourceSha of [
+    undefined,
+    null,
+    "",
+    "main",
+    "0123456",
+    "g".repeat(40),
+    "0".repeat(39),
+    "0".repeat(41),
+    `${releaseSourceSha}\n`,
+  ]) {
+    assert.throws(
+      () =>
+        publishCatalog(emptyCatalog(), "dist/market-1", sourceSha, (args) => {
+          calls.push(args);
+          return "[]";
+        }),
+      /complete 40-character commit SHA/,
+    );
+  }
+  assert.deepEqual(calls, []);
+});
+
+test("publication binds the release tag to the exact reviewed source commit", () => {
+  const calls = [];
+  publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
+    calls.push(args);
+    return args[1] === "list" ? "[]" : "";
+  });
+  const create = calls.find((args) => args[1] === "create");
+  assert.equal(create[create.indexOf("--target") + 1], releaseSourceSha);
+  assert.equal(create.includes("--draft"), true);
+  assert.deepEqual(
+    calls.map((args) => args[1]),
+    ["list", "create", "upload", "edit"],
+  );
+  assert.equal(calls.at(-1).includes("--latest"), true);
+});
+
 test("failed uploads stay draft and older catalog revisions are not republished", () => {
   const catalog = { ...emptyCatalog(2), repository: "owner/market" };
   const calls = [];
@@ -326,7 +369,7 @@ test("failed uploads stay draft and older catalog revisions are not republished"
     return "";
   };
   assert.throws(
-    () => publishCatalog(catalog, "dist/market-2", run),
+    () => publishCatalog(catalog, "dist/market-2", releaseSourceSha, run),
     /Upload failed/,
   );
   assert.equal(
@@ -338,7 +381,13 @@ test("failed uploads stay draft and older catalog revisions are not republished"
     false,
   );
   assert.throws(
-    () => publishCatalog({ ...catalog, revision: 1 }, "dist/market-1", run),
+    () =>
+      publishCatalog(
+        { ...catalog, revision: 1 },
+        "dist/market-1",
+        releaseSourceSha,
+        run,
+      ),
     /must increase/,
   );
 });
