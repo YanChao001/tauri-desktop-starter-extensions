@@ -1,0 +1,28 @@
+name: 插件原生规则与静态检查
+description: 使用市场锁定工具链检查全部收录插件，不执行宿主桌面程序
+runs:
+  using: composite
+  steps:
+    - name: 准备市场 Rust 工具链
+      shell: bash
+      run: |
+        rustup toolchain install
+        rustup target add wasm32-unknown-unknown
+    - name: 检查全部收录插件的原生规则与 Clippy
+      shell: bash
+      run: |
+        node --input-type=module <<'NODE'
+        import { readFileSync } from "node:fs";
+        import { spawnSync } from "node:child_process";
+        import { validateListings } from "./scripts/build.mjs";
+        const listings = JSON.parse(readFileSync("listings.json", "utf8"));
+        validateListings(listings);
+        for (const { directory } of listings.plugins) {
+          const options = ["--locked", "--manifest-path", `plugins/${directory}/Cargo.toml`, "--target-dir", `target/${directory}-native`];
+          for (const args of [["test", ...options], ["clippy", ...options, "--all-targets", "--", "-D", "warnings"]]) {
+            const result = spawnSync("cargo", args, { stdio: "inherit" });
+            if (result.error) throw result.error;
+            if (result.status !== 0) throw new Error(`cargo ${args[0]} failed: ${directory}`);
+          }
+        }
+        NODE

@@ -7,7 +7,7 @@ on:
         required: false
         type: string
       host_ref:
-        description: 已推送并审核的宿主提交，留空使用 STARTER_HOST_REF 仓库变量或 develop
+        description: 已推送并审核的宿主完整 40 位 SHA，留空使用 STARTER_HOST_REF 仓库变量
         required: false
         type: string
 permissions:
@@ -19,54 +19,65 @@ jobs:
   build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
+    timeout-minutes: 90
     outputs:
       revision: ${{ steps.metadata.outputs.revision }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
-      - name: 确定目录修订号
+      - name: 核对目录修订号与固定宿主提交
         id: metadata
         env:
           REQUESTED_REVISION: ${{ inputs.revision }}
+          SELECTED_HOST_REF: ${{ inputs.host_ref || vars.STARTER_HOST_REF }}
         run: |
-          export MARKET_REVISION="${REQUESTED_REVISION:-$(date +%s)}"
-          node --input-type=module -e 'const n=Number(process.env.MARKET_REVISION);if(!Number.isInteger(n)||n<=0||n>0xffffffff)throw Error("Invalid revision")'
-          echo "revision=$MARKET_REVISION" >> "$GITHUB_OUTPUT"
-          echo "MARKET_REVISION=$MARKET_REVISION" >> "$GITHUB_ENV"
-      - name: 回归
-        run: node --test scripts/*.test.mjs
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from "node:fs";
+          const requested = process.env.REQUESTED_REVISION || String(Math.floor(Date.now() / 1000));
+          const revision = Number(requested);
+          if (!/^\d+$/.test(requested) || !Number.isInteger(revision) || revision <= 0 || revision > 0xffffffff) throw new Error("Invalid revision");
+          const hostRef = process.env.SELECTED_HOST_REF ?? "";
+          if (!/^[a-f0-9]{40}$/i.test(hostRef)) throw new Error("Production host ref must be a reviewed, remotely available 40-character commit SHA");
+          appendFileSync(process.env.GITHUB_OUTPUT, `revision=${revision}\nhost_ref=${hostRef}\n`);
+          appendFileSync(process.env.GITHUB_ENV, `MARKET_REVISION=${revision}\n`);
+          NODE
+      - name: 脚本与插件界面回归
+        run: node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs
+      - uses: ./.github/actions/plugin-check
       - uses: ./.github/actions/host-tool
         with:
-          ref: ${{ inputs.host_ref || vars.STARTER_HOST_REF || 'develop' }}
+          ref: ${{ steps.metadata.outputs.host_ref }}
       - name: 编译、真实 Wasm 回归与离线验签（无生产签名密钥）
         run: node scripts/check.mjs
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: market-packages
-          path: dist/
+          path: dist/market-${{ steps.metadata.outputs.revision }}/
           if-no-files-found: error
+          retention-days: 3
   publish:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
     permissions:
       contents: write
     env:
       MARKET_REVISION: ${{ needs.build.outputs.revision }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: market-packages
-          path: dist/
+          path: dist/market-${{ needs.build.outputs.revision }}/
       - name: 签名并核对附件（不执行插件构建）
         env:
           MARKET_SIGNING_PRIVATE_KEY: ${{ secrets.MARKET_SIGNING_PRIVATE_KEY }}
