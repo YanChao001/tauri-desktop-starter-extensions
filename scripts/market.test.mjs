@@ -5,7 +5,14 @@ import { publicKey, signCatalog, verifyCatalog } from "./signing.mjs";
 import { hash, packagePlugin, validateListings } from "./build.mjs";
 import { buildEnvironment, validatePlugin } from "./host-tool.mjs";
 import { verifyRelease } from "./verify.mjs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -170,6 +177,84 @@ test("command formats, optional permissions and network declarations are checked
     network: [{ origin: "http://localhost:11434", methods: ["POST"] }],
   });
 });
+test("image, proxy and link capabilities require the new host before packaging", () => {
+  const wasm = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]);
+  for (const permission of [
+    "network:images",
+    "network:system-proxy",
+    "links:open",
+  ]) {
+    for (const declaration of ["permissions", "optionalPermissions"]) {
+      const extension = manifest();
+      extension[declaration].push(permission);
+      if (permission === "network:system-proxy")
+        extension.optionalPermissions.push("network:images");
+      for (const minHostVersion of ["0.0.99", "0.1.4", "0.1.5"])
+        assert.throws(
+          () => validateManifest({ ...extension, minHostVersion }),
+          /require minHostVersion 0\.1\.6/,
+        );
+      for (const minHostVersion of ["0.1.6", "0.1.10", "0.2.0", "1.0.0"]) {
+        const supported = { ...extension, minHostVersion };
+        validateManifest(supported);
+        assert.ok(
+          JSON.parse(packagePlugin(supported, wasm).content).manifest[
+            declaration
+          ].includes(permission),
+        );
+      }
+    }
+  }
+});
+
+test("system proxy declarations require public HTTP or image access", () => {
+  const extension = {
+    ...manifest(),
+    minHostVersion: "0.1.6",
+    optionalPermissions: ["network:system-proxy"],
+  };
+  assert.throws(() => validateManifest(extension), /requires declared public/);
+  assert.throws(
+    () =>
+      validateManifest({
+        ...extension,
+        optionalPermissions: ["network:system-proxy", "network:local"],
+        network: [{ origin: "http://localhost:11434", methods: ["GET"] }],
+      }),
+    /requires declared public/,
+  );
+  validateManifest({
+    ...extension,
+    optionalPermissions: ["network:system-proxy", "network:images"],
+  });
+  validateManifest({
+    ...extension,
+    optionalPermissions: ["network:system-proxy", "network:https"],
+    network: [{ origin: "https://cn.bing.com", methods: ["GET"] }],
+  });
+  assert.throws(() =>
+    validateManifest({
+      ...extension,
+      optionalPermissions: ["network:system-proxy", "network:https"],
+    }),
+  );
+  for (const permission of ["network:images", "network:system-proxy"])
+    assert.throws(
+      () =>
+        validateManifest({
+          ...extension,
+          optionalPermissions: ["network:system-proxy", "network:images"],
+          commands: [
+            {
+              ...extension.commands[0],
+              permissions: ["text:read", permission],
+            },
+          ],
+        }),
+      /Invalid command contribution/,
+    );
+});
+
 test("listings reject duplicates and paths outside plugin directories", () => {
   const listing = { directory: "text-tools", category: "text", featured: true };
   const source = { repository: "owner/market", plugins: [listing] };
@@ -191,7 +276,7 @@ test("listings reject duplicates and paths outside plugin directories", () => {
 });
 
 async function temporary(testContext) {
-  const parent = resolve(tmpdir());
+  const parent = await realpath(tmpdir());
   const directory = await mkdtemp(join(parent, "market-regression-"));
   testContext.after(async () => {
     assert.equal(dirname(resolve(directory)), parent);
@@ -391,6 +476,8 @@ test("compilation and host processes never inherit signing credentials", () => {
       PATH: "/tools",
       MARKET_SIGNING_PRIVATE_KEY: "secret",
       MARKET_KEY_FILE: "/private/key",
+      market_signing_private_key: "lowercase-secret",
+      Market_Key_File: "/private/mixed-case-key",
       OTHER: "kept",
     }),
     { PATH: "/tools", OTHER: "kept" },
@@ -438,6 +525,7 @@ test("offline release verification binds signed metadata to the exact packaged m
   );
 });
 const releaseSourceSha = "0123456789abcdef0123456789abcdef01234567";
+const isHistory = (args) => args[0] === "api" && args[1].includes("/releases?");
 
 test("publication requires a complete source SHA before contacting GitHub", () => {
   const calls = [];
@@ -468,14 +556,16 @@ test("publication binds the release tag to the exact reviewed source commit", ()
   const calls = [];
   publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
     calls.push(args);
-    return args[0] === "api" || args[1] === "list" ? "[]" : "";
+    return args[0] === "api" ? "[]" : "";
   });
   const create = calls.find((args) => args[1] === "create");
   assert.equal(create[create.indexOf("--target") + 1], releaseSourceSha);
   assert.equal(create.includes("--draft"), true);
   assert.deepEqual(
-    calls.map((args) => (args[0] === "api" ? "verify-tag" : args[1])),
-    ["list", "verify-tag", "create", "upload", "verify-tag", "edit"],
+    calls.map((args) =>
+      isHistory(args) ? "history" : args[0] === "api" ? "verify-tag" : args[1],
+    ),
+    ["history", "verify-tag", "create", "upload", "verify-tag", "edit"],
   );
   assert.equal(calls.at(-1).includes("--latest"), true);
 });
@@ -485,8 +575,9 @@ test("failed uploads stay draft and older catalog revisions are not republished"
   const calls = [];
   const run = (args) => {
     calls.push(args);
+    if (isHistory(args))
+      return JSON.stringify([[{ tag_name: "market-1", draft: false }]]);
     if (args[0] === "api") return "[]";
-    if (args[1] === "list") return JSON.stringify([{ tagName: "market-1" }]);
     if (args[1] === "upload") throw new Error("Upload failed");
     return "";
   };
@@ -523,11 +614,12 @@ test("publication accepts an existing lightweight tag only at the reviewed commi
   const calls = [];
   publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
     calls.push(args);
+    if (isHistory(args)) return "[]";
     if (args[0] === "api")
       return JSON.stringify([tagReference("commit", releaseSourceSha)]);
     return args[1] === "list" ? "[]" : "";
   });
-  assert.equal(calls.filter((args) => args[0] === "api").length, 2);
+  assert.equal(calls.filter((args) => args[0] === "api").length, 3);
   assert.equal(calls.at(-1)[1], "edit");
 });
 
@@ -535,6 +627,7 @@ test("a similarly prefixed tag does not occupy the intended release tag", () => 
   const calls = [];
   publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
     calls.push(args);
+    if (isHistory(args)) return "[]";
     if (args[0] === "api")
       return JSON.stringify([
         tagReference("commit", "a".repeat(40), "market-20"),
@@ -554,6 +647,7 @@ test("an existing tag at another commit is rejected before any release mutation"
         releaseSourceSha,
         (args) => {
           calls.push(args);
+          if (isHistory(args)) return "[]";
           if (args[0] === "api")
             return JSON.stringify([tagReference("commit", "a".repeat(40))]);
           return "[]";
@@ -563,9 +657,9 @@ test("an existing tag at another commit is rejected before any release mutation"
   );
   assert.deepEqual(
     calls.map((args) => args[0]),
-    ["release", "api"],
+    ["api", "api"],
   );
-  assert.equal(calls[0][1], "list");
+  assert.equal(isHistory(calls[0]), true);
 });
 
 test("annotated release tags are dereferenced through nested tags to the reviewed commit", () => {
@@ -574,6 +668,7 @@ test("annotated release tags are dereferenced through nested tags to the reviewe
   const calls = [];
   publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
     calls.push(args);
+    if (isHistory(args)) return "[]";
     if (args[0] === "api") {
       if (args[1].includes("/matching-refs/"))
         return JSON.stringify([tagReference("tag", outerSha)]);
@@ -591,7 +686,7 @@ test("annotated release tags are dereferenced through nested tags to the reviewe
     }
     return args[1] === "list" ? "[]" : "";
   });
-  assert.equal(calls.filter((args) => args[0] === "api").length, 6);
+  assert.equal(calls.filter((args) => args[0] === "api").length, 7);
   assert.equal(calls.at(-1)[1], "edit");
 });
 
@@ -615,6 +710,7 @@ test("failed or malformed tag reads are never treated as an absent release tag",
         releaseSourceSha,
         (args) => {
           calls.push(args);
+          if (isHistory(args)) return "[]";
           return args[0] === "api" ? response() : "[]";
         },
       ),
@@ -646,6 +742,7 @@ test("incorrect, cyclic or unreadable annotated tags fail before release creatio
         releaseSourceSha,
         (args) => {
           calls.push(args);
+          if (isHistory(args)) return "[]";
           if (args[0] === "api") {
             if (args[1].includes("/matching-refs/"))
               return JSON.stringify([tagReference("tag", annotatedSha)]);
@@ -678,6 +775,7 @@ test("tag movement or read failure during upload prevents publication as latest"
         releaseSourceSha,
         (args) => {
           calls.push(args);
+          if (isHistory(args)) return "[]";
           if (args[0] === "api") return ++reads === 1 ? "[]" : changed();
           return args[1] === "list" ? "[]" : "";
         },

@@ -1,7 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { access, lstat, mkdtemp, open, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { assertUnlinkedPath, parseJson, readBounded } from "./files.mjs";
+import { validateManifest } from "./protocol.mjs";
+export { readBounded } from "./files.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const limits = {
@@ -14,36 +17,11 @@ export function buildEnvironment(environment = process.env) {
   return Object.fromEntries(
     Object.entries(environment).filter(
       ([name]) =>
-        !["MARKET_SIGNING_PRIVATE_KEY", "MARKET_KEY_FILE"].includes(name),
+        !["MARKET_SIGNING_PRIVATE_KEY", "MARKET_KEY_FILE"].includes(
+          name.toUpperCase(),
+        ),
     ),
   );
-}
-
-export async function readBounded(path, limit) {
-  const file = await open(path, "r");
-  try {
-    const metadata = await file.stat();
-    if (!metadata.isFile() || metadata.size > limit)
-      throw new Error(
-        `Expected a regular file of at most ${limit} bytes: ${path}`,
-      );
-    const bytes = Buffer.alloc(limit + 1);
-    let total = 0;
-    while (total <= limit) {
-      const { bytesRead } = await file.read(
-        bytes,
-        total,
-        bytes.length - total,
-        null,
-      );
-      if (bytesRead === 0) break;
-      total += bytesRead;
-    }
-    if (total > limit) throw new Error(`File exceeds ${limit} bytes: ${path}`);
-    return bytes.subarray(0, total);
-  } finally {
-    await file.close();
-  }
 }
 
 export async function resolveHostTool(environment = process.env) {
@@ -111,7 +89,8 @@ export async function validatePlugin({
     readBounded(wasmPath, limits.wasm),
     readBounded(fixturePath, limits.fixture),
   ]);
-  const manifest = JSON.parse(manifestBytes.toString("utf8"));
+  const manifest = parseJson(manifestBytes);
+  validateManifest(manifest);
   const documentIds = [
     ...new Set(
       (manifest.commands ?? [])
@@ -129,26 +108,23 @@ export async function validatePlugin({
       )
     )
       throw new Error("Invalid UI source directory or document identifier");
-    const metadata = await lstat(uiDirectory);
-    if (!metadata.isDirectory() || metadata.isSymbolicLink())
-      throw new Error("UI source directory must not be a link");
+    await assertUnlinkedPath(uiDirectory, true);
     let total = 0;
     for (const id of documentIds.sort()) {
-      const path = join(uiDirectory, `${id}.html`),
-        metadata = await lstat(path);
-      if (!metadata.isFile() || metadata.isSymbolicLink())
-        throw new Error("UI sources must be regular files");
+      const path = join(uiDirectory, `${id}.html`);
       const bytes = await readBounded(path, 512 * 1024);
       total += bytes.length;
       if (total > 2 * 1024 * 1024) throw new Error("UI sources exceed 2 MiB");
       documents.push([
         id,
-        new TextDecoder("utf-8", { fatal: true }).decode(bytes),
+        new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
+          bytes,
+        ),
       ]);
     }
   }
   const uiDocuments = Object.fromEntries(documents);
-  const fixture = JSON.parse(fixtureBytes.toString("utf8"));
+  const fixture = parseJson(fixtureBytes);
   const fixtures = Array.isArray(fixture) ? fixture : [fixture];
   if (
     !Array.isArray(manifest.commands) ||
@@ -163,7 +139,7 @@ export async function validatePlugin({
     if (!covered.has(command.id))
       throw new Error(`Smoke fixture does not cover command: ${command.id}`);
   }
-  const temporaryRoot = resolve(tmpdir());
+  const temporaryRoot = await realpath(tmpdir());
   const temporary = await mkdtemp(join(temporaryRoot, "starter-market-tool-"));
   try {
     const paths = {
@@ -190,7 +166,11 @@ export async function validatePlugin({
     const reports = Array.isArray(tested.smoke) ? tested.smoke : [tested.smoke];
     if (
       reports.length !== fixtures.length ||
-      reports.some((report) => report?.passed !== true)
+      reports.some(
+        (report, index) =>
+          report?.passed !== true ||
+          report.command !== fixtures[index]?.command,
+      )
     )
       throw new Error("Host tool did not pass all smoke cases");
     console.log(

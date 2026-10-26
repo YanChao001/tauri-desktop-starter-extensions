@@ -8,7 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test scripts/*.test.mjs",
+    "test": "node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
     "verify": "node scripts/verify.mjs"
