@@ -58,6 +58,7 @@
       }
       .stack {
         display: grid;
+        align-content: start;
         gap: 0.8rem;
       }
       label {
@@ -642,7 +643,8 @@
         const DRAFT_INTERVAL = 250;
         let lastDraftStarted = -Infinity;
         let draftEpoch = 0,
-          disposed = false;
+          disposed = false,
+          draftDeferred = false;
         let lastCheckpoint;
         const ownedCheckpoints = new Set();
         function rememberCheckpoint(value) {
@@ -676,13 +678,13 @@
           clearTimeout(draftTimer);
           draftTimer = undefined;
           while (syncing) await syncing;
-          if (
-            disposed ||
-            !localDraft ||
-            syncedRevision === draftRevision ||
-            current?.busy
-          )
+          if (disposed || !localDraft || syncedRevision === draftRevision)
             return;
+          if (current?.busy) {
+            draftDeferred = true;
+            return;
+          }
+          draftDeferred = false;
           const revision = draftRevision,
             submitted = values(),
             epoch = draftEpoch;
@@ -722,7 +724,10 @@
           draftTimer = setTimeout(
             () => {
               draftTimer = undefined;
-              if (busy()) return;
+              if (busy()) {
+                draftDeferred = true;
+                return;
+              }
               void persistDraft()
                 .then(() => {
                   if (syncedRevision !== draftRevision && !busy()) queueDraft();
@@ -1023,6 +1028,10 @@
             }),
           );
           scheduleDraw();
+          if (draftDeferred && !busy()) {
+            draftDeferred = false;
+            queueDraft();
+          }
         }
         async function saveArtifact(index) {
           if (busy()) return;
@@ -1447,6 +1456,7 @@
           () => {
             disposed = true;
             draftEpoch++;
+            draftDeferred = false;
             clearTimeout(draftTimer);
             draftTimer = undefined;
             clearTimeout(zoomTimer);
@@ -1480,6 +1490,7 @@
             clearTimeout(draftTimer);
             draftTimer = undefined;
             draftEpoch++;
+            draftDeferred = false;
             localDraft = false;
             hydrated = false;
           }
