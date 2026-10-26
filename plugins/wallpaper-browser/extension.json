@@ -3,7 +3,7 @@
   "apiVersion": 2,
   "minHostVersion": "0.1.5",
   "id": "market.wallpaper-browser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "name": "壁纸库",
   "author": "Tauri Desktop Starter",
   "description": "按关键词搜索必应图片，预览、下载第三方来源原图、导入本机图库、设置应用背景，并管理自己的图片。不按许可筛选，图片许可由原站决定。网络与图库操作需要授予壁纸管理权限，不改变操作系统桌面壁纸。",

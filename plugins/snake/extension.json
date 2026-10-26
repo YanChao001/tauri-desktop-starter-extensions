@@ -3,7 +3,7 @@
   "apiVersion": 2,
   "minHostVersion": "0.1.5",
   "id": "market.snake",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "贪吃蛇",
   "author": "Tauri Desktop Starter",
   "description": "带合成音效的贪吃蛇：方向键、WASD、触控与滑动，三档速度、障碍与穿墙模式。可选私有存储保存经 Wasm 重放核验的分模式纪录。",
