@@ -255,6 +255,13 @@
       #artifacts {
         justify-content: flex-start;
       }
+      #artifacts > button {
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       details {
         margin-top: 0.8rem;
         font-size: 0.875rem;
@@ -1045,6 +1052,7 @@
               button.dataset.variant = "outline";
               button.disabled = !!busy();
               button.textContent = `${tr("saveFile")} · ${artifact.name}`;
+              button.title = button.textContent;
               button.onclick = () => void saveArtifact(index);
               return button;
             }),
