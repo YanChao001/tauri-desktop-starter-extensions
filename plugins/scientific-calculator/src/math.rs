@@ -48,7 +48,9 @@ impl Vars {
 
     fn radians(self, value: f64) -> f64 {
         match self.angle {
-            Angle::Deg => value.rem_euclid(360.0).to_radians(),
+            // A signed remainder preserves tiny negative angles. rem_euclid
+            // adds 360 to them and can round them to a full turn.
+            Angle::Deg => (value % 360.0).to_radians(),
             Angle::Rad => value,
         }
     }
@@ -727,7 +729,9 @@ fn bisect(
     right_value: f64,
     vars: Vars,
 ) -> Result<f64, String> {
-    let residual_scale = left_value.abs().max(right_value.abs());
+    // The residual must improve on both ends of the original bracket. Using
+    // the larger end can incorrectly accept a small, nonzero step plateau.
+    let residual_scale = left_value.abs().min(right_value.abs());
     let residual_tolerance = residual_scale * 1e-8;
     for _ in 0..ROOT_ITERATIONS {
         let midpoint = left + (right - left) * 0.5;
@@ -1004,6 +1008,22 @@ mod tests {
     }
 
     #[test]
+    fn degree_mode_preserves_tiny_negative_angles() {
+        let vars = Vars {
+            angle: Angle::Deg,
+            ..Vars::default()
+        };
+        let expected = (-1e-20_f64).to_radians();
+        for source in ["sin(-1e-20)", "tan(-1e-20)"] {
+            let actual = evaluate(source, vars).unwrap();
+            assert!(
+                (actual / expected - 1.0).abs() < 1e-14,
+                "{source}: {actual}"
+            );
+        }
+    }
+
+    #[test]
     fn atan2_respects_quadrants_and_angle_mode() {
         near(value("atan2(1,-1)"), std::f64::consts::PI * 0.75);
         near(
@@ -1231,6 +1251,8 @@ mod tests {
         assert!(root("1/x", -1.0, 1.0, Vars::default()).is_err());
         assert!(root("1/(x-0.12345)", 0.0, 1.0, Vars::default()).is_err());
         assert!(root("tan(x)", 1.0, 2.0, Vars::default()).is_err());
+        assert!(root("sign(x-0.12345)+1-1e-10", 0.0, 1.0, Vars::default()).is_err());
+        assert!(root("sign(x-0.12345)-1+1e-10", 0.0, 1.0, Vars::default()).is_err());
     }
 
     #[test]

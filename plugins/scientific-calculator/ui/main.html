@@ -548,8 +548,9 @@
             <summary data-i18n="reference">函数速查</summary>
             <p>
               <code
-                >sin cos tan asin acos atan sinh cosh tanh sqrt cbrt abs ln log
-                exp floor ceil round min max pow hypot clamp</code
+                >sin cos tan asin acos atan atan2 sinh cosh tanh sqrt cbrt abs
+                ln log log2 log10 exp floor ceil round trunc sign min max pow
+                hypot clamp deg rad</code
               >
             </p>
             <p class="muted" data-i18n="constants">
@@ -828,6 +829,7 @@
           completedBusySerial = 0,
           awaitIdleSnapshot = false;
         let lastCheckpoint;
+        let renderedHistory;
         const ownedCheckpoints = new Set();
         function rememberCheckpoint(value) {
           const key = JSON.stringify(value);
@@ -1010,7 +1012,12 @@
               const input = $("expression"),
                 start = input.selectionStart ?? input.value.length,
                 end = input.selectionEnd ?? start;
-              const position = start === end ? Math.max(0, start - 1) : start;
+              const position =
+                start === end
+                  ? start -
+                    (Array.from(input.value.slice(0, start)).at(-1)?.length ??
+                      0)
+                  : start;
               input.value =
                 input.value.slice(0, position) + input.value.slice(end);
               input.focus();
@@ -1102,6 +1109,8 @@
             .querySelector("main")
             .setAttribute("aria-busy", String(!!busy()));
           document.title = tr("title");
+          document.documentElement.lang =
+            current.locale === "en" ? "en" : "zh-CN";
           document.querySelectorAll("[data-i18n]").forEach((node) => {
             node.textContent = tr(node.dataset.i18n);
           });
@@ -1188,35 +1197,43 @@
             button.dataset.locked = String(!!busy() && !unavailable);
           });
           $("history-empty").hidden = state.history.length > 0;
-          $("history").replaceChildren(
-            ...state.history.map((entry) => {
-              const li = document.createElement("li"),
-                numerical = /^(root|integral)\(/.test(entry.expression),
-                node = document.createElement(numerical ? "div" : "button"),
-                expression = document.createElement("span"),
-                value = document.createElement("strong");
-              expression.textContent =
-                entry.expression + " · " + entry.angle.toUpperCase();
-              value.textContent = fmt(entry.value);
-              node.title = `${expression.textContent} = ${value.textContent}`;
-              node.append(expression, value);
-              if (numerical) node.className = "history-entry";
-              else {
-                node.dataset.variant = "outline";
-                node.disabled = !!busy();
-                node.dataset.locked = String(!!busy());
-                node.onclick = () => {
-                  if (busy()) return;
-                  $("expression").value = entry.expression;
-                  $("angle").value = entry.angle;
-                  $("expression").focus();
-                  checkpoint();
-                };
-              }
-              li.append(node);
-              return li;
-            }),
-          );
+          const historyKey = JSON.stringify(state.history);
+          if (historyKey !== renderedHistory) {
+            renderedHistory = historyKey;
+            $("history").replaceChildren(
+              ...state.history.map((entry) => {
+                const li = document.createElement("li"),
+                  numerical = /^(root|integral)\(/.test(entry.expression),
+                  node = document.createElement(numerical ? "div" : "button"),
+                  expression = document.createElement("span"),
+                  value = document.createElement("strong");
+                expression.textContent =
+                  entry.expression + " · " + entry.angle.toUpperCase();
+                value.textContent = fmt(entry.value);
+                node.title = `${expression.textContent} = ${value.textContent}`;
+                node.append(expression, value);
+                if (numerical) node.className = "history-entry";
+                else {
+                  node.dataset.variant = "outline";
+                  node.disabled = !!busy();
+                  node.dataset.locked = String(!!busy());
+                  node.onclick = () => {
+                    if (busy()) return;
+                    $("expression").value = entry.expression;
+                    $("angle").value = entry.angle;
+                    $("expression").focus();
+                    checkpoint();
+                  };
+                }
+                li.append(node);
+                return li;
+              }),
+            );
+          }
+          for (const button of $("history").querySelectorAll("button")) {
+            button.disabled = !!busy();
+            button.dataset.locked = String(!!busy());
+          }
           chartData =
             state.plot && Array.isArray(state.plot.series) ? state.plot : null;
           if (!pointer) viewport = range();

@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 const STORAGE_KEY: &str = "calculator-workspace";
 const MAX_HISTORY: usize = 32;
 const SAMPLES: usize = 640;
+const MAX_STATE_BYTES: usize = 240_000;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -43,7 +44,7 @@ struct Receipt {
     value: Option<Value>,
     error: Option<Value>,
 }
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct History {
     expression: String,
@@ -61,6 +62,8 @@ struct State {
     notice: String,
     fields: BTreeMap<String, String>,
     pending: bool,
+    #[serde(default)]
+    pending_revision: Option<i32>,
     #[serde(default, deserialize_with = "ignore_plot")]
     plot: Plot,
 }
@@ -103,12 +106,119 @@ impl Default for State {
                 ("curve".into(), "0".into()),
             ]),
             pending: false,
+            pending_revision: None,
             plot: Plot::default(),
         }
     }
 }
 fn tr<'a>(zh: bool, cn: &'a str, en: &'a str) -> &'a str {
     if zh { cn } else { en }
+}
+fn localized_error(error: String, zh: bool) -> String {
+    if !zh {
+        return error;
+    }
+    let translated = match error.as_str() {
+        "Expression is empty" => "请输入表达式。",
+        "Expression exceeds 4096 bytes" => "表达式不能超过 4096 个 UTF-8 字节。",
+        "Expression exceeds 2048 nodes" => "表达式过于复杂，不能超过 2048 个节点。",
+        "Expression exceeds nesting depth 64" => "表达式嵌套不能超过 64 层。",
+        "A function accepts at most 16 arguments" => "每个函数最多接受 16 个参数。",
+        "Variables must be finite numbers" => "变量必须为有限数值。",
+        "Division by zero" => "除数不能为零。",
+        "Modulo by zero" => "取余运算的除数不能为零。",
+        "Memory overflow" => "记忆寄存器数值溢出。",
+        "tan is undefined at this angle" => "此角度的正切没有定义。",
+        "Inverse sine/cosine requires an argument between -1 and 1" => {
+            "反正弦和反余弦的参数必须介于 -1 和 1 之间。"
+        }
+        "atan2 is undefined when both arguments are zero" => "atan2 的两个参数不能同时为零。",
+        "sqrt requires a non-negative argument" => "平方根的参数不能为负数。",
+        "Logarithms require a positive argument" => "对数的参数必须为正数。",
+        "Logarithm base must be positive and different from 1" => {
+            "对数的底数必须为正数且不等于 1。"
+        }
+        "clamp lower bound must not exceed its upper bound" => "clamp 的下界不能大于上界。",
+        "Factorial requires an integer between 0 and 170" => {
+            "阶乘的参数必须为 0 至 170 之间的整数。"
+        }
+        "Result is not finite; check the domain and numeric range" => {
+            "结果不是有限数值，请检查定义域与数值范围。"
+        }
+        "Zero cannot be raised to a negative power" => "零不能取负指数幂。",
+        "A negative base requires an integer exponent; use cbrt for real cube roots" => {
+            "负底数只接受整数指数，实数立方根请使用 cbrt。"
+        }
+        "Enter between one and three functions, one per line" => "请输入一至三个函数，每行一个。",
+        "Graph ranges must increase and span at least 1e-10" => {
+            "坐标上界必须大于下界，跨度至少为 1e-10。"
+        }
+        "Choose an existing curve" => "请选择已输入的曲线。",
+        "Interval bounds and width must be finite" => "区间端点及宽度必须为有限数值。",
+        "No sampled zero or sign-changing root found in the interval" => {
+            "区间内未找到采样零点或符号变化的夹根区间。"
+        }
+        "Root did not converge; the interval may contain a singularity" => {
+            "求根未收敛，区间内可能存在奇点或不连续。"
+        }
+        "Root iteration limit reached; narrow the interval" => "求根已达迭代上限，请缩小区间。",
+        "Integration interval is too narrow to subdivide" => "积分区间太窄，无法继续细分。",
+        "Integration evaluation limit reached; narrow the interval" => {
+            "积分已达采样上限，请缩小区间。"
+        }
+        "Integration cannot resolve this interval; narrow the numeric range" => {
+            "积分无法分辨此区间，请缩小数值范围。"
+        }
+        "Integration did not converge; check for singularities or narrow the interval" => {
+            "积分未收敛，请检查奇点或缩小区间。"
+        }
+        _ => {
+            for (prefix, text) in [
+                (
+                    "Unexpected token at byte ",
+                    "表达式有意外符号，请检查括号并用 * 表示乘法。",
+                ),
+                ("Unexpected character at byte ", "表达式含有不支持的字符。"),
+                ("Invalid number at byte ", "表达式中有无效的数值。"),
+                (
+                    "Invalid scientific notation at byte ",
+                    "科学计数法格式无效，例如 1.2e-3。",
+                ),
+                (
+                    "Expected a number, variable or '(' at byte ",
+                    "此处需要数值、变量或左括号。",
+                ),
+                ("Expected ')' at byte ", "表达式缺少右括号。"),
+                ("Unknown function: ", "未知函数："),
+                ("Unknown identifier: ", "未知标识符："),
+            ] {
+                if let Some(detail) = error.strip_prefix(prefix) {
+                    return if prefix.starts_with("Unknown") {
+                        format!("{text}{detail}")
+                    } else {
+                        text.into()
+                    };
+                }
+            }
+            if error.starts_with("Function '") {
+                return "函数参数数量或括号不正确，请查看函数速查。".into();
+            }
+            if let Some((field, reason)) = error.split_once(": ")
+                && ["xmin", "xmax", "ymin", "ymax", "a", "b"].contains(&field)
+            {
+                return format!(
+                    "{field}：{}",
+                    if reason.contains("±1e12") {
+                        "请输入 ±1e12 范围内的有限数值。"
+                    } else {
+                        "请输入有限数值。"
+                    }
+                );
+            }
+            return error;
+        }
+    };
+    translated.into()
 }
 fn bounded(value: &str, max: usize) -> bool {
     value.len() <= max && !value.contains('\0')
@@ -117,6 +227,10 @@ fn valid_state(state: &State) -> bool {
     state.schema == 1
         && state.ans.is_finite()
         && state.memory.is_finite()
+        && state.pending == state.pending_revision.is_some()
+        && state
+            .pending_revision
+            .is_none_or(|revision| (0..i32::MAX).contains(&revision))
         && bounded(&state.result, 240)
         && bounded(&state.notice, 600)
         && state.history.len() <= MAX_HISTORY
@@ -236,7 +350,9 @@ fn record(state: &mut State, expression: String, value: f64) {
     state.history.insert(
         0,
         History {
-            expression,
+            // Keep token separation without expanding thousands of tabs/newlines
+            // into escaped JSON in the bounded workspace and Markdown history.
+            expression: expression.split_whitespace().collect::<Vec<_>>().join(" "),
             value,
             angle: state.fields["angle"].clone(),
         },
@@ -268,7 +384,7 @@ pub fn process(input: &str) -> Result<String, String> {
         || !["zh-CN", "en"].contains(&request.locale.as_str())
         || request.fields.len() > 10
         || request.results.len() > 1
-        || !bounded(&request.state, 240_000)
+        || !bounded(&request.state, MAX_STATE_BYTES)
     {
         return Err("Invalid calculator protocol".into());
     }
@@ -307,8 +423,12 @@ pub fn process(input: &str) -> Result<String, String> {
     let mut errors = BTreeMap::<String, String>::new();
     let mut effects = Vec::<Value>::new();
     let mut artifacts = Vec::<Value>::new();
+    let mut save_revision = None;
     state.notice.clear();
     let action = request.action.as_deref();
+    if action != Some("host-result") && !request.results.is_empty() {
+        return Err("Unexpected storage receipt".into());
+    }
     if state.pending && action != Some("host-result") {
         return Err("A save is awaiting its matching host receipt".into());
     }
@@ -382,21 +502,22 @@ pub fn process(input: &str) -> Result<String, String> {
         }
         Some("save") => {
             if let Some(store) = store {
+                if store.revision == i32::MAX {
+                    return Err("Storage revision is exhausted; original retained".into());
+                }
                 // Validate existing data even for overwrite; do not destroy future or corrupt data.
                 if let Some(value) = store.values.get(STORAGE_KEY) {
                     let old: State = serde_json::from_value(value.clone())
                         .map_err(|_| "Saved calculator data is invalid; original retained")?;
-                    if !valid_state(&old) {
+                    if !valid_state(&old) || old.pending {
                         return Err(
                             "Saved calculator data is incompatible; original retained".into()
                         );
                     }
                 }
-                let mut saved = state.clone();
-                saved.pending = false;
-                saved.plot = Plot::default();
-                effects.push(json!({"kind":"storage","id":"save-workspace","expectedRevision":store.revision,"changes":{STORAGE_KEY:saved}}));
+                save_revision = Some(store.revision);
                 state.pending = true;
+                state.pending_revision = Some(store.revision);
                 state.notice = tr(zh, "正在保存工作区…", "Saving workspace…").into();
             } else {
                 state.notice=tr(zh,"保存需要可选存储授权；计算与绘图仍可离线使用。","Saving requires the optional storage permission; calculation and graphs remain available offline.").into();
@@ -436,12 +557,19 @@ pub fn process(input: &str) -> Result<String, String> {
             {
                 return Err("Invalid save receipt".into());
             }
-            state.pending = false;
             if let Some(value) = &receipt.value {
-                if value["revision"]
-                    .as_i64()
-                    .is_none_or(|r| r < 0 || r > i32::MAX as i64)
-                    || !value["values"].is_object()
+                let saved: State = serde_json::from_value(value["values"][STORAGE_KEY].clone())
+                    .map_err(|_| "Invalid successful save receipt")?;
+                if value["revision"].as_i64()
+                    != state
+                        .pending_revision
+                        .map(|revision| i64::from(revision) + 1)
+                    || !valid_state(&saved)
+                    || saved.pending
+                    || saved.ans != state.ans
+                    || saved.memory != state.memory
+                    || saved.fields != state.fields
+                    || saved.history != state.history
                 {
                     return Err("Invalid successful save receipt".into());
                 }
@@ -463,6 +591,8 @@ pub fn process(input: &str) -> Result<String, String> {
                     )
                 );
             }
+            state.pending = false;
+            state.pending_revision = None;
         }
         Some("export") => {
             let mut body = format!(
@@ -486,6 +616,47 @@ pub fn process(input: &str) -> Result<String, String> {
         Err(error) => {
             errors.insert("functions".into(), error);
             state.plot = Plot::default();
+        }
+    }
+    // Graph samples are derived and can expand an imported or long-history
+    // workspace. Preserve answers, memory and current fields; discard only the
+    // oldest history until the next request fits the same state budget.
+    let mut trimmed = false;
+    while serde_json::to_vec(&state)
+        .map_err(|_| "Cannot encode calculator state")?
+        .len()
+        > MAX_STATE_BYTES - 256
+        && !state.history.is_empty()
+    {
+        state.history.pop();
+        trimmed = true;
+    }
+    if trimmed {
+        state.notice.push_str(tr(
+            zh,
+            " 会话额度已满，已移除最旧的历史记录。",
+            " The session limit was reached; the oldest history entries were removed.",
+        ));
+    }
+    if let Some(revision) = save_revision {
+        let mut saved = state.clone();
+        saved.pending = false;
+        saved.pending_revision = None;
+        saved.notice.clear();
+        saved.plot = Plot::default();
+        effects.push(json!({"kind":"storage","id":"save-workspace","expectedRevision":revision,"changes":{STORAGE_KEY:saved}}));
+    }
+    for error in errors.values_mut() {
+        *error = localized_error(std::mem::take(error), zh);
+        // The host accepts at most 1000 UTF-8 bytes per field error. Unknown
+        // identifiers can consume the entire 4096-byte expression allowance.
+        if error.len() > 1000 {
+            let mut end = 997;
+            while !error.is_char_boundary(end) {
+                end -= 1;
+            }
+            error.truncate(end);
+            error.push('…');
         }
     }
     let labels = [
@@ -531,7 +702,12 @@ pub fn process(input: &str) -> Result<String, String> {
     } else {
         tr(zh,"离线科学计算 · 支持 ans、mem、pi、e 与 x · 图形和数值分析为近似。","Offline scientific calculation · ans, mem, pi, e and x · Graphs and numerical analysis are approximations.").into()
     };
-    serde_json::to_string(&json!({"version":2,"state":serde_json::to_string(&state).map_err(|_|"Cannot encode calculator state")?,"display":tr(zh,"科学计算器","Scientific calculator"),"description":description,"fields":fields,"groups":[{"columns":4,"actions":buttons}],"blocks":[{"kind":"metrics","items":[{"label":tr(zh,"结果","Result"),"value":state.result},{"label":tr(zh,"记忆","Memory"),"value":format_number(state.memory)},{"label":tr(zh,"历史","History"),"value":state.history.len().to_string()}]}],"effects":effects,"errors":errors,"artifacts":artifacts})).map_err(|_|"Cannot encode calculator view".into())
+    let encoded_state =
+        serde_json::to_string(&state).map_err(|_| "Cannot encode calculator state")?;
+    if encoded_state.len() > MAX_STATE_BYTES {
+        return Err("Calculator workspace exceeds the session limit; original retained".into());
+    }
+    serde_json::to_string(&json!({"version":2,"state":encoded_state,"display":tr(zh,"科学计算器","Scientific calculator"),"description":description,"fields":fields,"groups":[{"columns":4,"actions":buttons}],"blocks":[{"kind":"metrics","items":[{"label":tr(zh,"结果","Result"),"value":state.result},{"label":tr(zh,"记忆","Memory"),"value":format_number(state.memory)},{"label":tr(zh,"历史","History"),"value":state.history.len().to_string()}]}],"effects":effects,"errors":errors,"artifacts":artifacts})).map_err(|_|"Cannot encode calculator view".into())
 }
 #[cfg(target_arch = "wasm32")]
 #[plugin_fn]
@@ -666,7 +842,7 @@ mod tests {
             "host-result",
             saved["state"].as_str().unwrap(),
             json!({}),
-            json!([{"id":"save-workspace","value":{"revision":8,"values":{}},"error":null}]),
+            json!([{"id":"save-workspace","value":{"revision":8,"values":{STORAGE_KEY:saved["effects"][0]["changes"][STORAGE_KEY]}},"error":null}]),
         )
         .unwrap();
         let state: State = serde_json::from_str(confirmed["state"].as_str().unwrap()).unwrap();
@@ -788,5 +964,121 @@ mod tests {
         let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
         assert!(state["plot"]["xmax"].as_f64().unwrap() > state["plot"]["xmin"].as_f64().unwrap());
         assert_eq!(state["fields"]["xmin"], "999999999999.999");
+    }
+
+    #[test]
+    fn save_requires_the_exact_revision_and_workspace_receipt() {
+        let saved = with_storage("save", "", json!({}), json!([])).unwrap();
+        let workspace = &saved["effects"][0]["changes"][STORAGE_KEY];
+        for (revision, value) in [
+            (7, workspace.clone()),
+            (9, workspace.clone()),
+            (8, json!({})),
+        ] {
+            assert!(with_storage("host-result", saved["state"].as_str().unwrap(), json!({}),
+                json!([{"id":"save-workspace","value":{"revision":revision,"values":{STORAGE_KEY:value}},"error":null}])).is_err());
+        }
+        let mut changed = workspace.clone();
+        changed["memory"] = json!(42);
+        assert!(with_storage("host-result", saved["state"].as_str().unwrap(), json!({}),
+            json!([{"id":"save-workspace","value":{"revision":8,"values":{STORAGE_KEY:changed}},"error":null}])).is_err());
+        assert!(process(&json!({"version":2,"action":"save","state":"","fields":{},"locale":"en","host":{"permissions":["storage"],"storage":{"revision":i32::MAX,"values":{}}}}).to_string()).is_err());
+    }
+
+    #[test]
+    fn long_whitespace_history_stays_roundtrippable_and_exports_one_line() {
+        let source = format!("1{}+{}1", "\t\n".repeat(1000), "\t".repeat(90));
+        let mut view = call(None, "", json!({}));
+        for _ in 0..MAX_HISTORY {
+            view = call(
+                Some("calculate"),
+                view["state"].as_str().unwrap(),
+                json!({"expression":source}),
+            );
+            assert!(view["state"].as_str().unwrap().len() <= MAX_STATE_BYTES);
+        }
+        let state: State = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+        assert_eq!(state.history.len(), MAX_HISTORY);
+        assert_eq!(state.history[0].expression, "1 + 1");
+        let exported = call(Some("export"), view["state"].as_str().unwrap(), json!({}));
+        assert_eq!(
+            exported["artifacts"][0]["content"]
+                .as_str()
+                .unwrap()
+                .lines()
+                .count(),
+            MAX_HISTORY + 2
+        );
+    }
+
+    #[test]
+    fn oversized_derived_state_discards_only_oldest_history_before_saving() {
+        let mut state = State {
+            ans: 42.0,
+            memory: 17.0,
+            ..State::default()
+        };
+        state
+            .fields
+            .insert("expression".into(), "unsaved draft".into());
+        // Every history entry is individually valid. Escaped backslashes expand
+        // on serialization; derived curve samples then exceed the state budget.
+        for index in 0..MAX_HISTORY {
+            state.history.push(History {
+                expression: format!("{index}{}", "\\".repeat(3000)),
+                value: index as f64,
+                angle: "rad".into(),
+            });
+        }
+        let original = serde_json::to_string(&state).unwrap();
+        assert!(original.len() < MAX_STATE_BYTES);
+        let view = with_storage("save", &original, json!({}), json!([])).unwrap();
+        let retained: State = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+        assert!(retained.history.len() < MAX_HISTORY);
+        assert_eq!(retained.history[0].value, 0.0);
+        assert_eq!(retained.ans, 42.0);
+        assert_eq!(retained.memory, 17.0);
+        assert_eq!(retained.fields["expression"], "unsaved draft");
+        let receipt = json!([{"id":"save-workspace","value":{"revision":8,"values":{STORAGE_KEY:view["effects"][0]["changes"][STORAGE_KEY]}},"error":null}]);
+        let confirmed = with_storage(
+            "host-result",
+            view["state"].as_str().unwrap(),
+            json!({}),
+            receipt,
+        )
+        .unwrap();
+        assert_eq!(confirmed["description"], "Workspace saved.");
+    }
+
+    #[test]
+    fn chinese_validation_errors_are_localized() {
+        for (fields, key, expected) in [
+            (
+                json!({"expression":"sqrt(-1)"}),
+                "expression",
+                "平方根的参数不能为负数。",
+            ),
+            (
+                json!({"xmin":"invalid"}),
+                "functions",
+                "xmin：请输入有限数值。",
+            ),
+        ] {
+            let output = process(&json!({"version":2,"action":"calculate","state":"","fields":fields,"locale":"zh-CN"}).to_string()).unwrap();
+            let view: Value = serde_json::from_str(&output).unwrap();
+            assert_eq!(view["errors"][key], expected);
+        }
+    }
+
+    #[test]
+    fn long_identifier_errors_fit_the_host_field_error_limit() {
+        for locale in ["en", "zh-CN"] {
+            let output = process(&json!({"version":2,"action":"calculate","state":"","fields":{"expression":"a".repeat(4096),"functions":"a".repeat(4096)},"locale":locale}).to_string()).unwrap();
+            let view: Value = serde_json::from_str(&output).unwrap();
+            assert_eq!(view["errors"].as_object().unwrap().len(), 2);
+            for error in view["errors"].as_object().unwrap().values() {
+                assert!(error.as_str().unwrap().len() <= 1000);
+            }
+        }
     }
 }
