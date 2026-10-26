@@ -756,4 +756,42 @@ mod tests {
             );
         }
     }
+    #[test]
+    fn repeated_viewport_updates_keep_fixed_samples_and_preserve_work() {
+        let mut view = call(Some("calculate"), "", json!({"expression":"6*7"}));
+        for step in 0..80 {
+            let start = -10.0 + f64::from(step) / 137.0;
+            view = call(
+                Some("plot"),
+                view["state"].as_str().unwrap(),
+                json!({"expression":"unsaved draft 你好", "xmin":start.to_string(),"xmax":(start+20.0).to_string()}),
+            );
+            let text = view["state"].as_str().unwrap();
+            assert!(text.len() < 240_000);
+            let state: Value = serde_json::from_str(text).unwrap();
+            assert_eq!(state["ans"], 42.0);
+            assert_eq!(state["history"].as_array().unwrap().len(), 1);
+            assert_eq!(state["fields"]["expression"], "unsaved draft 你好");
+            assert_eq!(view["errors"], json!({}));
+            let series = state["plot"]["series"].as_array().unwrap();
+            assert_eq!(series.len(), 3);
+            assert!(
+                series
+                    .iter()
+                    .all(|item| item["points"].as_array().unwrap().len() == SAMPLES + 1)
+            );
+        }
+    }
+    #[test]
+    fn narrow_ranges_at_large_offsets_survive_numeric_roundtrips() {
+        let view = call(
+            Some("plot"),
+            "",
+            json!({"xmin":"999999999999.999","xmax":"1000000000000","functions":"x"}),
+        );
+        assert_eq!(view["errors"], json!({}));
+        let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+        assert!(state["plot"]["xmax"].as_f64().unwrap() > state["plot"]["xmin"].as_f64().unwrap());
+        assert_eq!(state["fields"]["xmin"], "999999999999.999");
+    }
 }

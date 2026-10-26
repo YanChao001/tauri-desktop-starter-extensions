@@ -255,6 +255,7 @@
       }
       .settings section {
         display: grid;
+        align-content: start;
         gap: 8px;
       }
       label {
@@ -531,6 +532,8 @@
           state: null,
           selected: "",
           pending: false,
+          backgroundPending: false,
+          actionEpoch: 0,
           snapshot: null,
           visible: true,
           disposed: false,
@@ -763,7 +766,10 @@
               ui.visible &&
               !document.hidden
             )
-              call({ action: "markRead", peerId: ui.selected }, true);
+              call(
+                { action: "markRead", peerId: ui.selected },
+                { background: true },
+              );
           }, 250);
         }
         function render() {
@@ -812,15 +818,28 @@
           renderMessages();
           scheduleRead();
         }
-        async function call(request, silent = false) {
-          if (ui.pending || ui.disposed || !permitted()) return false;
-          ui.pending = true;
-          render();
+        async function call(request, { background = false } = {}) {
+          if (
+            ui.pending ||
+            ui.disposed ||
+            !permitted() ||
+            (background && ui.backgroundPending)
+          )
+            return false;
+          if (background) ui.backgroundPending = true;
+          else {
+            ui.pending = true;
+            ui.actionEpoch++;
+            render();
+          }
+          // 一个后台请求在途；手动动作会使它失效，旧快照不能覆盖发送 / 停止结果。
+          const epoch = ui.actionEpoch;
           try {
             const state = validated(
               await starter.services.request("lan", request),
             );
-            if (ui.disposed) return false;
+            if (ui.disposed || !permitted() || epoch !== ui.actionEpoch)
+              return false;
             ui.state = state;
             if (
               !ui.selected ||
@@ -829,14 +848,17 @@
               ui.selected = state.peers[0]?.id ?? "";
               ui.messagesKey = "";
             }
-            if (request.action === "nickname" || request.action === "start")
+            if (
+              (request.action === "nickname" || request.action === "start") &&
+              $("nickname").value === request.nickname
+            )
               ui.nicknameDirty = false;
             if (!ui.nicknameDirty && document.activeElement !== $("nickname"))
               $("nickname").value = state.nickname;
             if (state.lastError && state.lastError !== ui.lastError) {
               ui.lastError = state.lastError;
               notice(`服务提示：${state.lastError}`, true);
-            } else if (!silent)
+            } else if (!background)
               notice(
                 request.action === "connect"
                   ? "已发起连接，正在等待对方协议握手。"
@@ -848,7 +870,11 @@
               checkpoint();
             return true;
           } catch (error) {
-            if (!ui.disposed)
+            if (
+              !ui.disposed &&
+              epoch === ui.actionEpoch &&
+              (!background || !ui.state)
+            )
               notice(
                 error?.code === "STORAGE_CORRUPT"
                   ? "本机聊天存档损坏或超限，原始数据已保留，未覆盖。"
@@ -859,7 +885,8 @@
               );
             return false;
           } finally {
-            ui.pending = false;
+            if (background) ui.backgroundPending = false;
+            else ui.pending = false;
             if (!ui.disposed) render();
           }
         }
@@ -980,6 +1007,7 @@
           }
           body = `局域网信使 · ${peer.nickname}\n导出时间：${new Date().toLocaleString("zh-CN")}\n${omitted ? `因导出大小限制，省略最早 ${omitted} 条消息。\n` : ""}\n${body}`;
           ui.pending = true;
+          ui.actionEpoch++;
           render();
           try {
             await starter.run("export", {
@@ -1005,7 +1033,7 @@
           ui.polling = true;
           try {
             if (ui.visible && !document.hidden && permitted() && !ui.pending)
-              await call({ action: "status" }, true);
+              await call({ action: "status" }, { background: true });
           } finally {
             ui.polling = false;
             if (!ui.disposed) ui.pollTimer = setTimeout(poll, 2000);
