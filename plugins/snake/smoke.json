@@ -1,0 +1,316 @@
+[
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "zh-CN"
+    },
+    "expectJsonSubset": {
+      "version": 2,
+      "display": "贪吃蛇",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "display": "Snake",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Score",
+              "value": "10"
+            },
+            {
+              "label": "Mode best",
+              "value": "0"
+            },
+            {
+              "label": "Ticks",
+              "value": "14"
+            }
+          ]
+        },
+        {
+          "kind": "table",
+          "columns": ["mode", "best"],
+          "rows": []
+        }
+      ],
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "save-best",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "description": "Private storage is not granted. Play and session export remain available.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "save-best",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 1,
+              "best": {
+                "fast-wrap-rocks": 50
+              }
+            }
+          }
+        }
+      }
+    },
+    "expectJsonSubset": {
+      "effects": [
+        {
+          "kind": "storage",
+          "id": "save-best",
+          "expectedRevision": 7,
+          "changes": {
+            "snake-records": {
+              "schema": 1,
+              "best": {
+                "fast-wrap-rocks": 50,
+                "normal-wall-clear": 10
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 8,
+          "values": {
+            "snake-records": {
+              "schema": 1,
+              "best": {
+                "fast-wrap-rocks": 50,
+                "normal-wall-clear": 10
+              }
+            }
+          }
+        }
+      },
+      "results": [
+        {
+          "id": "save-best",
+          "value": {
+            "revision": 8,
+            "values": {
+              "snake-records": {
+                "schema": 1,
+                "best": {
+                  "fast-wrap-rocks": 50,
+                  "normal-wall-clear": 10
+                }
+              }
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "description": "The best score for this mode was saved.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 1,
+              "best": {
+                "fast-wrap-rocks": 50
+              }
+            }
+          }
+        }
+      },
+      "results": [
+        {
+          "id": "save-best",
+          "value": null,
+          "error": {
+            "code": "CONFLICT",
+            "message": "changed",
+            "retryable": false
+          }
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "description": "Another window changed records. Your game is retained; review and save again manually.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10}}",
+      "fields": {},
+      "locale": "en",
+      "results": [
+        {
+          "id": "save-best",
+          "value": null,
+          "error": {
+            "code": "INPUT_TOO_LONG",
+            "message": "completed",
+            "retryable": false
+          }
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "description": "The save was executed but its response was omitted. Your game is retained; do not automatically retry.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":2,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[],\"muted\":false}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[],\"muted\":false,\"score\":9999}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"left\"],\"muted\":false}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "save-best",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 1,
+          "values": {
+            "snake-records": {
+              "schema": 2,
+              "best": {}
+            }
+          }
+        }
+      }
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "unknown",
+      "state": "",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  }
+]

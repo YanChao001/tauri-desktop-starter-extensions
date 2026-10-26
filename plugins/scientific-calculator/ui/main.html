@@ -1,0 +1,1457 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>科学计算器</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      main {
+        max-width: 1180px;
+        padding: 1.25rem;
+        margin: auto;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        letter-spacing: -0.03em;
+      }
+      h2 {
+        margin: 0 0 0.8rem;
+        font-size: 1.05rem;
+      }
+      p {
+        margin: 0.4rem 0;
+      }
+      .muted,
+      small {
+        color: var(--muted-foreground);
+      }
+      header,
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+      }
+      header {
+        margin-bottom: 1rem;
+      }
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(230px, 1fr);
+        gap: 1rem;
+      }
+      .panel {
+        min-width: 0;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        background: var(--card);
+      }
+      .stack {
+        display: grid;
+        gap: 0.8rem;
+      }
+      label {
+        display: grid;
+        gap: 0.3rem;
+        min-width: 0;
+        font-size: 0.875rem;
+      }
+      input,
+      select,
+      textarea {
+        max-width: 100%;
+        min-width: 0;
+      }
+      [data-locked="true"]:disabled {
+        opacity: 1;
+        cursor: wait;
+      }
+      button.primary {
+        color: var(--primary-foreground);
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+      button.primary:hover:not(:disabled) {
+        opacity: 0.9;
+        background: var(--primary);
+      }
+      :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 3px;
+      }
+      .expression {
+        font:
+          1.25rem/1.5 ui-monospace,
+          monospace;
+      }
+      .result {
+        display: block;
+        min-height: 3.2rem;
+        overflow-wrap: anywhere;
+        font:
+          2rem/1.5 ui-monospace,
+          monospace;
+        text-align: right;
+      }
+      .keypad {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.4rem;
+      }
+      .keypad button {
+        min-height: 2.5rem;
+        padding: 0.35rem 0.1rem;
+        font-size: 0.875rem;
+      }
+      .keypad button[data-special="clear"] {
+        color: var(--destructive);
+      }
+      .memory {
+        gap: 0.4rem;
+        justify-content: flex-start;
+      }
+      .memory output {
+        margin-left: auto;
+        font-size: 0.8rem;
+        font-family: ui-monospace, monospace;
+        overflow-wrap: anywhere;
+      }
+      #history {
+        max-height: 20rem;
+        overflow: auto;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      #history li + li {
+        border-top: 1px solid var(--border);
+      }
+      #history button,
+      .history-entry {
+        width: 100%;
+        border: 0;
+        border-radius: 0;
+        padding: 0.65rem 0.2rem;
+        text-align: left;
+        display: grid;
+        gap: 0.2rem;
+        background: transparent;
+      }
+      #history strong {
+        font-family: ui-monospace, monospace;
+        overflow-wrap: anywhere;
+      }
+      #history span {
+        overflow-wrap: anywhere;
+        font-size: 0.8rem;
+      }
+      .graph-panel {
+        margin-top: 1rem;
+      }
+      .graph-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 240px;
+        gap: 1rem;
+      }
+      .canvas-wrap {
+        position: relative;
+        height: 390px;
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: var(--background);
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+        cursor: crosshair;
+      }
+      .coordinates {
+        font:
+          0.8rem/1.5 ui-monospace,
+          monospace;
+        min-height: 1.5rem;
+      }
+      .ranges {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      .ranges input {
+        padding: 0.4rem;
+      }
+      .tools {
+        border-top: 1px solid var(--border);
+        padding-top: 0.75rem;
+      }
+      .legend {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+      }
+      .legend span {
+        overflow-wrap: anywhere;
+      }
+      .dot {
+        display: inline-block;
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 50%;
+        margin-right: 0.4rem;
+      }
+      #error {
+        color: var(--destructive);
+        overflow-wrap: anywhere;
+        white-space: pre-line;
+        min-height: 1.5em;
+      }
+      .footer {
+        margin-top: 1rem;
+        font-size: 0.875rem;
+      }
+      .confirmation {
+        margin: 0 0 1rem;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--ring);
+        border-radius: var(--radius, 0.625rem);
+      }
+      .confirmation[hidden] {
+        display: none;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .graph-tools {
+        justify-content: flex-start;
+        margin-bottom: 0.5rem;
+      }
+      #graph-status {
+        min-height: 1.4em;
+      }
+      #artifacts {
+        justify-content: flex-start;
+      }
+      details {
+        margin-top: 0.8rem;
+        font-size: 0.875rem;
+      }
+      summary {
+        cursor: pointer;
+      }
+      code {
+        font-family: ui-monospace, monospace;
+      }
+      @media (max-width: 760px) {
+        .workspace,
+        .graph-layout {
+          grid-template-columns: 1fr;
+        }
+        .canvas-wrap {
+          height: 320px;
+        }
+        main {
+          padding: 0.75rem;
+        }
+        .graph-controls {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: start;
+          gap: 0.75rem;
+        }
+        .graph-controls > label:first-child {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (max-width: 430px) {
+        .graph-controls {
+          grid-template-columns: 1fr;
+        }
+        .keypad {
+          gap: 0.25rem;
+        }
+        .panel {
+          padding: 0.75rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1 data-i18n="title">科学计算器</h1>
+          <p class="muted" data-i18n="subtitle">
+            精确表达式 · 函数曲线 · 数值探索
+          </p>
+        </div>
+        <div class="row">
+          <button data-action="save" data-i18n="save">保存工作区</button
+          ><button id="load" data-i18n="load">载入</button>
+        </div>
+      </header>
+      <section
+        id="load-confirm"
+        class="confirmation"
+        role="region"
+        aria-labelledby="load-confirm-title"
+        hidden
+      >
+        <h2 id="load-confirm-title" data-i18n="loadTitle">
+          载入保存的工作区？
+        </h2>
+        <p data-i18n="loadConfirm">
+          载入保存的工作区会替换当前会话，请先导出需要保留的记录。
+        </p>
+        <div class="row">
+          <button id="load-cancel" data-i18n="cancel">取消</button
+          ><button
+            id="load-confirm-button"
+            class="primary"
+            data-i18n="confirmLoad"
+          >
+            确认载入
+          </button>
+        </div>
+      </section>
+      <div class="workspace">
+        <section class="panel stack" aria-labelledby="calculate-heading">
+          <div class="row">
+            <h2 id="calculate-heading" data-i18n="calculate">计算</h2>
+            <label
+              ><span class="sr-only" data-i18n="angle">角度制</span
+              ><select id="angle" aria-label="角度制">
+                <option value="rad">RAD</option>
+                <option value="deg">DEG</option>
+              </select></label
+            >
+          </div>
+          <label
+            ><span data-i18n="expression">表达式</span
+            ><input
+              id="expression"
+              class="expression"
+              type="text"
+              maxlength="4096"
+              spellcheck="false"
+              autocomplete="off"
+              aria-describedby="syntax-hint error"
+          /></label>
+          <output id="result" class="result" aria-live="polite">0</output>
+          <div class="row memory">
+            <button data-action="memory-store">MS</button
+            ><button data-action="memory-add">M+</button
+            ><button id="recall">MR</button
+            ><button data-action="memory-clear">MC</button
+            ><output id="memory">M = 0</output>
+          </div>
+          <div id="keypad" class="keypad"></div>
+          <div class="row">
+            <small id="syntax-hint" data-i18n="syntax"
+              >Enter 计算 · 乘法请写 * · 上次答案 ans</small
+            ><button class="primary" data-action="calculate" data-i18n="equals">
+              计算 =
+            </button>
+          </div>
+        </section>
+        <section class="panel stack" aria-labelledby="history-heading">
+          <div class="row">
+            <h2 id="history-heading" data-i18n="history">历史记录</h2>
+            <button data-action="history-clear" data-i18n="clearHistory">
+              清空
+            </button>
+          </div>
+          <ol id="history"></ol>
+          <p id="history-empty" class="muted" data-i18n="emptyHistory">
+            计算结果将保留在这里，点击表达式再次使用。
+          </p>
+          <button data-action="export" data-i18n="export">导出计算记录</button>
+          <details>
+            <summary data-i18n="reference">函数速查</summary>
+            <p>
+              <code
+                >sin cos tan asin acos atan sinh cosh tanh sqrt cbrt abs ln log
+                exp floor ceil round min max pow hypot clamp</code
+              >
+            </p>
+            <p class="muted" data-i18n="constants">
+              常量 pi、e、tau；变量 ans、mem、x。log(x) 为十进制对数，ln(x)
+              为自然对数。科学计数示例 1.2e-3。
+            </p>
+          </details>
+        </section>
+      </div>
+      <section class="panel graph-panel" aria-labelledby="graph-heading">
+        <div class="row">
+          <h2 id="graph-heading" data-i18n="graph">函数曲线</h2>
+          <div class="row">
+            <button id="fit" data-i18n="fit">适配 Y 轴</button
+            ><button data-action="reset-plot" data-i18n="reset">重置坐标</button
+            ><button class="primary" data-action="plot" data-i18n="plot">
+              绘制曲线
+            </button>
+          </div>
+        </div>
+        <div class="graph-layout">
+          <div>
+            <div class="row graph-tools">
+              <button id="zoom-in" data-i18n="zoomIn">放大 +</button
+              ><button id="zoom-out" data-i18n="zoomOut">缩小 −</button
+              ><small
+                id="graph-status"
+                class="muted"
+                role="status"
+                aria-live="polite"
+              ></small>
+            </div>
+            <div class="canvas-wrap">
+              <canvas
+                id="graph"
+                tabindex="0"
+                role="img"
+                aria-label="函数图像"
+                aria-describedby="graph-help graph-summary"
+              ></canvas>
+            </div>
+            <p id="graph-summary" class="sr-only"></p>
+            <div
+              id="coordinates"
+              class="coordinates muted"
+              aria-live="off"
+            ></div>
+            <div id="legend" class="legend"></div>
+            <small id="graph-help" class="muted" data-i18n="graphHelp"
+              >拖动平移，滚轮缩放。聚焦图像后方向键平移，+ / −
+              缩放。采样仅为近似。</small
+            >
+          </div>
+          <div class="graph-controls stack">
+            <label
+              ><span data-i18n="functions">函数（每行一条，最多 3 条）</span
+              ><textarea
+                id="functions"
+                rows="3"
+                spellcheck="false"
+                maxlength="4096"
+              ></textarea>
+            </label>
+            <div class="ranges">
+              <label
+                ><span data-i18n="xmin">X 最小值</span
+                ><input id="xmin" inputmode="decimal" maxlength="80" /></label
+              ><label
+                ><span data-i18n="xmax">X 最大值</span
+                ><input id="xmax" inputmode="decimal" maxlength="80" /></label
+              ><label
+                ><span data-i18n="ymin">Y 最小值</span
+                ><input id="ymin" inputmode="decimal" maxlength="80" /></label
+              ><label
+                ><span data-i18n="ymax">Y 最大值</span
+                ><input id="ymax" inputmode="decimal" maxlength="80"
+              /></label>
+            </div>
+            <div class="stack tools">
+              <label
+                ><span data-i18n="selectedCurve">数值分析曲线</span
+                ><select id="curve">
+                  <option value="0">f₁</option>
+                  <option value="1">f₂</option>
+                  <option value="2">f₃</option>
+                </select></label
+              >
+              <div class="ranges">
+                <label>a<input id="a" inputmode="decimal" /></label
+                ><label>b<input id="b" inputmode="decimal" /></label>
+              </div>
+              <div class="row">
+                <button data-action="root" data-i18n="root">区间求根</button
+                ><button data-action="integrate" data-i18n="integrate">
+                  定积分
+                </button>
+              </div>
+              <small class="muted" data-i18n="analysisHint"
+                >求根返回区间内一个可夹住的根。积分为数值近似，不保证检测所有奇点。</small
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="footer">
+        <p id="description" class="muted"></p>
+        <p id="storage-hint" class="muted"></p>
+        <p id="error" role="alert"></p>
+        <div id="artifacts" class="row"></div>
+      </div>
+    </main>
+    <script>
+      (() => {
+        "use strict";
+        const $ = (id) => document.getElementById(id);
+        const ids = [
+          "expression",
+          "angle",
+          "functions",
+          "xmin",
+          "xmax",
+          "ymin",
+          "ymax",
+          "a",
+          "b",
+          "curve",
+        ];
+        const words = {
+          title: ["科学计算器", "Scientific calculator"],
+          subtitle: [
+            "科学表达式 · 函数曲线 · 数值探索",
+            "Scientific expressions · Function graphs · Numerical exploration",
+          ],
+          save: ["保存工作区", "Save workspace"],
+          load: ["载入", "Load"],
+          calculate: ["计算", "Calculate"],
+          angle: ["角度制", "Angle mode"],
+          expression: ["表达式", "Expression"],
+          syntax: [
+            "Enter 计算 · 乘法请写 * · 上次答案 ans",
+            "Enter to calculate · Use * to multiply · Previous answer: ans",
+          ],
+          equals: ["计算 =", "Calculate ="],
+          history: ["历史记录", "History"],
+          clearHistory: ["清空", "Clear"],
+          emptyHistory: [
+            "计算结果将保留在这里，点击表达式再次使用。",
+            "Results appear here. Select an expression to reuse it.",
+          ],
+          export: ["导出计算记录", "Export history"],
+          reference: ["函数速查", "Function reference"],
+          constants: [
+            "常量 pi、e、tau；变量 ans、mem、x。log(x) 为十进制对数，ln(x) 为自然对数。科学计数示例 1.2e-3。",
+            "Constants: pi, e, tau. Variables: ans, mem, x. log(x) is base 10; ln(x) is natural logarithm. Scientific notation: 1.2e-3.",
+          ],
+          graph: ["函数曲线", "Function graphs"],
+          fit: ["适配 Y 轴", "Fit Y axis"],
+          reset: ["重置坐标", "Reset axes"],
+          plot: ["绘制曲线", "Plot"],
+          graphHelp: [
+            "拖动平移，滚轮缩放。聚焦图像后方向键平移，+ / − 缩放。采样仅为近似。",
+            "Drag to pan; scroll to zoom. Focus the graph to pan with arrows or zoom with + / −. Samples are approximate.",
+          ],
+          functions: [
+            "函数（每行一条，最多 3 条）",
+            "Functions (one per line, up to 3)",
+          ],
+          selectedCurve: ["数值分析曲线", "Analysis curve"],
+          root: ["区间求根", "Find root"],
+          integrate: ["定积分", "Integrate"],
+          analysisHint: [
+            "求根返回区间内一个可夹住的根。积分为数值近似，不保证检测所有奇点。",
+            "Find one bracketed root in the interval. Integration is numerical and cannot guarantee detection of every singularity.",
+          ],
+          clearExpression: ["清空表达式", "Clear expression"],
+          backspace: ["删除一个字符", "Delete one character"],
+          loadConfirm: [
+            "载入保存的工作区将替换当前会话，是否继续？",
+            "Loading will replace this session with the saved workspace. Continue?",
+          ],
+          failed: [
+            "操作未完成，当前输入和上次结果已保留。",
+            "Operation did not complete. Your input and last result were retained.",
+          ],
+          graphLabel: [
+            "函数图像；可拖动平移、滚轮缩放，或使用键盘方向键与加减号。",
+            "Function graph. Drag or use arrow keys to pan; scroll or use plus and minus to zoom.",
+          ],
+          checkpointFailed: [
+            "无法保留草稿，请先保存重要输入。",
+            "Could not retain the draft. Save important input before leaving.",
+          ],
+        };
+        Object.assign(words, {
+          loadTitle: ["载入保存的工作区？", "Load the saved workspace?"],
+          loadConfirm: [
+            "载入会替换当前输入、记忆和历史，请先导出需要保留的记录。",
+            "Loading replaces your current input, memory and history. Export anything you want to keep first.",
+          ],
+          cancel: ["取消", "Cancel"],
+          confirmLoad: ["确认载入", "Load workspace"],
+          xmin: ["X 最小值", "X minimum"],
+          xmax: ["X 最大值", "X maximum"],
+          ymin: ["Y 最小值", "Y minimum"],
+          ymax: ["Y 最大值", "Y maximum"],
+          zoomIn: ["放大 +", "Zoom in +"],
+          zoomOut: ["缩小 −", "Zoom out −"],
+          resampling: ["正在重新采样…", "Resampling…"],
+          samplePreview: [
+            "坐标预览；停止操作后重新采样",
+            "Viewport preview; resampling after interaction",
+          ],
+          noStorage: [
+            "未授权私有存储：计算、绘图和导出仍可使用；保存或载入工作区需在扩展中心授权。",
+            "Storage is optional. Calculate, graph and export offline; grant storage in Extensions to save or load a workspace.",
+          ],
+          approximation: [
+            "数值近似 · 641 个采样点/曲线",
+            "Numerical approximation · 641 samples per curve",
+          ],
+          noSamples: [
+            "当前范围内没有可绘制的采样点。请检查函数与坐标范围。",
+            "No drawable samples in this range. Check the functions and axis limits.",
+          ],
+          saveFile: ["保存生成的记录", "Save generated history"],
+          memoryStore: [
+            "把上次答案存入记忆",
+            "Store the last answer in memory",
+          ],
+          memoryAdd: ["把上次答案累加到记忆", "Add the last answer to memory"],
+          memoryRecall: ["插入记忆变量 mem", "Insert the memory variable mem"],
+          memoryClear: ["清空记忆寄存器", "Clear the memory register"],
+        });
+        let current,
+          state,
+          working = false,
+          force = false,
+          hydrated = false,
+          localDraft = false;
+        let draftTimer, zoomTimer, viewport, pointer, cursor, chartData, frame;
+        let draftRevision = 0,
+          syncedRevision = 0,
+          syncing = null,
+          localError = "",
+          previewing = false;
+        let lastCheckpoint;
+        const ownedCheckpoints = new Set();
+        function rememberCheckpoint(value) {
+          const key = JSON.stringify(value);
+          ownedCheckpoints.add(key);
+          if (ownedCheckpoints.size > 16)
+            ownedCheckpoints.delete(ownedCheckpoints.values().next().value);
+          return key;
+        }
+        const tr = (key) =>
+          words[key]?.[current?.locale === "en" ? 1 : 0] ?? key;
+        const actions = () =>
+          current?.view?.groups.flatMap((group) => group.actions) ?? [];
+        const values = () =>
+          Object.fromEntries(ids.map((id) => [id, $(id).value]));
+        const busy = () => working || current?.busy;
+        const fmt = (value, digits = 12) =>
+          Number.isFinite(value)
+            ? Number(value.toPrecision(digits)).toString()
+            : "—";
+        function report(error) {
+          localError = error;
+          $("error").textContent = [
+            localError,
+            ...Object.values(current?.view?.errors ?? {}),
+          ]
+            .filter(Boolean)
+            .join("\n");
+        }
+        async function persistDraft() {
+          clearTimeout(draftTimer);
+          while (syncing) await syncing;
+          if (!localDraft || syncedRevision === draftRevision || current?.busy)
+            return;
+          const revision = draftRevision,
+            submitted = values();
+          const checkpointValue = { schema: 1, fields: submitted };
+          rememberCheckpoint(checkpointValue);
+          const pending = (async () => {
+            await starter.setFields(submitted);
+            await starter.checkpoint(checkpointValue, true);
+            syncedRevision = revision;
+          })();
+          syncing = pending;
+          try {
+            await pending;
+          } finally {
+            if (syncing === pending) syncing = null;
+          }
+        }
+        function checkpoint() {
+          localDraft = true;
+          draftRevision++;
+          queueDraft();
+        }
+        function queueDraft() {
+          clearTimeout(draftTimer);
+          draftTimer = setTimeout(
+            () => {
+              if (busy()) return;
+              void persistDraft()
+                .then(() => {
+                  if (syncedRevision !== draftRevision && !busy()) queueDraft();
+                })
+                .catch(() => report(tr("checkpointFailed")));
+            },
+            syncing ? 80 : 0,
+          );
+        }
+        function insert(text) {
+          if (busy()) return;
+          const input = $("expression");
+          input.focus();
+          const start = input.selectionStart ?? input.value.length;
+          const end = input.selectionEnd ?? start;
+          if (input.value.length - (end - start) + text.length > 4096) return;
+          input.value =
+            input.value.slice(0, start) + text + input.value.slice(end);
+          input.setSelectionRange(start + text.length, start + text.length);
+          checkpoint();
+        }
+        const keys = [
+          ["sin", "sin("],
+          ["cos", "cos("],
+          ["tan", "tan("],
+          ["(", "("],
+          [")", ")"],
+          ["⌫", "backspace"],
+          ["asin", "asin("],
+          ["acos", "acos("],
+          ["atan", "atan("],
+          ["xʸ", "^"],
+          ["n!", "!"],
+          ["C", "clear"],
+          ["ln", "ln("],
+          ["log", "log("],
+          ["√", "sqrt("],
+          ["π", "pi"],
+          ["e", "e"],
+          ["ans", "ans"],
+          ["7", "7"],
+          ["8", "8"],
+          ["9", "9"],
+          ["÷", "/"],
+          ["%", "%"],
+          ["abs", "abs("],
+          ["4", "4"],
+          ["5", "5"],
+          ["6", "6"],
+          ["×", "*"],
+          ["−", "-"],
+          ["exp", "exp("],
+          ["1", "1"],
+          ["2", "2"],
+          ["3", "3"],
+          ["+", "+"],
+          ["0", "0"],
+          [".", "."],
+        ];
+        for (const [label, token] of keys) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.variant = "outline";
+          button.textContent = label;
+          if (token === "backspace" || token === "clear")
+            button.dataset.special = token;
+          button.onclick = () => {
+            if (busy()) return;
+            if (token === "clear") {
+              $("expression").value = "";
+              $("expression").focus();
+              checkpoint();
+            } else if (token === "backspace") {
+              const input = $("expression"),
+                start = input.selectionStart ?? input.value.length,
+                end = input.selectionEnd ?? start;
+              const position = start === end ? Math.max(0, start - 1) : start;
+              input.value =
+                input.value.slice(0, position) + input.value.slice(end);
+              input.focus();
+              input.setSelectionRange(position, position);
+              checkpoint();
+            } else insert(token);
+          };
+          $("keypad").append(button);
+        }
+        function range() {
+          const fallback =
+            chartData &&
+            [
+              chartData.xmin,
+              chartData.xmax,
+              chartData.ymin,
+              chartData.ymax,
+            ].every(Number.isFinite) &&
+            chartData.xmax > chartData.xmin &&
+            chartData.ymax > chartData.ymin
+              ? chartData
+              : {
+                  xmin: -10,
+                  xmax: 10,
+                  ymin: -3,
+                  ymax: 3,
+                };
+          const value = Object.fromEntries(
+            ["xmin", "xmax", "ymin", "ymax"].map((id) => [
+              id,
+              Number($(id).value),
+            ]),
+          );
+          return ["xmin", "xmax", "ymin", "ymax"].every(
+            (id) => $(id).value.trim() !== "",
+          ) &&
+            Object.values(value).every(Number.isFinite) &&
+            value.xmax > value.xmin &&
+            value.ymax > value.ymin
+            ? value
+            : fallback;
+        }
+        function setRange(next) {
+          if (
+            ![next.xmin, next.xmax, next.ymin, next.ymax].every(
+              Number.isFinite,
+            ) ||
+            next.xmax - next.xmin < 1e-10 ||
+            next.ymax - next.ymin < 1e-10 ||
+            Object.values(next).some((value) => Math.abs(value) > 1e12)
+          )
+            return false;
+          viewport = next;
+          for (const id of ["xmin", "xmax", "ymin", "ymax"])
+            $(id).value = Number(next[id].toPrecision(14)).toString();
+          previewing = true;
+          $("graph-status").textContent = tr("samplePreview");
+          scheduleDraw();
+          checkpoint();
+          return true;
+        }
+        function render() {
+          if (!current?.view) return;
+          try {
+            const next = JSON.parse(current.view.state);
+            if (
+              !next ||
+              next.schema !== 1 ||
+              !Array.isArray(next.history) ||
+              next.history.length > 32 ||
+              typeof next.result !== "string" ||
+              !Number.isFinite(next.memory) ||
+              !next.history.every(
+                (entry) =>
+                  typeof entry.expression === "string" &&
+                  ["rad", "deg"].includes(entry.angle) &&
+                  Number.isFinite(entry.value),
+              )
+            )
+              throw new Error("Invalid state");
+            state = next;
+          } catch {
+            report(tr("failed"));
+            return;
+          }
+          document
+            .querySelector("main")
+            .setAttribute("aria-busy", String(!!busy()));
+          document.title = tr("title");
+          document.querySelectorAll("[data-i18n]").forEach((node) => {
+            node.textContent = tr(node.dataset.i18n);
+          });
+          $("angle").setAttribute("aria-label", tr("angle"));
+          $("graph").setAttribute("aria-label", tr("graphLabel"));
+          for (const [action, key] of [
+            ["memory-store", "memoryStore"],
+            ["memory-add", "memoryAdd"],
+            ["memory-clear", "memoryClear"],
+          ]) {
+            const button = document.querySelector(`[data-action="${action}"]`);
+            button.title = tr(key);
+            button.setAttribute("aria-label", tr(key));
+          }
+          $("recall").title = tr("memoryRecall");
+          $("recall").setAttribute("aria-label", tr("memoryRecall"));
+          document.querySelectorAll("[data-special]").forEach((button) => {
+            button.setAttribute(
+              "aria-label",
+              tr(
+                button.dataset.special === "clear"
+                  ? "clearExpression"
+                  : "backspace",
+              ),
+            );
+          });
+          for (const id of ids) {
+            const input = $(id);
+            if (force || (!working && !localDraft)) {
+              const savedDraft = !hydrated
+                ? current.checkpoint?.fields?.[id]
+                : undefined;
+              input.value =
+                typeof savedDraft === "string"
+                  ? savedDraft
+                  : (current.fields[id] ?? state.fields?.[id] ?? "");
+            }
+            if (input.tagName === "SELECT") input.disabled = !!busy();
+            else input.readOnly = !!busy();
+            input.dataset.locked = String(!!busy());
+            input.setAttribute(
+              "aria-invalid",
+              String(!!current.view.errors?.[id]),
+            );
+          }
+          hydrated = true;
+          force = false;
+          $("result").textContent = state.result;
+          $("memory").textContent = "M = " + fmt(state.memory);
+          $("description").textContent = current.view.description;
+          $("storage-hint").textContent = current.grantedPermissions.includes(
+            "storage",
+          )
+            ? ""
+            : tr("noStorage");
+          report(localError);
+          document.querySelectorAll("button").forEach((button) => {
+            const id =
+              button.dataset.action ?? (button.id === "load" ? "load" : null);
+            const unavailable =
+              !!id &&
+              (!actions().some((action) => action.id === id) ||
+                actions().find((action) => action.id === id)?.disabled);
+            button.disabled = !!busy() || unavailable;
+            button.dataset.locked = String(!!busy() && !unavailable);
+          });
+          $("history-empty").hidden = state.history.length > 0;
+          $("history").replaceChildren(
+            ...state.history.map((entry) => {
+              const li = document.createElement("li"),
+                numerical = /^(root|integral)\(/.test(entry.expression),
+                node = document.createElement(numerical ? "div" : "button"),
+                expression = document.createElement("span"),
+                value = document.createElement("strong");
+              expression.textContent =
+                entry.expression + " · " + entry.angle.toUpperCase();
+              value.textContent = fmt(entry.value);
+              node.append(expression, value);
+              if (numerical) node.className = "history-entry";
+              else {
+                node.dataset.variant = "outline";
+                node.disabled = !!busy();
+                node.dataset.locked = String(!!busy());
+                node.onclick = () => {
+                  if (busy()) return;
+                  $("expression").value = entry.expression;
+                  $("angle").value = entry.angle;
+                  $("expression").focus();
+                  checkpoint();
+                };
+              }
+              li.append(node);
+              return li;
+            }),
+          );
+          chartData =
+            state.plot && Array.isArray(state.plot.series) ? state.plot : null;
+          if (!pointer) viewport = range();
+          $("legend").replaceChildren(
+            ...(chartData?.series ?? []).map((series, index) => {
+              const item = document.createElement("span"),
+                dot = document.createElement("i");
+              dot.className = "dot";
+              dot.style.background = color(index);
+              item.append(
+                dot,
+                document.createTextNode(
+                  `f${index + 1}(x) = ${series.expression}`,
+                ),
+              );
+              return item;
+            }),
+          );
+          $("graph-summary").textContent =
+            `${tr("approximation")}. ${(chartData?.series ?? []).map((series, index) => `f${index + 1}(x) = ${series.expression}`).join("; ")}. X: ${$("xmin").value} … ${$("xmax").value}; Y: ${$("ymin").value} … ${$("ymax").value}`;
+          $("graph-status").textContent = previewing
+            ? tr("samplePreview")
+            : tr("approximation");
+          $("artifacts").replaceChildren(
+            ...(current.view.artifacts ?? []).map((artifact, index) => {
+              const button = document.createElement("button");
+              button.dataset.variant = "outline";
+              button.disabled = !!busy();
+              button.textContent = `${tr("saveFile")} · ${artifact.name}`;
+              button.onclick = () => void saveArtifact(index);
+              return button;
+            }),
+          );
+          scheduleDraw();
+        }
+        async function saveArtifact(index) {
+          if (busy()) return;
+          working = true;
+          render();
+          try {
+            await starter.saveArtifact(index);
+          } catch {
+            report(tr("failed"));
+          } finally {
+            working = false;
+            render();
+          }
+        }
+        async function act(id) {
+          const action = actions().find((entry) => entry.id === id);
+          if (busy() || !action || action.disabled) return;
+          clearTimeout(draftTimer);
+          clearTimeout(zoomTimer);
+          working = true;
+          localError = "";
+          render();
+          try {
+            await persistDraft();
+            const wasDirty = current.dirty || localDraft;
+            const next = await starter.run(id, values());
+            // A private-storage save is not a session export. Retain unsaved-session
+            // state conservatively, including failed CAS receipts and history clears.
+            const dirty =
+              wasDirty || !["save", "load", "plot", "export"].includes(id);
+            rememberCheckpoint(null);
+            await starter.checkpoint(null, dirty);
+            current = {
+              ...current,
+              view: next,
+              fields: Object.fromEntries(
+                next.fields.map((field) => [field.id, field.value]),
+              ),
+              checkpoint: null,
+            };
+            localDraft = false;
+            syncedRevision = draftRevision;
+            previewing = false;
+            force = true;
+            if (id === "export" && next.artifacts?.length)
+              await starter.saveArtifact(0);
+          } catch {
+            report(tr("failed"));
+          } finally {
+            working = false;
+            render();
+          }
+        }
+        document.querySelectorAll("[data-action]").forEach((button) => {
+          button.onclick = () => void act(button.dataset.action);
+        });
+        $("load").onclick = () => {
+          if (busy()) return;
+          $("load-confirm").hidden = false;
+          $("load-cancel").focus();
+        };
+        $("load-cancel").onclick = () => {
+          $("load-confirm").hidden = true;
+          $("load").focus();
+        };
+        $("load-confirm-button").onclick = () => {
+          $("load-confirm").hidden = true;
+          void act("load").finally(() => $("load").focus());
+        };
+        $("recall").onclick = () => insert("mem");
+        for (const id of ids) {
+          if ($(id).tagName === "INPUT" && id !== "expression")
+            $(id).maxLength = 80;
+          $(id).addEventListener(
+            $(id).tagName === "SELECT" ? "change" : "input",
+            () => {
+              if (!busy()) {
+                if (["functions", "xmin", "xmax", "ymin", "ymax"].includes(id))
+                  previewing = true;
+                checkpoint();
+              }
+            },
+          );
+        }
+        $("angle").addEventListener("change", () => {
+          if (!busy()) void act("plot");
+        });
+        $("expression").onkeydown = (event) => {
+          if (event.isComposing) return;
+          if (event.key === "Enter") {
+            event.preventDefault();
+            void act("calculate");
+          }
+          if (event.key === "Escape" && !busy()) {
+            event.preventDefault();
+            $("expression").value = "";
+            checkpoint();
+          }
+        };
+        function color(index) {
+          const styles = getComputedStyle(document.documentElement);
+          return [
+            styles.getPropertyValue("--primary").trim() || "#2563eb",
+            styles.getPropertyValue("--chart-2").trim() || "#d97706",
+            styles.getPropertyValue("--chart-3").trim() || "#16a085",
+          ][index % 3];
+        }
+        const canvas = $("graph"),
+          context = canvas.getContext("2d");
+        function scheduleDraw() {
+          if (frame) return;
+          frame = requestAnimationFrame(() => {
+            frame = undefined;
+            draw();
+          });
+        }
+        function dimensions() {
+          return {
+            w: canvas.clientWidth,
+            h: canvas.clientHeight,
+            left: 48,
+            right: 14,
+            top: 18,
+            bottom: 30,
+          };
+        }
+        function gridStep(span) {
+          const unit = 10 ** Math.floor(Math.log10(span / 7));
+          return (
+            [1, 2, 5, 10].map((n) => n * unit).find((n) => span / n <= 10) ??
+            unit * 10
+          );
+        }
+        function draw() {
+          if (!context) return;
+          const d = dimensions();
+          if (!d.w || !d.h) return;
+          const ratio = Math.min(window.devicePixelRatio || 1, 3),
+            width = Math.round(d.w * ratio),
+            height = Math.round(d.h * ratio);
+          if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+          }
+          context.setTransform(ratio, 0, 0, ratio, 0, 0);
+          context.clearRect(0, 0, d.w, d.h);
+          const r = viewport ?? range(),
+            styles = getComputedStyle(document.documentElement),
+            plotWidth = d.w - d.left - d.right,
+            plotHeight = d.h - d.top - d.bottom;
+          const px = (x) =>
+              d.left + ((x - r.xmin) / (r.xmax - r.xmin)) * plotWidth,
+            py = (y) => d.top + ((r.ymax - y) / (r.ymax - r.ymin)) * plotHeight;
+          context.font = "11px ui-monospace, monospace";
+          context.fillStyle =
+            styles.getPropertyValue("--muted-foreground").trim() || "#777";
+          context.strokeStyle =
+            styles.getPropertyValue("--border").trim() || "#ccc";
+          context.lineWidth = 0.7;
+          const xstep = gridStep(r.xmax - r.xmin),
+            ystep = gridStep(r.ymax - r.ymin);
+          context.textAlign = "center";
+          for (
+            let x = Math.ceil(r.xmin / xstep) * xstep, i = 0;
+            x <= r.xmax && i < 30;
+            x += xstep, i++
+          ) {
+            context.beginPath();
+            context.moveTo(px(x), d.top);
+            context.lineTo(px(x), d.h - d.bottom);
+            context.stroke();
+            context.fillText(
+              Number(x.toPrecision(5)).toString(),
+              px(x),
+              d.h - 9,
+            );
+          }
+          context.textAlign = "right";
+          for (
+            let y = Math.ceil(r.ymin / ystep) * ystep, i = 0;
+            y <= r.ymax && i < 30;
+            y += ystep, i++
+          ) {
+            context.beginPath();
+            context.moveTo(d.left, py(y));
+            context.lineTo(d.w - d.right, py(y));
+            context.stroke();
+            context.fillText(
+              Number(y.toPrecision(5)).toString(),
+              d.left - 5,
+              py(y) + 4,
+            );
+          }
+          context.save();
+          context.beginPath();
+          context.rect(d.left, d.top, plotWidth, plotHeight);
+          context.clip();
+          context.strokeStyle =
+            styles.getPropertyValue("--muted-foreground").trim() || "#777";
+          context.lineWidth = 1;
+          if (r.xmin <= 0 && r.xmax >= 0) {
+            context.beginPath();
+            context.moveTo(px(0), d.top);
+            context.lineTo(px(0), d.h - d.bottom);
+            context.stroke();
+          }
+          if (r.ymin <= 0 && r.ymax >= 0) {
+            context.beginPath();
+            context.moveTo(d.left, py(0));
+            context.lineTo(d.w - d.right, py(0));
+            context.stroke();
+          }
+          for (const [index, series] of (chartData?.series ?? []).entries()) {
+            context.strokeStyle = color(index);
+            context.lineWidth = 2;
+            context.beginPath();
+            let previous = null;
+            for (const sample of (series.points ?? []).slice(0, 641)) {
+              if (!Array.isArray(sample) || sample.length !== 2) {
+                previous = null;
+                continue;
+              }
+              const [x, y] = sample;
+              if (!Number.isFinite(x) || !Number.isFinite(y)) {
+                previous = null;
+                continue;
+              }
+              const point = [px(x), py(y)];
+              if (Math.abs(point[1]) > 1e7) {
+                previous = null;
+                continue;
+              }
+              if (previous) context.lineTo(...point);
+              else context.moveTo(...point);
+              previous = point;
+            }
+            context.stroke();
+          }
+          if (cursor) {
+            context.strokeStyle =
+              styles.getPropertyValue("--muted-foreground").trim() || "#777";
+            context.setLineDash([3, 4]);
+            context.beginPath();
+            context.moveTo(cursor.x, d.top);
+            context.lineTo(cursor.x, d.h - d.bottom);
+            context.moveTo(d.left, cursor.y);
+            context.lineTo(d.w - d.right, cursor.y);
+            context.stroke();
+          }
+          context.restore();
+        }
+        function location(event) {
+          const rect = canvas.getBoundingClientRect();
+          return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        }
+        function zoom(factor, point) {
+          const r = viewport ?? range(),
+            d = dimensions(),
+            tx = point ? (point.x - d.left) / (d.w - d.left - d.right) : 0.5,
+            ty = point ? (point.y - d.top) / (d.h - d.top - d.bottom) : 0.5;
+          const x = r.xmin + tx * (r.xmax - r.xmin),
+            y = r.ymax - ty * (r.ymax - r.ymin),
+            dx = (r.xmax - r.xmin) * factor,
+            dy = (r.ymax - r.ymin) * factor;
+          return setRange({
+            xmin: x - tx * dx,
+            xmax: x + (1 - tx) * dx,
+            ymin: y - (1 - ty) * dy,
+            ymax: y + ty * dy,
+          });
+        }
+        function resampleSoon() {
+          clearTimeout(zoomTimer);
+          zoomTimer = setTimeout(() => void act("plot"), 280);
+        }
+        canvas.addEventListener(
+          "wheel",
+          (event) => {
+            if (busy() || event.deltaY === 0) return;
+            event.preventDefault();
+            if (
+              zoom(
+                Math.exp(Math.max(-1, Math.min(1, event.deltaY / 100)) * 0.18),
+                location(event),
+              )
+            )
+              resampleSoon();
+          },
+          { passive: false },
+        );
+        canvas.onpointerdown = (event) => {
+          if (busy() || event.button !== 0 || !event.isPrimary) return;
+          event.preventDefault();
+          canvas.focus();
+          pointer = {
+            ...location(event),
+            range: { ...(viewport ?? range()) },
+            id: event.pointerId,
+          };
+          canvas.setPointerCapture(event.pointerId);
+        };
+        canvas.onpointermove = (event) => {
+          const point = location(event),
+            d = dimensions();
+          cursor = point;
+          if (pointer && pointer.id === event.pointerId && !busy()) {
+            const r = pointer.range,
+              dx =
+                ((point.x - pointer.x) / (d.w - d.left - d.right)) *
+                (r.xmax - r.xmin),
+              dy =
+                ((point.y - pointer.y) / (d.h - d.top - d.bottom)) *
+                (r.ymax - r.ymin);
+            setRange({
+              xmin: r.xmin - dx,
+              xmax: r.xmax - dx,
+              ymin: r.ymin + dy,
+              ymax: r.ymax + dy,
+            });
+          }
+          const r = viewport ?? range(),
+            x =
+              r.xmin +
+              ((point.x - d.left) / (d.w - d.left - d.right)) *
+                (r.xmax - r.xmin),
+            y =
+              r.ymax -
+              ((point.y - d.top) / (d.h - d.top - d.bottom)) *
+                (r.ymax - r.ymin);
+          $("coordinates").textContent = `x ≈ ${fmt(x, 7)}   y ≈ ${fmt(y, 7)}`;
+          scheduleDraw();
+        };
+        const endPan = (event) => {
+          if (!pointer || pointer.id !== event.pointerId) return;
+          pointer = null;
+          if (canvas.hasPointerCapture(event.pointerId))
+            canvas.releasePointerCapture(event.pointerId);
+          resampleSoon();
+        };
+        canvas.onpointerup = endPan;
+        canvas.onpointercancel = endPan;
+        canvas.onlostpointercapture = endPan;
+        canvas.onpointerleave = () => {
+          if (!pointer) {
+            cursor = null;
+            $("coordinates").textContent = "";
+            scheduleDraw();
+          }
+        };
+        canvas.onkeydown = (event) => {
+          if (busy()) return;
+          const r = viewport ?? range(),
+            dx = (r.xmax - r.xmin) * 0.15,
+            dy = (r.ymax - r.ymin) * 0.15;
+          let handled = true;
+          if (event.key === "ArrowLeft")
+            setRange({ ...r, xmin: r.xmin - dx, xmax: r.xmax - dx });
+          else if (event.key === "ArrowRight")
+            setRange({ ...r, xmin: r.xmin + dx, xmax: r.xmax + dx });
+          else if (event.key === "ArrowUp")
+            setRange({ ...r, ymin: r.ymin + dy, ymax: r.ymax + dy });
+          else if (event.key === "ArrowDown")
+            setRange({ ...r, ymin: r.ymin - dy, ymax: r.ymax - dy });
+          else if (["+", "="].includes(event.key)) zoom(0.8);
+          else if (event.key === "-") zoom(1.25);
+          else handled = false;
+          if (handled) {
+            event.preventDefault();
+            resampleSoon();
+          }
+        };
+        $("zoom-in").onclick = () => {
+          if (!busy() && zoom(0.8)) resampleSoon();
+        };
+        $("zoom-out").onclick = () => {
+          if (!busy() && zoom(1.25)) resampleSoon();
+        };
+        $("fit").onclick = () => {
+          if (busy()) return;
+          const r = viewport ?? range(),
+            ys = (chartData?.series ?? []).flatMap((series) =>
+              series.points
+                .filter(
+                  ([x, y]) =>
+                    x >= r.xmin &&
+                    x <= r.xmax &&
+                    y !== null &&
+                    Number.isFinite(y) &&
+                    Math.abs(y) < 1e11,
+                )
+                .map(([, y]) => y),
+            );
+          if (!ys.length) {
+            report(tr("noSamples"));
+            return;
+          }
+          const low = Math.min(...ys),
+            high = Math.max(...ys),
+            margin = Math.max((high - low) * 0.1, 0.5);
+          if (setRange({ ...r, ymin: low - margin, ymax: high + margin }))
+            void act("plot");
+        };
+        const resize = new ResizeObserver(scheduleDraw);
+        resize.observe(canvas.parentElement);
+        function watchDpr() {
+          const query = matchMedia(
+            `(resolution: ${window.devicePixelRatio || 1}dppx)`,
+          );
+          query.addEventListener(
+            "change",
+            () => {
+              scheduleDraw();
+              watchDpr();
+            },
+            { once: true },
+          );
+        }
+        watchDpr();
+        window.addEventListener(
+          "pagehide",
+          () => {
+            clearTimeout(draftTimer);
+            clearTimeout(zoomTimer);
+            if (frame) cancelAnimationFrame(frame);
+            resize.disconnect();
+          },
+          { once: true },
+        );
+        document.querySelectorAll("button").forEach((button) => {
+          button.type = "button";
+          if (!button.classList.contains("primary"))
+            button.dataset.variant = "outline";
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !$("load-confirm").hidden) {
+            event.preventDefault();
+            $("load-cancel").click();
+          }
+        });
+        starter.onChange((snapshot) => {
+          const checkpointKey = JSON.stringify(snapshot.checkpoint ?? null);
+          // Host session imports can replace a live document. Local input owns its
+          // draft until that explicit checkpoint replacement or a completed action.
+          if (
+            hydrated &&
+            !working &&
+            checkpointKey !== lastCheckpoint &&
+            !ownedCheckpoints.has(checkpointKey)
+          ) {
+            clearTimeout(draftTimer);
+            localDraft = false;
+            hydrated = false;
+          }
+          lastCheckpoint = checkpointKey;
+          current = snapshot;
+          render();
+        });
+      })();
+    </script>
+  </body>
+</html>

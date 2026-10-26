@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>贪吃蛇</title>
+    <style>
+      main {
+        max-width: 980px;
+        margin: auto;
+        padding: clamp(12px, 3vw, 28px);
+      }
+      header,
+      .row,
+      .stats {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(26px, 5vw, 38px);
+        letter-spacing: -0.04em;
+      }
+      .eyebrow {
+        color: var(--muted-foreground);
+        margin: 0 0 4px;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+      }
+      .stats {
+        gap: 8px;
+      }
+      .stat {
+        background: var(--muted);
+        border-radius: 12px;
+        padding: 8px 14px;
+        min-width: 82px;
+      }
+      .stat small {
+        display: block;
+        color: var(--muted-foreground);
+        font-size: 11px;
+      }
+      .stat strong {
+        font-size: 23px;
+        font-variant-numeric: tabular-nums;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 240px;
+        gap: 24px;
+        margin-top: 20px;
+        align-items: start;
+      }
+      .arena {
+        position: relative;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        overflow: hidden;
+        background: var(--card);
+      }
+      canvas {
+        width: 100%;
+        aspect-ratio: 1;
+        display: block;
+        touch-action: none;
+        outline-offset: -5px;
+      }
+      canvas:focus-visible {
+        outline: 3px solid var(--ring);
+      }
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        gap: 12px;
+        text-align: center;
+        padding: 24px;
+        background: color-mix(in srgb, var(--background) 88%, transparent);
+      }
+      .overlay[hidden],
+      [hidden] {
+        display: none;
+      }
+      .overlay h2 {
+        font-size: 26px;
+        margin: 0;
+      }
+      .overlay p {
+        margin: 0;
+        color: var(--muted-foreground);
+      }
+      button {
+        min-height: 44px;
+        cursor: pointer;
+      }
+      button:disabled {
+        cursor: default;
+        opacity: 0.5;
+      }
+      .primary {
+        background: var(--primary);
+        color: var(--primary-foreground);
+        border-color: var(--primary);
+      }
+      .full {
+        width: 100%;
+      }
+      .pad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+        margin: 16px 0;
+      }
+      .pad button {
+        font-size: 24px;
+        padding: 6px;
+      }
+      [data-direction="up"] {
+        grid-column: 2;
+      }
+      [data-direction="left"] {
+        grid-row: 2;
+        grid-column: 1;
+      }
+      [data-direction="down"] {
+        grid-row: 2;
+        grid-column: 2;
+      }
+      [data-direction="right"] {
+        grid-row: 2;
+        grid-column: 3;
+      }
+      .muted {
+        color: var(--muted-foreground);
+        font-size: 13px;
+      }
+      #notice {
+        min-height: 3em;
+      }
+      #error {
+        color: var(--destructive);
+        font-size: 13px;
+      }
+      details {
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+        margin-top: 12px;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      label.check {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      select,
+      input[type="number"] {
+        width: 100%;
+        margin-top: 5px;
+      }
+      .confirm {
+        border: 1px solid var(--border);
+        padding: 14px;
+        background: var(--muted);
+        border-radius: 12px;
+        margin-top: 12px;
+      }
+      .confirm p {
+        margin: 0 0 12px;
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        margin-top: 20px;
+        padding-top: 12px;
+      }
+      @media (max-width: 680px) {
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .controls {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0 16px;
+        }
+        .controls .game-buttons {
+          padding-top: 12px;
+        }
+        .settings {
+          grid-column: 1/-1;
+        }
+        .stat {
+          min-width: 68px;
+          padding: 6px 9px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main inert>
+      <header>
+        <div>
+          <p class="eyebrow">POCKET ARCADE / 01</p>
+          <h1 id="title">贪吃蛇</h1>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <small id="score-label">本局分数</small
+            ><strong id="score">0</strong>
+          </div>
+          <div class="stat">
+            <small id="best-label">已存纪录</small><strong id="best">—</strong>
+          </div>
+        </div>
+      </header>
+      <div class="layout">
+        <section>
+          <div class="arena">
+            <canvas
+              id="board"
+              width="420"
+              height="420"
+              tabindex="0"
+              role="img"
+              aria-label="贪吃蛇棋盘"
+              aria-describedby="help"
+            ></canvas>
+            <div class="overlay" id="overlay">
+              <h2 id="overlay-title">准备好了吗？</h2>
+              <p id="overlay-text">收集食物，每颗 10 分。</p>
+              <button type="button" id="start" class="primary">开始游戏</button>
+            </div>
+          </div>
+          <p id="notice" class="muted" role="status" aria-live="polite"></p>
+          <p id="error" role="alert"></p>
+        </section>
+        <aside class="controls">
+          <div>
+            <div class="pad" aria-label="方向控制" id="pad">
+              <button type="button" data-direction="up" aria-label="向上">
+                ↑</button
+              ><button type="button" data-direction="left" aria-label="向左">
+                ←</button
+              ><button type="button" data-direction="down" aria-label="向下">
+                ↓</button
+              ><button type="button" data-direction="right" aria-label="向右">
+                →
+              </button>
+            </div>
+            <p id="help" class="muted">方向键 / WASD / 滑动；空格暂停。</p>
+          </div>
+          <div class="game-buttons">
+            <button type="button" id="pause" class="full">开始 / 继续</button>
+            <div class="row" style="margin-top: 8px">
+              <button type="button" id="restart">重新开始</button
+              ><button type="button" id="sound" aria-pressed="false">
+                声音：开
+              </button>
+            </div>
+            <button
+              type="button"
+              id="save"
+              class="full"
+              style="margin-top: 12px"
+            >
+              保存模式纪录
+            </button>
+            <p id="storage" class="muted"></p>
+          </div>
+          <div class="settings">
+            <section
+              id="confirm"
+              class="confirm"
+              hidden
+              role="group"
+              aria-labelledby="confirm-text"
+            >
+              <p id="confirm-text">重新开始将替换本局进度，是否继续？</p>
+              <div class="row">
+                <button type="button" id="cancel-restart">保留本局</button
+                ><button type="button" id="confirm-restart" class="primary">
+                  确定重开
+                </button>
+              </div>
+            </section>
+            <details>
+              <summary id="settings-title">下一局设置</summary>
+              <label
+                ><span id="speed-label">速度</span
+                ><select id="speed">
+                  <option value="slow">悠闲 · 160 ms</option>
+                  <option value="normal" selected>标准 · 110 ms</option>
+                  <option value="fast">疾速 · 85 ms</option>
+                </select></label
+              >
+              <label class="check"
+                ><input type="checkbox" id="wrap" /><span id="wrap-label"
+                  >穿墙模式</span
+                ></label
+              >
+              <label class="check"
+                ><input type="checkbox" id="rocks" /><span id="rocks-label"
+                  >固定障碍</span
+                ></label
+              >
+              <label
+                ><span id="seed-label">开局种子（可重现棋局）</span
+                ><input
+                  type="number"
+                  id="seed"
+                  min="1"
+                  max="4294967295"
+                  step="1"
+                  inputmode="numeric"
+                  value="20261026"
+              /></label>
+              <button type="button" id="random" style="margin-top: 8px">
+                换一个种子
+              </button>
+              <p id="settings-help" class="muted">
+                设置在重新开始后生效。不同模式的纪录分别保存。
+              </p>
+            </details>
+          </div>
+        </aside>
+      </div>
+      <footer class="muted" id="footer">
+        本机离线运行。离开后暂停，返回需手动继续。音效由浏览器合成，无远程资源。
+      </footer>
+    </main>
+    <script>
+      (() => {
+        "use strict";
+        const $ = (id) => document.getElementById(id),
+          canvas = $("board"),
+          ctx = canvas.getContext("2d"),
+          SIZE = 21,
+          LIMIT = 8192;
+        const dirs = {
+            up: [0, -1],
+            right: [1, 0],
+            down: [0, 1],
+            left: [-1, 0],
+          },
+          opposites = { up: "down", right: "left", down: "up", left: "right" };
+        const rockCells = [
+          [5, 5],
+          [15, 5],
+          [5, 15],
+          [15, 15],
+          [10, 5],
+          [10, 15],
+        ];
+        let current,
+          checkpoint,
+          game,
+          running = false,
+          working = false,
+          disposed = false,
+          initialized = false,
+          queue = [],
+          frame = 0,
+          previous = 0,
+          elapsed = 0,
+          pointer,
+          audio,
+          lastTone = 0;
+        let checkpointPromise = null,
+          lastRetained = "",
+          unsubscribe = () => {},
+          best = 0,
+          recordBook = {},
+          audioTimer = 0;
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)"),
+          removers = [];
+        const tr = (zh, en) => (current?.locale === "en" ? en : zh);
+        const same = (a, b) => a[0] === b[0] && a[1] === b[1];
+        const initial = () => ({
+          schema: 1,
+          seed: 20261026,
+          difficulty: "normal",
+          wrap: false,
+          obstacles: false,
+          moves: [],
+          muted: false,
+        });
+        function listen(target, event, callback, options) {
+          target.addEventListener(event, callback, options);
+          removers.push(() =>
+            target.removeEventListener(event, callback, options),
+          );
+        }
+        function random(g) {
+          let x = g.rng;
+          x ^= x << 13;
+          x ^= x >>> 17;
+          x ^= x << 5;
+          g.rng = x >>> 0;
+          return g.rng;
+        }
+        function spawn(g) {
+          const empty = [];
+          for (let y = 0; y < SIZE; y++)
+            for (let x = 0; x < SIZE; x++)
+              if (
+                !g.snake.some((p) => same(p, [x, y])) &&
+                !g.rocks.some((p) => same(p, [x, y]))
+              )
+                empty.push([x, y]);
+          g.food = empty.length ? empty[random(g) % empty.length] : null;
+        }
+        function create(c) {
+          const g = {
+            snake: [
+              [10, 10],
+              [9, 10],
+              [8, 10],
+            ],
+            food: null,
+            direction: "right",
+            rng: c.seed,
+            score: 0,
+            dead: false,
+            wrap: c.wrap,
+            rocks: c.obstacles ? rockCells.map((p) => [...p]) : [],
+          };
+          spawn(g);
+          return g;
+        }
+        function step(g, d) {
+          if (g.dead || !g.food || opposites[g.direction] === d)
+            throw Error("Invalid snake history");
+          g.direction = d;
+          const v = dirs[d],
+            head = [g.snake[0][0] + v[0], g.snake[0][1] + v[1]];
+          if (g.wrap) {
+            head[0] = (head[0] + SIZE) % SIZE;
+            head[1] = (head[1] + SIZE) % SIZE;
+          }
+          const eating = same(head, g.food),
+            occupied = eating ? g.snake : g.snake.slice(0, -1);
+          if (
+            head.some((n) => n < 0 || n >= SIZE) ||
+            g.rocks.some((p) => same(p, head)) ||
+            occupied.some((p) => same(p, head))
+          ) {
+            g.dead = true;
+            return false;
+          }
+          g.snake.unshift(head);
+          if (eating) {
+            g.score += 10;
+            spawn(g);
+          } else g.snake.pop();
+          return eating;
+        }
+        function restore(value) {
+          if (
+            !value ||
+            typeof value !== "object" ||
+            Array.isArray(value) ||
+            Object.keys(value).sort().join(",") !==
+              "difficulty,moves,muted,obstacles,schema,seed,wrap" ||
+            value.schema !== 1 ||
+            !Number.isInteger(value.seed) ||
+            value.seed < 1 ||
+            value.seed > 4294967295 ||
+            !["slow", "normal", "fast"].includes(value.difficulty) ||
+            typeof value.wrap !== "boolean" ||
+            typeof value.obstacles !== "boolean" ||
+            typeof value.muted !== "boolean" ||
+            !Array.isArray(value.moves) ||
+            value.moves.length > LIMIT ||
+            value.moves.some((d) => !Object.hasOwn(dirs, d))
+          )
+            throw Error("Invalid snake checkpoint");
+          const copy = structuredClone(value),
+            restored = create(copy);
+          for (const d of copy.moves) step(restored, d);
+          return { checkpoint: copy, game: restored };
+        }
+        function note(text) {
+          $("notice").textContent = text;
+        }
+        async function retain(force = false) {
+          if (!checkpoint || disposed) return;
+          if (checkpointPromise) {
+            await checkpointPromise;
+            return retain(force);
+          }
+          const serialized = JSON.stringify(checkpoint);
+          if (!force && serialized === lastRetained) return;
+          const pending = starter
+            .checkpoint(JSON.parse(serialized), false)
+            .then(() => {
+              lastRetained = serialized;
+            })
+            .catch(() => {
+              if (!disposed)
+                $("error").textContent = tr(
+                  "无法保留进度，请暂停后重试；本页棋局仍在。",
+                  "Could not retain the checkpoint. Pause and retry; this board is retained.",
+                );
+            });
+          checkpointPromise = pending;
+          try {
+            await pending;
+          } finally {
+            if (checkpointPromise === pending) checkpointPromise = null;
+          }
+        }
+        function unlockAudio() {
+          clearTimeout(audioTimer);
+          if (checkpoint.muted) return;
+          try {
+            audio ??= new AudioContext();
+            if (audio.state === "suspended")
+              void audio.resume().catch(() => {});
+          } catch {
+            /* Audio may be unavailable; gameplay is unaffected. */
+          }
+        }
+        function tone(kind) {
+          if (checkpoint.muted || !audio || audio.state !== "running") return;
+          const now = audio.currentTime;
+          if (now - lastTone < 0.035) return;
+          lastTone = now;
+          const oscillator = audio.createOscillator(),
+            gain = audio.createGain();
+          oscillator.connect(gain);
+          gain.connect(audio.destination);
+          oscillator.type = kind === "dead" ? "triangle" : "sine";
+          oscillator.frequency.setValueAtTime(
+            kind === "eat" ? 620 : kind === "dead" ? 180 : 360,
+            now,
+          );
+          oscillator.frequency.exponentialRampToValueAtTime(
+            kind === "eat" ? 1000 : kind === "dead" ? 65 : 480,
+            now + 0.12,
+          );
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(0.07, now + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.17);
+          oscillator.start(now);
+          oscillator.stop(now + 0.18);
+          oscillator.onended = () => {
+            oscillator.disconnect();
+            gain.disconnect();
+          };
+        }
+        function color(name) {
+          return (
+            getComputedStyle(document.documentElement)
+              .getPropertyValue(name)
+              .trim() ||
+            {
+              "--background": "#fafafa",
+              "--card": "#ffffff",
+              "--primary": "#16734b",
+              "--foreground": "#17251c",
+              "--muted": "#e5e9e5",
+              "--destructive": "#c8423b",
+            }[name]
+          );
+        }
+        function draw() {
+          if (!game || !ctx) return;
+          const side = Math.max(210, Math.min(600, canvas.clientWidth)),
+            ratio = Math.min(devicePixelRatio || 1, 2),
+            pixels = Math.round(side * ratio);
+          if (canvas.width !== pixels || canvas.height !== pixels) {
+            canvas.width = pixels;
+            canvas.height = pixels;
+          }
+          ctx.setTransform(pixels / 420, 0, 0, pixels / 420, 0, 0);
+          ctx.clearRect(0, 0, 420, 420);
+          ctx.fillStyle = color("--card");
+          ctx.fillRect(0, 0, 420, 420);
+          ctx.strokeStyle = color("--muted");
+          ctx.lineWidth = 0.6;
+          for (let i = 1; i < SIZE; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * 20, 0);
+            ctx.lineTo(i * 20, 420);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i * 20);
+            ctx.lineTo(420, i * 20);
+            ctx.stroke();
+          }
+          ctx.fillStyle = color("--muted-foreground");
+          for (const [x, y] of game.rocks) {
+            ctx.beginPath();
+            ctx.roundRect(x * 20 + 2, y * 20 + 2, 16, 16, 3);
+            ctx.fill();
+          }
+          if (game.food) {
+            ctx.fillStyle = color("--destructive");
+            ctx.beginPath();
+            ctx.arc(
+              game.food[0] * 20 + 10,
+              game.food[1] * 20 + 10,
+              6.5,
+              0,
+              Math.PI * 2,
+            );
+            ctx.fill();
+          }
+          game.snake.forEach(([x, y], i) => {
+            ctx.globalAlpha = i === 0 ? 1 : 0.72;
+            ctx.fillStyle = color("--primary");
+            ctx.beginPath();
+            ctx.roundRect(x * 20 + 1.5, y * 20 + 1.5, 17, 17, i === 0 ? 6 : 4);
+            ctx.fill();
+          });
+          ctx.globalAlpha = 1;
+          const [hx, hy] = game.snake[0],
+            v = dirs[game.direction];
+          ctx.fillStyle = color("--primary-foreground") || "white";
+          for (const offset of [-3, 3]) {
+            ctx.beginPath();
+            ctx.arc(
+              hx * 20 + 10 + v[0] * 4 + (v[1] ? offset : 0),
+              hy * 20 + 10 + v[1] * 4 + (v[0] ? offset : 0),
+              1.4,
+              0,
+              Math.PI * 2,
+            );
+            ctx.fill();
+          }
+        }
+        function paint() {
+          if (!game || !current) return;
+          $("title").textContent = tr("贪吃蛇", "Snake");
+          $("score-label").textContent = tr("本局分数", "Score");
+          $("best-label").textContent = tr("已存纪录", "Saved best");
+          $("score").textContent = String(game.score);
+          const storage = current.grantedPermissions.includes("storage");
+          best =
+            Number(
+              recordBook[
+                `${checkpoint.difficulty}-${checkpoint.wrap ? "wrap" : "wall"}-${checkpoint.obstacles ? "rocks" : "clear"}`
+              ],
+            ) || 0;
+          $("best").textContent = storage ? String(best) : "—";
+          $("overlay").hidden = running;
+          $("overlay-title").textContent = game.dead
+            ? tr("本局结束", "Game over")
+            : !game.food
+              ? tr("棋盘填满了！", "Board cleared!")
+              : checkpoint.moves.length
+                ? tr("已暂停", "Paused")
+                : tr("准备好了吗？", "Ready to play?");
+          $("overlay-text").textContent = game.dead
+            ? tr("分数 ", "Score: ") + game.score
+            : tr(
+                "收集食物，每颗 10 分。",
+                "Collect food. Each one is worth 10 points.",
+              );
+          const finished =
+            game.dead || !game.food || checkpoint.moves.length >= LIMIT;
+          $("start").textContent = finished
+            ? tr("重新开始", "New game")
+            : checkpoint.moves.length
+              ? tr("继续游戏", "Resume")
+              : tr("开始游戏", "Start");
+          $("pause").textContent = running
+            ? tr("暂停 · 空格", "Pause · Space")
+            : tr("开始 / 继续", "Start / resume");
+          $("pause").disabled = working || finished;
+          $("start").disabled = working;
+          $("restart").textContent = tr("重新开始", "New game");
+          $("restart").disabled = working;
+          $("save").textContent = working
+            ? tr("正在保存…", "Saving…")
+            : tr("保存模式纪录", "Save mode best");
+          $("save").disabled = working || current.busy || !storage;
+          $("sound").textContent = checkpoint.muted
+            ? tr("声音：关", "Sound: off")
+            : tr("声音：开", "Sound: on");
+          $("sound").setAttribute("aria-pressed", String(checkpoint.muted));
+          $("storage").textContent = storage
+            ? tr(
+                "仅手动保存纪录，棋局保留在当前会话。",
+                "Records save only when requested; the board remains in this session.",
+              )
+            : tr(
+                "未授权存储，仍可完整游玩。会话可从宿主工具导出。",
+                "Play works without storage. Export the session using the host tools.",
+              );
+          $("help").textContent = tr(
+            "方向键 / WASD / 滑动；空格暂停。",
+            "Arrows / WASD / swipe; Space pauses.",
+          );
+          $("settings-title").textContent = tr(
+            "下一局设置",
+            "Next-game settings",
+          );
+          $("speed-label").textContent = tr("速度", "Speed");
+          Array.from($("speed").options).forEach(
+            (option, i) =>
+              (option.textContent = [
+                tr("悠闲 · 160 ms", "Relaxed · 160 ms"),
+                tr("标准 · 110 ms", "Normal · 110 ms"),
+                tr("疾速 · 85 ms", "Fast · 85 ms"),
+              ][i]),
+          );
+          $("wrap-label").textContent = tr("穿墙模式", "Wrap edges");
+          $("rocks-label").textContent = tr("固定障碍", "Fixed obstacles");
+          $("seed-label").textContent = tr(
+            "开局种子（可重现棋局）",
+            "Seed (reproducible game)",
+          );
+          $("random").textContent = tr("换一个种子", "Random seed");
+          $("settings-help").textContent = tr(
+            "设置在重新开始后生效。不同模式的纪录分别保存。",
+            "Settings apply on restart. Each mode has a separate record.",
+          );
+          $("confirm-text").textContent = tr(
+            "重新开始将替换本局进度，是否继续？",
+            "A new game replaces this board. Continue?",
+          );
+          $("cancel-restart").textContent = tr("保留本局", "Keep this game");
+          $("confirm-restart").textContent = tr("确定重开", "Start new game");
+          $("footer").textContent = tr(
+            "离线运行。离开后暂停，返回需手动继续。音效在本机合成，无远程资源。",
+            "Runs offline. Leaving pauses the game; resume manually. Sound is synthesized locally with no remote assets.",
+          );
+          canvas.setAttribute(
+            "aria-label",
+            tr(
+              "21 乘 21 贪吃蛇棋盘，本局分数 ",
+              "21 by 21 snake board. Score: ",
+            ) + game.score,
+          );
+          document.querySelectorAll("[data-direction]").forEach((button) =>
+            button.setAttribute(
+              "aria-label",
+              {
+                up: tr("向上", "Up"),
+                right: tr("向右", "Right"),
+                down: tr("向下", "Down"),
+                left: tr("向左", "Left"),
+              }[button.dataset.direction],
+            ),
+          );
+          draw();
+        }
+        function pause(message) {
+          running = false;
+          cancelAnimationFrame(frame);
+          frame = 0;
+          previous = 0;
+          elapsed = 0;
+          queue = [];
+          clearTimeout(audioTimer);
+          if (audio?.state === "running") {
+            if (document.hidden) void audio.suspend().catch(() => {});
+            else
+              audioTimer = setTimeout(
+                () => void audio?.suspend().catch(() => {}),
+                220,
+              );
+          }
+          if (message) note(message);
+          paint();
+          void retain();
+        }
+        function tick(now) {
+          if (!running || disposed) return;
+          if (previous && now - previous > 450) {
+            pause(
+              tr(
+                "检测到长时间停顿，已暂停；请手动继续。",
+                "A long frame was detected. The game paused; resume manually.",
+              ),
+            );
+            return;
+          }
+          elapsed += previous ? now - previous : 0;
+          previous = now;
+          const interval = { slow: 160, normal: 110, fast: 85 }[
+            checkpoint.difficulty
+          ];
+          let steps = 0;
+          while (elapsed >= interval && steps < 3 && running) {
+            elapsed -= interval;
+            steps++;
+            const d = queue.shift() || game.direction,
+              eating = step(game, d);
+            checkpoint.moves.push(d);
+            if (eating) tone("eat");
+            void retain();
+            if (game.dead || !game.food || checkpoint.moves.length >= LIMIT) {
+              if (game.dead) tone("dead");
+              pause(
+                game.dead
+                  ? tr(
+                      "撞到边界、障碍或身体。本局结束，进度已保留。",
+                      "You hit a wall, obstacle or your body. The finished game is retained.",
+                    )
+                  : !game.food
+                    ? tr("恭喜填满棋盘！", "You filled the board!")
+                    : tr(
+                        "已达 8192 步上限，请开始新局。",
+                        "The 8192-tick limit was reached. Start a new game.",
+                      ),
+              );
+            }
+          }
+          if (steps) paint();
+          if (running) frame = requestAnimationFrame(tick);
+        }
+        function start() {
+          if (
+            running ||
+            working ||
+            current?.busy ||
+            !game ||
+            !$("confirm").hidden
+          )
+            return;
+          if (game.dead || !game.food || checkpoint.moves.length >= LIMIT) {
+            askRestart();
+            return;
+          }
+          if (document.hidden) return;
+          unlockAudio();
+          running = true;
+          previous = 0;
+          elapsed = 0;
+          note(
+            tr(
+              "游戏中。空格暂停；重新开始前会询问。",
+              "Playing. Space pauses; restarting requires confirmation.",
+            ),
+          );
+          paint();
+          frame = requestAnimationFrame(tick);
+          canvas.focus();
+        }
+        function turn(d) {
+          if (!running) return;
+          const previousDirection = queue.at(-1) || game.direction;
+          if (
+            queue.length < 2 &&
+            d !== previousDirection &&
+            opposites[previousDirection] !== d
+          )
+            queue.push(d);
+        }
+        function newGame() {
+          const seed = Number($("seed").value);
+          if (!Number.isInteger(seed) || seed < 1 || seed > 4294967295) {
+            $("error").textContent = tr(
+              "请输入 1–4294967295 的整数种子。",
+              "Enter an integer seed from 1 to 4294967295.",
+            );
+            $("seed").focus();
+            return;
+          }
+          pause();
+          checkpoint = {
+            schema: 1,
+            seed,
+            difficulty: $("speed").value,
+            wrap: $("wrap").checked,
+            obstacles: $("rocks").checked,
+            moves: [],
+            muted: checkpoint.muted,
+          };
+          game = create(checkpoint);
+          best = 0;
+          $("confirm").hidden = true;
+          $("error").textContent = "";
+          note(
+            tr(
+              "新棋局已准备好，点击开始。",
+              "A new board is ready. Press Start.",
+            ),
+          );
+          paint();
+          void retain();
+        }
+        function askRestart() {
+          if (working) return;
+          pause();
+          if (checkpoint.moves.length === 0) {
+            newGame();
+            return;
+          }
+          $("confirm").hidden = false;
+          $("cancel-restart").focus();
+        }
+        async function save() {
+          if (
+            working ||
+            current?.busy ||
+            !current.grantedPermissions.includes("storage")
+          )
+            return;
+          pause();
+          working = true;
+          $("error").textContent = "";
+          paint();
+          try {
+            await retain();
+            const result = await starter.run("save-best", {
+              checkpoint: JSON.stringify(checkpoint),
+            });
+            note(result.description);
+            recordBook = Object.fromEntries(
+              result.blocks?.find((block) => block.kind === "table")?.rows ??
+                [],
+            );
+            await retain();
+          } catch {
+            $("error").textContent = tr(
+              "保存失败或已取消；棋局保留且保持暂停，未自动重试。",
+              "Save failed or was cancelled. Your board remains paused and retained; no automatic retry.",
+            );
+          } finally {
+            working = false;
+            await retain(true);
+            paint();
+          }
+        }
+        function boot(snapshot) {
+          current = snapshot;
+          if (!initialized && snapshot.view) {
+            initialized = true;
+            document.querySelector("main").inert = false;
+            try {
+              const fallback = JSON.parse(snapshot.view.state).game,
+                restored = restore(snapshot.checkpoint ?? fallback);
+              checkpoint = restored.checkpoint;
+              game = restored.game;
+            } catch {
+              const restored = restore(initial());
+              checkpoint = restored.checkpoint;
+              game = restored.game;
+              $("error").textContent = tr(
+                "导入进度无效或版本不支持，未载入；请保留原导出文件。",
+                "The imported checkpoint is invalid or unsupported and was not loaded. Keep the original export.",
+              );
+            }
+            $("speed").value = checkpoint.difficulty;
+            $("wrap").checked = checkpoint.wrap;
+            $("rocks").checked = checkpoint.obstacles;
+            $("seed").value = checkpoint.seed;
+            note(
+              snapshot.checkpoint
+                ? tr(
+                    "会话已恢复并暂停，点击继续。",
+                    "Session restored and paused. Resume when ready.",
+                  )
+                : snapshot.view.description,
+            );
+          }
+          if (snapshot.view)
+            recordBook = Object.fromEntries(
+              snapshot.view.blocks?.find((block) => block.kind === "table")
+                ?.rows ?? [],
+            );
+          if (snapshot.busy && running)
+            pause(
+              tr(
+                "宿主正在操作，棋局已暂停。",
+                "The host is busy. The game paused.",
+              ),
+            );
+          paint();
+        }
+        listen($("start"), "click", () => {
+          if (running) return;
+          start();
+        });
+        listen($("pause"), "click", () =>
+          running ? pause(tr("已暂停。", "Paused.")) : start(),
+        );
+        listen($("restart"), "click", askRestart);
+        listen($("confirm-restart"), "click", newGame);
+        listen($("cancel-restart"), "click", () => {
+          $("confirm").hidden = true;
+          $("pause").focus();
+        });
+        listen($("save"), "click", () => void save());
+        listen($("sound"), "click", () => {
+          checkpoint.muted = !checkpoint.muted;
+          if (checkpoint.muted) {
+            if (audio) void audio.suspend().catch(() => {});
+          } else {
+            unlockAudio();
+            tone("start");
+          }
+          paint();
+          void retain();
+        });
+        listen($("random"), "click", () => {
+          const seed = new Uint32Array(1);
+          crypto.getRandomValues(seed);
+          $("seed").value = seed[0] || 1;
+        });
+        document.querySelectorAll("[data-direction]").forEach((button) =>
+          listen(button, "click", () => {
+            unlockAudio();
+            turn(button.dataset.direction);
+          }),
+        );
+        listen(document, "keydown", (event) => {
+          if (
+            event.target instanceof HTMLInputElement ||
+            event.target instanceof HTMLButtonElement ||
+            event.target instanceof HTMLSelectElement ||
+            event.target instanceof HTMLTextAreaElement ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey
+          )
+            return;
+          const d = {
+            ArrowUp: "up",
+            ArrowRight: "right",
+            ArrowDown: "down",
+            ArrowLeft: "left",
+            w: "up",
+            d: "right",
+            s: "down",
+            a: "left",
+          }[event.key.length === 1 ? event.key.toLowerCase() : event.key];
+          if (d) {
+            event.preventDefault();
+            if (!event.repeat) turn(d);
+          } else if (event.code === "Space" && !event.repeat) {
+            event.preventDefault();
+            running ? pause(tr("已暂停。", "Paused.")) : start();
+          }
+        });
+        listen(canvas, "pointerdown", (event) => {
+          pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+          canvas.setPointerCapture(event.pointerId);
+          canvas.focus();
+          unlockAudio();
+        });
+        listen(canvas, "pointerup", (event) => {
+          if (!pointer || pointer.id !== event.pointerId) return;
+          const dx = event.clientX - pointer.x,
+            dy = event.clientY - pointer.y;
+          pointer = null;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) >= 18)
+            turn(
+              Math.abs(dx) > Math.abs(dy)
+                ? dx > 0
+                  ? "right"
+                  : "left"
+                : dy > 0
+                  ? "down"
+                  : "up",
+            );
+        });
+        listen(canvas, "pointercancel", () => {
+          pointer = null;
+        });
+        listen(document, "visibilitychange", () => {
+          if (document.hidden) {
+            if (running)
+              pause(
+                tr(
+                  "离开后已暂停，返回需手动继续。",
+                  "Paused while away. Resume manually when you return.",
+                ),
+              );
+            clearTimeout(audioTimer);
+            if (audio) void audio.suspend().catch(() => {});
+          }
+        });
+        listen(window, "blur", () => {
+          if (running)
+            pause(
+              tr(
+                "窗口失去焦点，已暂停。",
+                "The window lost focus. The game paused.",
+              ),
+            );
+        });
+        const observer = new ResizeObserver(draw);
+        observer.observe(canvas);
+        listen(reduced, "change", draw);
+        listen(window, "pagehide", () => {
+          pause();
+          disposed = true;
+          clearTimeout(audioTimer);
+          cancelAnimationFrame(frame);
+          observer.disconnect();
+          unsubscribe();
+          for (const remove of removers) remove();
+          if (audio) void audio.close().catch(() => {});
+        });
+        unsubscribe = starter.onChange(boot);
+      })();
+    </script>
+  </body>
+</html>

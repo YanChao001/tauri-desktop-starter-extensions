@@ -1,0 +1,339 @@
+[
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "zh-CN"
+    },
+    "expectJsonSubset": {
+      "version": 2,
+      "display": "科学计算器",
+      "effects": [],
+      "errors": {},
+      "artifacts": []
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "calculate",
+      "state": "",
+      "fields": {
+        "expression": "2^3^2"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "display": "Scientific calculator",
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "512"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "calculate",
+      "state": "",
+      "fields": {
+        "expression": "sin(30) + cos(60)",
+        "angle": "deg"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "1"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "calculate",
+      "state": "",
+      "fields": {
+        "expression": "5! + log(100)"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "122"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "integrate",
+      "state": "",
+      "fields": {
+        "functions": "x^2",
+        "a": "0",
+        "b": "3"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "9"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "save",
+      "state": "",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "description": "Saving requires the optional storage permission; calculation and graphs remain available offline."
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "export",
+      "state": "",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "artifacts": [
+        {
+          "name": "calculator-history.md",
+          "mediaType": "text/markdown",
+          "encoding": "utf8",
+          "content": "# Scientific calculation history\n\n"
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "root",
+      "state": "",
+      "fields": {
+        "functions": "x^2-4",
+        "a": "0",
+        "b": "4"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "2"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "calculate",
+      "state": "",
+      "fields": {
+        "expression": "sqrt(-1)"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {
+        "expression": "sqrt requires a non-negative argument"
+      },
+      "effects": []
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "save",
+      "state": "",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {}
+        }
+      }
+    },
+    "expectJsonSubset": {
+      "description": "Saving; awaiting host confirmation.",
+      "errors": {}
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"ans\":42,\"memory\":0,\"history\":[{\"expression\":\"6*7\",\"value\":42,\"angle\":\"rad\"}],\"result\":\"42\",\"notice\":\"\",\"fields\":{\"expression\":\"6*7\",\"angle\":\"rad\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\"},\"pending\":true}",
+      "fields": {},
+      "locale": "en",
+      "results": [
+        {
+          "id": "save-workspace",
+          "value": {
+            "revision": 8,
+            "values": {}
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "description": "Host confirmed the save.",
+      "effects": []
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"ans\":42,\"memory\":0,\"history\":[{\"expression\":\"6*7\",\"value\":42,\"angle\":\"rad\"}],\"result\":\"42\",\"notice\":\"\",\"fields\":{\"expression\":\"6*7\",\"angle\":\"rad\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\"},\"pending\":true}",
+      "fields": {},
+      "locale": "en",
+      "results": [
+        {
+          "id": "save-workspace",
+          "value": null,
+          "error": {
+            "code": "CONFLICT",
+            "message": "changed",
+            "retryable": false
+          }
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "description": "Save was not confirmed. [CONFLICT] Workspace retained; review before retrying manually.",
+      "effects": []
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "save",
+      "state": "",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "calculator-workspace": {
+              "schema": 99
+            }
+          }
+        }
+      }
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  }
+]

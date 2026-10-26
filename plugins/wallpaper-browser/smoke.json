@@ -1,0 +1,34 @@
+[
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "zh-CN"
+    },
+    "expectJsonSubset": {
+      "version": 2,
+      "display": "壁纸库",
+      "effects": [],
+      "artifacts": []
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "version": 2,
+      "display": "Wallpaper Library",
+      "effects": [],
+      "artifacts": []
+    }
+  }
+]

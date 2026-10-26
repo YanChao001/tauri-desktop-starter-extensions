@@ -119,7 +119,7 @@ node scripts/check.mjs
 
 ## 新增一个插件
 
-当前四个市场示例都使用官方 Extism Rust PDK。初次开发可复制 [`text-tools`](../plugins/text-tools/) 作为最小的文本与视图参考，或复制更接近需求的完整插件。复制后先修改身份和说明，再编写逻辑，避免提交同 ID 的另一个包。
+当前四个市场插件都使用官方 Extism Rust PDK，分别独立维护 Cargo 清单和锁文件。按业务参考 [科学计算器](../plugins/scientific-calculator/) 的计算与工作区、[贪吃蛇](../plugins/snake/) 的本地高频循环和日志校验，或 [局域网信使](../plugins/lan-chat/) / [壁纸库](../plugins/wallpaper-browser/) 的固定服务调用。复制后先修改身份和说明，不要为不相关的功能顺带复制存储、监听或下载能力。
 
 1. 建立 `plugins/<directory>/`。目录名使用小写字母开头的小写字母、数字和连字符，最长 64 字符；不要复制 `target/` 或 `dist/`。
 2. 修改 `Cargo.toml` 的包名、版本与许可。保留 `cdylib` 产物类型，新增依赖时审阅 Wasm 支持、许可、体积和维护情况。只为新插件生成或更新自身的 `Cargo.lock`，不要顺带升级其他插件。
@@ -149,11 +149,26 @@ JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或
 
 简单命令不需要 HTML；复杂应用在视图命令 ui 中设置 document，例如 main，并建立 `ui/main.html`。自包含 HTML 内嵌 CSS、JavaScript、数据图片和字体；可用普通 DOM / Canvas，也可让框架构建为单文件。保留键盘、焦点、减少动效、主题和窄屏；不要引用 CDN、外部脚本或远程网页。
 
-宿主在作者代码之前注入 SDK，HTML 不需要导入脚本。starter.onChange 接收当前 view、fields、checkpoint、忙碌、语言和主题；starter.run 请求本命令动作，starter.setFields 只更新字段，starter.checkpoint 报告草稿及是否未保存，starter.saveArtifact 请求保存已生成产物。异步失败保留输入并显示可理解的反馈，保存取消返回 false，不能标成已保存。完整类型与示例见 [宿主界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/feature/workflows-and-extensions/sdk)，不要复制一套 DTO。
+宿主在作者代码之前注入 SDK，HTML 不需要导入脚本。SDK 提供与宿主一致的主题 token、字体、语言、减少动效和基础控件样式；默认样式可以被作者 CSS 覆写，不必复制宿主组件或引入框架。独立窗口可选择主题和语言，包括跟随宿主语言；消费 snapshot 更新，避免只在初次加载时固定文案或画布颜色。
+
+`starter.onChange` 接收当前 view、fields、checkpoint、忙碌、语言和主题；`starter.run` 请求本命令动作，`starter.setFields` 只更新字段，`starter.checkpoint` 报告草稿及是否未保存，`starter.saveArtifact` 请求保存已生成产物。异步失败保留输入并显示可理解的反馈，保存取消返回 false，不能标成已保存。完整类型与示例见 [宿主界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/feature/workflows-and-extensions/sdk)，不要复制一套 DTO。
+
+隔离界面的 sandbox 不含 `allow-forms`；浏览器可能在触发 `onsubmit` 前就阻止表单提交。操作按钮显式使用 `type="button"`，通过点击处理调用业务函数，不依赖 `onsubmit`、`requestSubmit()` 或按钮默认的 submit 行为。需要回车操作时，在对应输入框中按产品语义处理键盘事件、阻止默认提交，再调用同一业务函数；多行输入保留换行或使用明确的组合键。不要为修复按钮无响应而放宽宿主 sandbox。
+
+高频游戏的帧和逻辑步放在界面内，必要时合并检查点，不逐帧调用 Wasm 或原生服务。普通临时游玩可以报告 `dirty: false`；真实未保存编辑用 `dirty: true`。离开暂停、返回手动恢复，并清理 RAF、音频、轮询与监听。检查点导入仍是未知数据，必须重验 schema、范围与可达性。
 
 本仓库 build 自动读取被引用的 `ui/<id>.html`，检查目录与文件不是链接、UTF-8 和额度，固定同一快照传给原生工具并打包。只修改 HTML 也必须提高插件版本；完整 JSON 包和 UI 文档摘要都会改变。界面重载恢复本窗口字段与检查点，不重新初始化 Wasm；未上报的局部状态无法保留。不同示例见各插件的 `ui/main.html`。
 
-UI 与 Wasm 是不同上下文。界面不会获得宿主 DOM、可用 Tauri IPC、任意路径或凭据原文；网络和持久化由 Wasm 返回受控 effects。界面脚本不要使用 Node API 或偷偷另建浏览器存储。路线选择与边界见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
+UI 与 Wasm 是不同上下文。界面不会获得宿主 DOM、可用 Tauri IPC、任意路径或凭据原文。通用网络和私有 KV 仍由 Wasm 返回受控 effects；需要 LAN 监听与长连接、或现有图库操作时，使用下面的有限原生服务。界面脚本不要使用 Node API 或另建浏览器存储。路线选择与边界见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
+
+## 固定原生服务
+
+`starter.services.request("lan", request)` 和 `starter.services.request("wallpaper", request)` 只接受宿主定义的操作。宿主附加安装身份、哈希、代次和原生窗口，重新检查当前启用与授权；插件不能传入另一个 ID、任意命令或路径。完整字段以配套宿主 SDK 和 Rust 服务为准。
+
+- **LAN** 使用 `messaging:lan`，信使将其作为必需权限。用户明确开启监听或输入数字私有 / 回环 IP 连接；不会自动发现公网设备、扫描网络或在导入会话时重连。连接属于原生窗口，导航后保持；界面仅在可见时读取状态，不能在 iframe 清理时误停整个服务。实际停止、最后服务窗口关闭、撤权、替换和退出由宿主回收。
+- **壁纸** 使用 `wallpapers:manage`，壁纸库将其作为核心浏览与管理的必需权限，覆盖现有图库与固定 Commons 来源。界面传文件标识或条目 ID，不传本机路径、原图 URL 或任意来源。搜索 / 预览 / 下载分别处理加载、失败和取消，原图系统另存与重绘压缩图加入图库是两种操作。
+
+服务是受控宿主能力，不是可插拔通用 IPC。新增方法或权限先完成宿主实现及边界测试，再更新插件；独立 CI 必须能获取对应宿主提交。具体用户操作见 [信使说明](../plugins/lan-chat/README.md) 和 [壁纸说明](../plugins/wallpaper-browser/README.md)，信任与许可见 [安全规范](./security.md#原生服务与外部来源)。
 
 ## 提交前
 

@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>局域网信使</title>
+    <style>
+      body {
+        padding: 0;
+      }
+      button.secondary {
+        background: var(--background);
+        color: var(--foreground);
+        border: 1px solid var(--border);
+      }
+      .app {
+        max-width: 1500px;
+        margin: auto;
+        min-height: 100dvh;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.4rem;
+        letter-spacing: -0.03em;
+      }
+      h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+      p {
+        margin: 0;
+      }
+      .muted {
+        color: var(--muted-foreground);
+        font-size: 0.8rem;
+      }
+      .status {
+        margin-left: auto;
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 5px 11px;
+        font-size: 0.8rem;
+      }
+      .status.on {
+        color: var(--primary);
+        background: var(--accent);
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr) 260px;
+        gap: 1px;
+        border: 1px solid var(--border);
+        border-radius: 15px;
+        overflow: hidden;
+        background: var(--border);
+        min-height: 570px;
+        height: calc(100dvh - 130px);
+      }
+      .contacts,
+      .chat,
+      .settings {
+        background: var(--background);
+        min-width: 0;
+      }
+      .contacts {
+        display: flex;
+        flex-direction: column;
+        padding: 14px 10px;
+        gap: 12px;
+      }
+      .contact-list {
+        overflow: auto;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .contact {
+        display: flex;
+        gap: 9px;
+        padding: 10px;
+        width: 100%;
+        min-height: 68px;
+        background: transparent;
+        color: var(--foreground);
+        text-align: left;
+        justify-content: flex-start;
+        border: 1px solid transparent;
+      }
+      .contact:hover,
+      .contact[aria-pressed="true"] {
+        background: var(--accent);
+        border-color: var(--border);
+      }
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        border-radius: 12px;
+        background: var(--muted);
+        color: var(--foreground);
+        font-weight: 700;
+      }
+      .contact-copy {
+        flex: 1;
+        min-width: 0;
+      }
+      .contact-name {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+      .contact-name strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.9rem;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        flex: 0 0 7px;
+        background: var(--muted-foreground);
+        border-radius: 50%;
+      }
+      .dot.online {
+        background: var(--primary);
+      }
+      .badge {
+        min-width: 20px;
+        padding: 1px 5px;
+        border-radius: 20px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        font-size: 0.7rem;
+        text-align: center;
+      }
+      .chat {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .chat-head {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 14px 18px;
+        min-height: 76px;
+        border-bottom: 1px solid var(--border);
+      }
+      .head-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .messages {
+        flex: 1;
+        overflow: auto;
+        min-height: 0;
+        padding: 20px;
+        background: color-mix(in oklab, var(--muted) 38%, var(--background));
+      }
+      .empty {
+        display: grid;
+        place-content: center;
+        gap: 10px;
+        text-align: center;
+        min-height: 220px;
+        padding: 18px;
+        color: var(--muted-foreground);
+      }
+      .empty .symbol {
+        font-size: 2.8rem;
+        line-height: 1;
+        opacity: 0.7;
+      }
+      .message {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        gap: 5px;
+      }
+      .message.outgoing {
+        align-items: flex-end;
+      }
+      .message-meta {
+        font-size: 0.72rem;
+        color: var(--muted-foreground);
+      }
+      .bubble {
+        max-width: min(88%, 570px);
+        padding: 10px 13px;
+        border: 1px solid var(--border);
+        border-radius: 3px 13px 13px;
+        background: var(--background);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+      .outgoing .bubble {
+        border-radius: 13px 3px 13px 13px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .composer {
+        flex-shrink: 0;
+        border-top: 1px solid var(--border);
+        padding: 12px 16px;
+        display: grid;
+        gap: 8px;
+      }
+      .composer textarea {
+        min-height: 84px;
+        max-height: 200px;
+        resize: vertical;
+        background: var(--background);
+      }
+      .composer-footer {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .settings {
+        padding: 16px;
+        overflow: auto;
+      }
+      .settings > summary {
+        font-weight: 650;
+        cursor: pointer;
+        margin-bottom: 14px;
+      }
+      .settings-content {
+        display: grid;
+        gap: 16px;
+      }
+      .settings section {
+        display: grid;
+        gap: 8px;
+      }
+      label {
+        display: grid;
+        gap: 5px;
+        font-size: 0.8rem;
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 82px;
+        gap: 7px;
+      }
+      .safety {
+        border: 1px solid var(--border);
+        background: var(--muted);
+        border-radius: 10px;
+        padding: 10px;
+        font-size: 0.76rem;
+        line-height: 1.65;
+      }
+      .address {
+        font:
+          0.85rem ui-monospace,
+          monospace;
+        overflow-wrap: anywhere;
+        padding: 9px;
+        background: var(--muted);
+        border-radius: 8px;
+        user-select: text;
+      }
+      #notice {
+        min-height: 1.3em;
+        color: var(--muted-foreground);
+        font-size: 0.8rem;
+        overflow-wrap: anywhere;
+      }
+      #notice.error {
+        color: var(--destructive);
+      }
+      #permission {
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--muted);
+      }
+      #confirmation {
+        border: 1px solid var(--destructive);
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      @media (max-width: 1050px) {
+        .layout {
+          grid-template-columns: 210px minmax(0, 1fr);
+          height: auto;
+          min-height: 600px;
+        }
+        .settings {
+          grid-column: 1 / -1;
+          border-top: 1px solid var(--border);
+        }
+        .settings-content {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 20px;
+        }
+        .chat {
+          min-height: 540px;
+          max-height: 78dvh;
+        }
+      }
+      @media (max-width: 640px) {
+        .app {
+          padding: 10px;
+        }
+        .layout {
+          display: flex;
+          flex-direction: column;
+        }
+        .contacts {
+          max-height: none;
+        }
+        .contact-list {
+          flex-direction: row;
+          min-height: 76px;
+        }
+        .contact {
+          min-width: 170px;
+          max-width: 210px;
+        }
+        .settings-content {
+          grid-template-columns: 1fr;
+        }
+        .chat {
+          min-height: 0;
+          max-height: none;
+        }
+        .messages {
+          flex: none;
+          height: clamp(14rem, 50dvh, 24rem);
+          padding: 12px;
+        }
+        .bubble {
+          max-width: 95%;
+        }
+        .chat-head,
+        .composer {
+          padding: 12px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="top">
+        <div>
+          <h1>局域网信使</h1>
+          <p class="muted">同一网络，自在交流 · LAN Messenger</p>
+        </div>
+        <span id="status" class="status">尚未监听</span
+        ><button id="refresh" class="secondary" type="button">刷新</button>
+      </header>
+      <div id="permission" hidden>
+        请在扩展中心为本插件启用“局域网消息”能力，再返回此页。聊天不会自动开启监听。
+      </div>
+      <div id="confirmation" hidden role="group" aria-label="确认历史操作">
+        <p id="confirmation-text"></p>
+        <button id="confirm-action" type="button">确认操作</button
+        ><button id="cancel-action" type="button" class="secondary">
+          取消
+        </button>
+      </div>
+      <div class="layout" id="layout">
+        <aside class="contacts" aria-label="联系人和会话">
+          <h2>会话 <span id="peer-count" class="muted">0</span></h2>
+          <input
+            id="search"
+            aria-label="搜索联系人"
+            placeholder="搜索昵称或 IP"
+          />
+          <nav id="contacts" class="contact-list" aria-label="选择会话"></nav>
+          <p class="muted">联系人来自真实连接。离线会话与消息保存在本机。</p>
+        </aside>
+        <section class="chat" aria-label="当前聊天">
+          <header class="chat-head">
+            <div>
+              <h2 id="peer-name">选择一位朋友</h2>
+              <p id="peer-detail" class="muted">
+                开启监听后，输入对方设备的 IP 连接
+              </p>
+            </div>
+            <div class="head-actions">
+              <button id="reconnect" type="button" class="secondary" disabled>
+                重新连接</button
+              ><button id="export" type="button" class="secondary" disabled>
+                导出会话</button
+              ><button id="forget" type="button" class="secondary" disabled>
+                移除联系人
+              </button>
+            </div>
+          </header>
+          <div
+            id="messages"
+            class="messages"
+            tabindex="0"
+            role="log"
+            aria-label="消息记录"
+            aria-live="polite"
+            aria-relevant="additions"
+          ></div>
+          <form id="composer" class="composer">
+            <label for="draft" class="muted">发送给当前联系人</label
+            ><textarea
+              id="draft"
+              maxlength="8192"
+              placeholder="写点什么吧…  Enter 发送，Shift + Enter 换行"
+              aria-label="消息内容"
+            ></textarea>
+            <div class="composer-footer">
+              <span id="draft-count" class="muted"
+                >0 / 8192 字节 · 明文传输</span
+              ><button id="send" type="button" disabled>发送消息</button>
+            </div>
+          </form>
+        </section>
+        <details class="settings" open>
+          <summary>连接与设置</summary>
+          <div class="settings-content">
+            <section>
+              <h2>我的设备</h2>
+              <label
+                >聊天昵称<input
+                  id="nickname"
+                  maxlength="40"
+                  autocomplete="off"
+                  placeholder="取一个昵称" /></label
+              ><label
+                >监听端口<input
+                  id="port"
+                  type="number"
+                  min="1"
+                  max="65535"
+                  value="45873" /></label
+              ><button id="start" type="button">开启监听</button
+              ><button id="stop" type="button" class="secondary" disabled>
+                停止监听与连接</button
+              ><button id="rename" type="button" class="secondary">
+                保存昵称
+              </button>
+              <div id="addresses" class="address">尚未监听</div>
+              <p class="muted">
+                把监听 IP 与端口告诉对方。双方均需先开启监听。
+              </p>
+            </section>
+            <section>
+              <h2>连接朋友</h2>
+              <label
+                >对方 IP<input
+                  id="address"
+                  placeholder="例如 192.168.1.25"
+                  autocomplete="off" /></label
+              ><label
+                >对方端口<input
+                  id="remote-port"
+                  type="number"
+                  min="1"
+                  max="65535"
+                  value="45873" /></label
+              ><button id="connect" type="button" disabled>连接设备</button>
+              <p class="muted">
+                仅接受数字形式的私有或回环
+                IP，不扫描网络。连接失败时核对同一网络、端口和系统防火墙；应用不会修改防火墙。
+              </p>
+            </section>
+            <section>
+              <h2>信任与历史</h2>
+              <p class="safety">
+                局域网 TCP
+                为明文传输，昵称由对方自行声明，未认证身份。仅连接可信设备，勿发送密码或敏感信息。本插件只收发文本，不访问或传输文件。
+              </p>
+              <p class="muted">
+                最近最多 500 条消息 / 1 MiB
+                保存在本机。切换页面仍会收信；最后使用的应用窗口关闭、撤权或退出会停止连接。
+              </p>
+              <p class="muted">
+                “已写入连接”不等于对方收到；“已送达”表示对方已保存消息。
+              </p>
+              <button id="clear" type="button" class="secondary">
+                清空本机消息历史
+              </button>
+            </section>
+          </div>
+        </details>
+      </div>
+      <p id="notice" role="status"></p>
+    </main>
+    <script>
+      (() => {
+        "use strict";
+        const $ = (id) => document.getElementById(id);
+        const encoder = new TextEncoder();
+        const ui = {
+          state: null,
+          selected: "",
+          pending: false,
+          snapshot: null,
+          visible: true,
+          disposed: false,
+          contactsKey: "",
+          messagesKey: "",
+          restored: false,
+          pollTimer: null,
+          readTimer: null,
+          polling: false,
+          lastError: null,
+          confirmation: null,
+          nicknameDirty: false,
+        };
+        const bytes = (text) => encoder.encode(text).length;
+        const selectedPeer = () =>
+          ui.state?.peers.find((peer) => peer.id === ui.selected);
+        function notice(message = "", error = false) {
+          $("notice").textContent = message;
+          $("notice").classList.toggle("error", error);
+        }
+        function permitted() {
+          return (
+            ui.snapshot?.grantedPermissions.includes("messaging:lan") === true
+          );
+        }
+        function checkpoint() {
+          if (!ui.snapshot || ui.disposed) return;
+          starter
+            .checkpoint(
+              {
+                version: 1,
+                selected: ui.selected,
+                draft: $("draft").value,
+                address: $("address").value,
+                port: $("port").value,
+                remotePort: $("remote-port").value,
+                nickname: $("nickname").value,
+                nicknameDirty: ui.nicknameDirty,
+              },
+              $("draft").value.length > 0 || ui.nicknameDirty,
+            )
+            .catch(() =>
+              notice("草稿尚未交给宿主保存，请保留此页面后重试。", true),
+            );
+        }
+        function validated(value) {
+          if (
+            !value ||
+            typeof value !== "object" ||
+            typeof value.running !== "boolean" ||
+            typeof value.nickname !== "string" ||
+            !Array.isArray(value.peers) ||
+            value.peers.length > 64 ||
+            !Array.isArray(value.messages) ||
+            value.messages.length > 500 ||
+            !Array.isArray(value.addresses)
+          )
+            throw new Error("Invalid LAN status");
+          for (const peer of value.peers)
+            if (
+              !peer ||
+              typeof peer.id !== "string" ||
+              typeof peer.nickname !== "string" ||
+              typeof peer.address !== "string" ||
+              typeof peer.connected !== "boolean" ||
+              !Number.isInteger(peer.port) ||
+              !Number.isInteger(peer.unread)
+            )
+              throw new Error("Invalid LAN contact");
+          for (const message of value.messages)
+            if (
+              !message ||
+              typeof message.id !== "string" ||
+              typeof message.peerId !== "string" ||
+              typeof message.nickname !== "string" ||
+              typeof message.text !== "string" ||
+              typeof message.outgoing !== "boolean" ||
+              typeof message.at !== "number" ||
+              typeof message.delivery !== "string"
+            )
+              throw new Error("Invalid LAN message");
+          return value;
+        }
+        function element(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined) node.textContent = text;
+          return node;
+        }
+        function renderContacts() {
+          const peers = (ui.state?.peers ?? [])
+            .filter((peer) =>
+              `${peer.nickname} ${peer.address}`
+                .toLowerCase()
+                .includes($("search").value.toLowerCase()),
+            )
+            .sort(
+              (a, b) =>
+                Number(b.connected) - Number(a.connected) ||
+                b.lastSeen - a.lastSeen,
+            );
+          const key = JSON.stringify([peers, ui.selected]);
+          if (key === ui.contactsKey) return;
+          ui.contactsKey = key;
+          const focused = document.activeElement?.dataset.peer;
+          $("contacts").replaceChildren();
+          $("peer-count").textContent = String(ui.state?.peers.length ?? 0);
+          if (!peers.length) {
+            $("contacts").append(
+              element(
+                "p",
+                "muted",
+                $("search").value
+                  ? "没有匹配的联系人"
+                  : "连接成功后，朋友会出现在这里。",
+              ),
+            );
+            return;
+          }
+          for (const peer of peers) {
+            const button = element("button", "contact");
+            button.type = "button";
+            button.dataset.peer = peer.id;
+            button.setAttribute(
+              "aria-pressed",
+              String(peer.id === ui.selected),
+            );
+            button.append(
+              element("span", "avatar", [...peer.nickname][0] ?? "友"),
+            );
+            const copy = element("span", "contact-copy");
+            const name = element("span", "contact-name");
+            const dot = element(
+              "span",
+              `dot${peer.connected ? " online" : ""}`,
+            );
+            dot.setAttribute("aria-label", peer.connected ? "已连接" : "离线");
+            name.append(dot, element("strong", "", peer.nickname));
+            copy.append(name, element("span", "muted", peer.address));
+            button.append(copy);
+            if (peer.unread)
+              button.append(element("span", "badge", String(peer.unread)));
+            button.onclick = () => {
+              ui.selected = peer.id;
+              ui.messagesKey = "";
+              render();
+              checkpoint();
+            };
+            $("contacts").append(button);
+          }
+          if (focused)
+            [...$("contacts").querySelectorAll("button")]
+              .find((node) => node.dataset.peer === focused)
+              ?.focus();
+        }
+        function renderMessages() {
+          const peer = selectedPeer();
+          const messages = (ui.state?.messages ?? []).filter(
+            (message) => message.peerId === ui.selected,
+          );
+          const key = JSON.stringify([ui.selected, messages]);
+          if (key === ui.messagesKey) return;
+          const changedPeer = !ui.messagesKey;
+          ui.messagesKey = key;
+          const target = $("messages");
+          const nearBottom =
+            changedPeer ||
+            target.scrollHeight - target.scrollTop - target.clientHeight < 90;
+          target.replaceChildren();
+          if (!messages.length) {
+            const empty = element("div", "empty");
+            empty.append(
+              element("span", "symbol", "✉"),
+              element(
+                "strong",
+                "",
+                peer ? "打个招呼，开启对话" : "让同一网络里的朋友靠近一点",
+              ),
+              element(
+                "p",
+                "muted",
+                peer
+                  ? "当前会话还没有消息。"
+                  : "先开启监听，再使用 IP 连接可信设备。",
+              ),
+            );
+            target.append(empty);
+          }
+          const delivery = {
+            sent: "已写入连接，等待回执",
+            delivered: "已送达",
+            failed: "发送失败",
+            received: "已接收",
+          };
+          for (const message of messages) {
+            const row = element(
+              "article",
+              `message${message.outgoing ? " outgoing" : ""}`,
+            );
+            const time = new Date(message.at).toLocaleString("zh-CN", {
+              month: "numeric",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            row.append(
+              element("div", "message-meta", `${message.nickname} · ${time}`),
+              element("div", "bubble", message.text),
+              element(
+                "div",
+                "message-meta",
+                message.delivery === "sent" && !peer?.connected
+                  ? "未收到送达回执（当前离线）"
+                  : (delivery[message.delivery] ?? "未知状态"),
+              ),
+            );
+            target.append(row);
+          }
+          if (nearBottom) target.scrollTop = target.scrollHeight;
+        }
+        function scheduleRead() {
+          clearTimeout(ui.readTimer);
+          const peer = selectedPeer();
+          if (!peer?.unread || !ui.visible || document.hidden || ui.pending)
+            return;
+          ui.readTimer = setTimeout(() => {
+            if (
+              selectedPeer()?.unread &&
+              !ui.pending &&
+              ui.visible &&
+              !document.hidden
+            )
+              call({ action: "markRead", peerId: ui.selected }, true);
+          }, 250);
+        }
+        function render() {
+          const allowed = permitted();
+          $("permission").hidden = allowed;
+          $("layout").hidden = !allowed;
+          const state = ui.state;
+          const peer = selectedPeer();
+          const busy = ui.pending || ui.snapshot?.busy === true;
+          $("confirm-action").disabled = busy;
+          $("status").textContent = state?.running
+            ? `正在监听 · ${state.port}`
+            : "尚未监听";
+          $("status").classList.toggle("on", state?.running === true);
+          $("peer-name").textContent = peer?.nickname ?? "选择一位朋友";
+          $("peer-detail").textContent = peer
+            ? `${peer.address}:${peer.port} · ${peer.connected ? "已连接" : "离线"}`
+            : "开启监听后，输入对方设备的 IP 连接";
+          $("addresses").textContent = state?.running
+            ? state.addresses
+                .map((address) => `${address}:${state.port}`)
+                .join("\n")
+            : "尚未监听";
+          $("send").disabled =
+            busy ||
+            !allowed ||
+            !peer?.connected ||
+            !$("draft").value.trim() ||
+            bytes($("draft").value) > 8192;
+          $("start").disabled = busy || !allowed || state?.running === true;
+          $("stop").disabled = busy || !state?.running;
+          $("connect").disabled = busy || !state?.running;
+          $("rename").disabled = busy || !allowed;
+          $("reconnect").disabled =
+            busy || !state?.running || !peer || peer.connected;
+          $("export").disabled =
+            busy ||
+            !state?.messages.some((message) => message.peerId === ui.selected);
+          $("forget").disabled = busy || !peer || peer.connected;
+          $("clear").disabled = busy || !state?.messages.length;
+          $("refresh").disabled = busy || !allowed;
+          $("port").disabled = state?.running === true;
+          $("draft-count").textContent =
+            `${bytes($("draft").value)} / 8192 字节 · 明文传输`;
+          renderContacts();
+          renderMessages();
+          scheduleRead();
+        }
+        async function call(request, silent = false) {
+          if (ui.pending || ui.disposed || !permitted()) return false;
+          ui.pending = true;
+          render();
+          try {
+            const state = validated(
+              await starter.services.request("lan", request),
+            );
+            if (ui.disposed) return false;
+            ui.state = state;
+            if (
+              !ui.selected ||
+              !state.peers.some((peer) => peer.id === ui.selected)
+            ) {
+              ui.selected = state.peers[0]?.id ?? "";
+              ui.messagesKey = "";
+            }
+            if (request.action === "nickname" || request.action === "start")
+              ui.nicknameDirty = false;
+            if (!ui.nicknameDirty && document.activeElement !== $("nickname"))
+              $("nickname").value = state.nickname;
+            if (state.lastError && state.lastError !== ui.lastError) {
+              ui.lastError = state.lastError;
+              notice(`服务提示：${state.lastError}`, true);
+            } else if (!silent)
+              notice(
+                request.action === "connect"
+                  ? "已发起连接，正在等待对方协议握手。"
+                  : request.action === "send"
+                    ? "消息已写入连接，等待送达回执。"
+                    : "操作已完成。",
+              );
+            if (request.action === "nickname" || request.action === "start")
+              checkpoint();
+            return true;
+          } catch (error) {
+            if (!ui.disposed)
+              notice(
+                error?.code === "STORAGE_CORRUPT"
+                  ? "本机聊天存档损坏或超限，原始数据已保留，未覆盖。"
+                  : error?.code === "EXTENSION_INCOMPATIBLE"
+                    ? "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的宿主。"
+                    : `操作未完成，请核对权限、IP、端口和连接状态。${typeof error?.code === "string" ? `（${error.code}）` : ""}`,
+                true,
+              );
+            return false;
+          } finally {
+            ui.pending = false;
+            if (!ui.disposed) render();
+          }
+        }
+        function port(id) {
+          const value = Number($(id).value);
+          if (!Number.isInteger(value) || value < 1 || value > 65535) {
+            notice("端口需要是 1 到 65535 的整数。", true);
+            return null;
+          }
+          return value;
+        }
+        $("start").onclick = () => {
+          const value = port("port");
+          if (value)
+            call({
+              action: "start",
+              nickname: $("nickname").value,
+              port: value,
+            });
+        };
+        $("stop").onclick = () => call({ action: "stop" });
+        $("connect").onclick = () => {
+          const value = port("remote-port");
+          if (value)
+            call({
+              action: "connect",
+              address: $("address").value.trim(),
+              port: value,
+            });
+        };
+        $("rename").onclick = () =>
+          call({ action: "nickname", nickname: $("nickname").value });
+        $("refresh").onclick = () => call({ action: "status" });
+        $("reconnect").onclick = () => {
+          const peer = selectedPeer();
+          if (peer)
+            call({ action: "connect", address: peer.address, port: peer.port });
+        };
+        function confirmAction(message, request) {
+          ui.confirmation = request;
+          $("confirmation-text").textContent = message;
+          $("confirmation").hidden = false;
+          $("confirm-action").focus();
+        }
+        $("confirm-action").onclick = () => {
+          const request = ui.confirmation;
+          ui.confirmation = null;
+          $("confirmation").hidden = true;
+          if (request) call(request);
+        };
+        $("cancel-action").onclick = () => {
+          ui.confirmation = null;
+          $("confirmation").hidden = true;
+        };
+        $("forget").onclick = () => {
+          const peer = selectedPeer();
+          if (peer)
+            confirmAction(`移除“${peer.nickname}”及其本机消息历史？`, {
+              action: "forget",
+              peerId: peer.id,
+            });
+        };
+        $("clear").onclick = () =>
+          confirmAction(
+            "清空所有本机聊天消息？联系人与对方设备上的消息将保留。",
+            { action: "clearHistory" },
+          );
+        async function sendMessage() {
+          const peer = selectedPeer();
+          const content = $("draft").value;
+          if (ui.pending || !peer || $("send").disabled) return;
+          if (await call({ action: "send", peerId: peer.id, text: content })) {
+            if ($("draft").value === content) $("draft").value = "";
+            checkpoint();
+            render();
+          }
+        }
+        // Sandboxed documents deliberately have no allow-forms capability. Route
+        // clicks and keyboard activation directly through the same guarded action.
+        $("send").onclick = () => void sendMessage();
+        $("composer").onsubmit = (event) => {
+          event.preventDefault();
+          void sendMessage();
+        };
+        $("draft").oninput = () => {
+          checkpoint();
+          render();
+        };
+        $("nickname").oninput = () => {
+          ui.nicknameDirty = true;
+          checkpoint();
+        };
+        $("draft").onkeydown = (event) => {
+          if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            void sendMessage();
+          }
+        };
+        $("search").oninput = renderContacts;
+        for (const id of ["address", "port", "remote-port"])
+          $(id).onchange = checkpoint;
+        $("export").onclick = async () => {
+          const peer = selectedPeer();
+          if (!peer || ui.pending) return;
+          const all = ui.state.messages.filter(
+            (message) => message.peerId === peer.id,
+          );
+          const lines = all.map(
+            (message) =>
+              `[${new Date(message.at).toLocaleString("zh-CN")}] ${message.nickname}${message.outgoing ? "（我）" : ""}：\n${message.text}\n`,
+          );
+          let omitted = 0;
+          let body = lines.join("\n");
+          while (bytes(body) > 200 * 1024 && lines.length) {
+            lines.shift();
+            omitted++;
+            body = lines.join("\n");
+          }
+          body = `局域网信使 · ${peer.nickname}\n导出时间：${new Date().toLocaleString("zh-CN")}\n${omitted ? `因导出大小限制，省略最早 ${omitted} 条消息。\n` : ""}\n${body}`;
+          ui.pending = true;
+          render();
+          try {
+            await starter.run("export", {
+              nickname: ui.state.nickname,
+              draft: $("draft").value,
+              export: body,
+            });
+            notice(
+              (await starter.saveArtifact(0))
+                ? "会话已导出。"
+                : "已取消导出，消息仍保存在本机。",
+            );
+          } catch {
+            notice("会话导出未完成，请重试。", true);
+          } finally {
+            ui.pending = false;
+            render();
+          }
+        };
+        async function poll() {
+          clearTimeout(ui.pollTimer);
+          if (ui.polling || ui.disposed) return;
+          ui.polling = true;
+          try {
+            if (ui.visible && !document.hidden && permitted() && !ui.pending)
+              await call({ action: "status" }, true);
+          } finally {
+            ui.polling = false;
+            if (!ui.disposed) ui.pollTimer = setTimeout(poll, 2000);
+          }
+        }
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) poll();
+        });
+        const observer = new IntersectionObserver(([entry]) => {
+          ui.visible = entry?.isIntersecting === true;
+          if (ui.visible) poll();
+        });
+        observer.observe(document.body);
+        const off = starter.onChange((snapshot) => {
+          ui.snapshot = snapshot;
+          if (!ui.restored) {
+            ui.restored = true;
+            const saved = snapshot.checkpoint;
+            if (saved?.version === 1) {
+              if (typeof saved.selected === "string")
+                ui.selected = saved.selected;
+              for (const [key, id, limit] of [
+                ["draft", "draft", 8192],
+                ["address", "address", 100],
+                ["port", "port", 5],
+                ["remotePort", "remote-port", 5],
+                ["nickname", "nickname", 120],
+              ])
+                if (
+                  typeof saved[key] === "string" &&
+                  bytes(saved[key]) <= limit
+                )
+                  $(id).value = saved[key];
+              ui.nicknameDirty =
+                saved.nicknameDirty === true &&
+                typeof saved.nickname === "string";
+            } else if (typeof snapshot.fields.draft === "string")
+              $("draft").value = snapshot.fields.draft;
+          }
+          render();
+        });
+        window.addEventListener(
+          "pagehide",
+          () => {
+            ui.disposed = true;
+            clearTimeout(ui.pollTimer);
+            clearTimeout(ui.readTimer);
+            observer.disconnect();
+            off();
+          },
+          { once: true },
+        );
+        starter.ready
+          .then((snapshot) => {
+            ui.snapshot = snapshot;
+            render();
+            poll();
+          })
+          .catch(() => notice("界面连接未完成，请重新打开本插件。", true));
+        render();
+      })();
+    </script>
+  </body>
+</html>
