@@ -5,16 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>壁纸库</title>
     <style>
-      * {
-        box-sizing: border-box;
-      }
       body {
-        margin: 0;
-        background: var(--background);
-        color: var(--foreground);
-        font:
-          var(--host-font-size, 15px)/1.5 system-ui,
-          sans-serif;
+        padding: 0;
       }
       main {
         max-width: 1240px;
@@ -32,39 +24,6 @@
       }
       h2 {
         font-size: 18px;
-      }
-      button,
-      input,
-      select {
-        font: inherit;
-        color: inherit;
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        padding: 9px 12px;
-        background: var(--card);
-      }
-      button {
-        cursor: pointer;
-        min-height: 42px;
-      }
-      button:hover {
-        background: var(--muted);
-      }
-      button:disabled {
-        opacity: 0.5;
-        cursor: wait;
-      }
-      button.primary {
-        background: var(--primary);
-        color: var(--primary-foreground);
-      }
-      :focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: 3px;
-      }
-      input {
-        width: 100%;
-        min-width: 0;
       }
       header,
       .toolbar,
@@ -95,6 +54,7 @@
       }
       .search {
         display: flex;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
         margin: 12px 0;
@@ -112,11 +72,6 @@
         flex-wrap: wrap;
         gap: 6px;
         margin-bottom: 16px;
-      }
-      .presets button {
-        min-height: 32px;
-        padding: 4px 10px;
-        font-size: 13px;
       }
       .layout {
         display: grid;
@@ -218,11 +173,6 @@
       .card .actions {
         gap: 5px;
       }
-      .card button {
-        font-size: 13px;
-        padding: 5px 8px;
-        min-height: 34px;
-      }
       #notice,
       #error,
       #permission {
@@ -288,7 +238,7 @@
           <h1 id="title">壁纸库</h1>
           <p class="muted" id="subtitle"></p>
         </div>
-        <button id="settings" type="button"></button>
+        <button id="settings" type="button" data-variant="outline"></button>
       </header>
       <p id="permission" hidden></p>
       <p id="error" role="alert" hidden></p>
@@ -300,6 +250,7 @@
           role="tab"
           aria-controls="remote-panel"
           aria-selected="true"
+          data-variant="outline"
         ></button>
         <button
           id="local-tab"
@@ -308,6 +259,7 @@
           aria-controls="local-panel"
           aria-selected="false"
           tabindex="-1"
+          data-variant="outline"
         ></button>
       </div>
       <section id="remote-panel" role="tabpanel" aria-labelledby="remote-tab">
@@ -352,7 +304,7 @@
                 <option value="cover">覆盖</option>
                 <option value="contain">完整显示</option>
               </select></label
-            ><button id="refresh" type="button"></button
+            ><button id="refresh" type="button" data-variant="outline"></button
             ><button id="import" type="button" class="primary"></button>
           </div>
         </div>
@@ -366,7 +318,11 @@
           ><input id="rename-value" maxlength="120"
         /></label>
         <div class="actions">
-          <button id="dialog-cancel" type="button"></button
+          <button
+            id="dialog-cancel"
+            type="button"
+            data-variant="outline"
+          ></button
           ><button id="dialog-confirm" type="button" class="primary"></button>
         </div>
       </dialog>
@@ -410,6 +366,7 @@
               element.id = actionName;
           }
           if (primary) element.className = "primary";
+          else element.dataset.variant = "outline";
           element.disabled = busy || !allowed();
           element.onclick = () => void work(action);
           return element;
