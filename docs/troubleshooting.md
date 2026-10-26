@@ -125,6 +125,12 @@ gh workflow list --repo YanChao001/tauri-desktop-starter-extensions
 
 ## CI 与生产发布
 
+### 宿主工具准备长时间没有进展
+
+展开 `host-tool` 复合步骤，按日志时间戳区分系统依赖安装、pnpm 初始化和 Rust 编译；整个复合步骤的耗时不代表当前子步骤的耗时。APT 日志反复出现 Azure 镜像的 `Ign` 时，优先检查镜像下载，不要直接归因于 pnpm 或 Rust。
+
+市场 [宿主工具 action](../.github/actions/host-tool/action.yml) 使用 Ubuntu 官方 HTTPS 镜像，并限制连接等待、重试及整段 APT 安装时间。超时会明确失败；核对上游连接与完整日志后重跑，不跳过系统依赖或后续 Wasm 校验。
+
 ### PR CI 使用了旧宿主或无法检出 ref
 
 PR / main CI 使用 `STARTER_HOST_REF` 仓库变量，默认是 `develop`；发布工作流的 `host_ref` 输入不会影响 PR。查看 Actions 摘要记录的实际宿主 SHA。协议修改尚未进入默认分支时，先推送并审核所需宿主提交，配置该变量后重跑 CI。
