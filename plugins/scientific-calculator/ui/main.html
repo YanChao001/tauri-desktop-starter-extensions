@@ -639,6 +639,10 @@
           syncing = null,
           localError = "",
           previewing = false;
+        const DRAFT_INTERVAL = 250;
+        let lastDraftStarted = -Infinity;
+        let draftEpoch = 0,
+          disposed = false;
         let lastCheckpoint;
         const ownedCheckpoints = new Set();
         function rememberCheckpoint(value) {
@@ -670,17 +674,26 @@
         }
         async function persistDraft() {
           clearTimeout(draftTimer);
+          draftTimer = undefined;
           while (syncing) await syncing;
-          if (!localDraft || syncedRevision === draftRevision || current?.busy)
+          if (
+            disposed ||
+            !localDraft ||
+            syncedRevision === draftRevision ||
+            current?.busy
+          )
             return;
           const revision = draftRevision,
-            submitted = values();
+            submitted = values(),
+            epoch = draftEpoch;
           const checkpointValue = { schema: 1, fields: submitted };
           rememberCheckpoint(checkpointValue);
+          lastDraftStarted = performance.now();
           const pending = (async () => {
             await starter.setFields(submitted);
+            if (disposed || epoch !== draftEpoch) return;
             await starter.checkpoint(checkpointValue, true);
-            syncedRevision = revision;
+            if (!disposed && epoch === draftEpoch) syncedRevision = revision;
           })();
           syncing = pending;
           try {
@@ -695,9 +708,20 @@
           queueDraft();
         }
         function queueDraft() {
-          clearTimeout(draftTimer);
+          // Canvas movement stays local. One acknowledged fields/checkpoint batch
+          // per interval retains the latest viewport without sending at pointer rate.
+          if (
+            disposed ||
+            !localDraft ||
+            syncedRevision === draftRevision ||
+            draftTimer !== undefined ||
+            syncing ||
+            busy()
+          )
+            return;
           draftTimer = setTimeout(
             () => {
+              draftTimer = undefined;
               if (busy()) return;
               void persistDraft()
                 .then(() => {
@@ -705,7 +729,10 @@
                 })
                 .catch(() => report(tr("checkpointFailed")));
             },
-            syncing ? 80 : 0,
+            Math.max(
+              0,
+              DRAFT_INTERVAL - (performance.now() - lastDraftStarted),
+            ),
           );
         }
         function insert(text) {
@@ -830,7 +857,9 @@
             return false;
           viewport = next;
           for (const id of ["xmin", "xmax", "ymin", "ymax"])
-            $(id).value = Number(next[id].toPrecision(14)).toString();
+            // The shortest round-trippable representation stays below 80 bytes.
+            // Rounding to 14 digits can collapse a valid narrow range at a large offset.
+            $(id).value = next[id].toString();
           previewing = true;
           $("graph-status").textContent = tr("samplePreview");
           scheduleDraw();
@@ -1012,6 +1041,7 @@
           const action = actions().find((entry) => entry.id === id);
           if (busy() || !action || action.disabled) return;
           clearTimeout(draftTimer);
+          draftTimer = undefined;
           clearTimeout(zoomTimer);
           working = true;
           localError = "";
@@ -1415,7 +1445,10 @@
         window.addEventListener(
           "pagehide",
           () => {
+            disposed = true;
+            draftEpoch++;
             clearTimeout(draftTimer);
+            draftTimer = undefined;
             clearTimeout(zoomTimer);
             if (frame) cancelAnimationFrame(frame);
             resize.disconnect();
@@ -1434,6 +1467,7 @@
           }
         });
         starter.onChange((snapshot) => {
+          if (disposed) return;
           const checkpointKey = JSON.stringify(snapshot.checkpoint ?? null);
           // Host session imports can replace a live document. Local input owns its
           // draft until that explicit checkpoint replacement or a completed action.
@@ -1444,6 +1478,8 @@
             !ownedCheckpoints.has(checkpointKey)
           ) {
             clearTimeout(draftTimer);
+            draftTimer = undefined;
+            draftEpoch++;
             localDraft = false;
             hydrated = false;
           }
