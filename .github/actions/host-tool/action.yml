@@ -17,8 +17,13 @@ runs:
     - name: 安装宿主 Linux 系统依赖
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+        # 与宿主 CI 一致，使用 Ubuntu 官方 HTTPS 源并限制镜像等待。
+        sudo timeout --kill-after=30s 8m bash -euo pipefail <<'APT'
+        printf 'https://archive.ubuntu.com/ubuntu/\tpriority:1\nhttps://security.ubuntu.com/ubuntu/\tpriority:2\n' > /etc/apt/apt-mirrors.txt
+        apt=(apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+        "${apt[@]}" update
+        "${apt[@]}" install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+        APT
     - uses: pnpm/action-setup@v6
       with:
         package_json_file: .host/package.json

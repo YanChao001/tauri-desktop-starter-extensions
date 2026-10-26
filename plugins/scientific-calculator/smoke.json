@@ -261,7 +261,7 @@
       }
     },
     "expectJsonSubset": {
-      "description": "Saving; awaiting host confirmation.",
+      "description": "Saving workspace…",
       "errors": {}
     }
   },
@@ -285,7 +285,7 @@
       ]
     },
     "expectJsonSubset": {
-      "description": "Host confirmed the save.",
+      "description": "Workspace saved.",
       "effects": []
     }
   },

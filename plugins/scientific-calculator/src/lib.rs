@@ -397,12 +397,7 @@ pub fn process(input: &str) -> Result<String, String> {
                 saved.plot = Plot::default();
                 effects.push(json!({"kind":"storage","id":"save-workspace","expectedRevision":store.revision,"changes":{STORAGE_KEY:saved}}));
                 state.pending = true;
-                state.notice = tr(
-                    zh,
-                    "正在保存，等待宿主确认。",
-                    "Saving; awaiting host confirmation.",
-                )
-                .into();
+                state.notice = tr(zh, "正在保存工作区…", "Saving workspace…").into();
             } else {
                 state.notice=tr(zh,"保存需要可选存储授权；计算与绘图仍可离线使用。","Saving requires the optional storage permission; calculation and graphs remain available offline.").into();
             }
@@ -450,7 +445,7 @@ pub fn process(input: &str) -> Result<String, String> {
                 {
                     return Err("Invalid successful save receipt".into());
                 }
-                state.notice = tr(zh, "宿主已确认保存。", "Host confirmed the save.").into();
+                state.notice = tr(zh, "工作区已保存。", "Workspace saved.").into();
             } else {
                 let code = receipt
                     .error
@@ -676,7 +671,7 @@ mod tests {
         .unwrap();
         let state: State = serde_json::from_str(confirmed["state"].as_str().unwrap()).unwrap();
         assert!(!state.pending);
-        assert_eq!(confirmed["description"], "Host confirmed the save.");
+        assert_eq!(confirmed["description"], "Workspace saved.");
     }
     #[test]
     fn conflict_preserves_workspace_and_never_retries() {

@@ -46,10 +46,15 @@
       }
       .status {
         margin-left: auto;
+        flex: 0 0 auto;
+        width: 11em;
         border: 1px solid var(--border);
         border-radius: 99px;
         padding: 5px 11px;
         font-size: 0.8rem;
+        white-space: nowrap;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
       }
       .status.on {
         color: var(--primary);
@@ -78,6 +83,16 @@
         padding: 14px 10px;
         gap: 12px;
       }
+      .contacts h2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      #peer-count {
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+      }
       .contact-list {
         overflow: auto;
         flex: 1;
@@ -91,7 +106,9 @@
         gap: 9px;
         padding: 10px;
         width: 100%;
-        min-height: 68px;
+        min-height: 4.25rem;
+        height: 4.25rem;
+        flex-shrink: 0;
         background: transparent;
         color: var(--foreground);
         text-align: left;
@@ -117,13 +134,22 @@
       .contact-copy {
         flex: 1;
         min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+      .contact-copy > .muted {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .contact-name {
         display: flex;
         gap: 5px;
         align-items: center;
+        min-width: 0;
       }
       .contact-name strong {
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -141,12 +167,14 @@
       }
       .badge {
         min-width: 20px;
+        flex-shrink: 0;
         padding: 1px 5px;
         border-radius: 20px;
         background: var(--primary);
         color: var(--primary-foreground);
         font-size: 0.7rem;
         text-align: center;
+        font-variant-numeric: tabular-nums;
       }
       .chat {
         display: flex;
@@ -168,6 +196,23 @@
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
+      }
+      .peer-copy {
+        flex: 1 1 12rem;
+        min-width: 0;
+      }
+      #peer-name,
+      #peer-detail {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #peer-name {
+        line-height: 1.5;
+      }
+      #peer-detail {
+        line-height: 1.5;
+        min-height: 1.5em;
       }
       .messages {
         flex: 1;
@@ -203,6 +248,11 @@
       .message-meta {
         font-size: 0.72rem;
         color: var(--muted-foreground);
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.5;
       }
       .bubble {
         max-width: min(88%, 570px);
@@ -234,11 +284,17 @@
         background: var(--background);
       }
       .composer-footer {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: 8px;
         align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
+      }
+      #draft-count {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
       }
       .settings {
         padding: 16px;
@@ -268,32 +324,41 @@
         grid-template-columns: 1fr 82px;
         gap: 7px;
       }
-      .safety {
+      .connection-details {
         border: 1px solid var(--border);
         background: var(--muted);
         border-radius: 10px;
         padding: 10px;
-        font-size: 0.76rem;
+      }
+      .connection-details > summary {
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .connection-details-content {
+        display: grid;
+        gap: 10px;
+        padding-top: 10px;
+        font-size: 0.8rem;
         line-height: 1.65;
       }
       .address {
-        font:
-          0.85rem ui-monospace,
-          monospace;
+        font: inherit;
+        font-size: 0.85rem;
         overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        height: calc(3em + 18px);
+        line-height: 1.5;
         padding: 9px;
         background: var(--muted);
         border-radius: 8px;
         user-select: text;
       }
-      #notice {
-        min-height: 1.3em;
-        color: var(--muted-foreground);
-        font-size: 0.8rem;
-        overflow-wrap: anywhere;
-      }
-      #notice.error {
-        color: var(--destructive);
+      .address[data-running="true"] {
+        font-family: ui-monospace, monospace;
+        white-space: pre-line;
       }
       #permission {
         padding: 20px;
@@ -309,6 +374,15 @@
         gap: 10px;
         align-items: center;
         flex-wrap: wrap;
+      }
+      #confirmation-text {
+        flex: 1 1 12rem;
+        min-width: 0;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        overflow-wrap: anywhere;
       }
       [hidden] {
         display: none !important;
@@ -384,7 +458,6 @@
       <header class="top">
         <div>
           <h1>局域网信使</h1>
-          <p class="muted">同一网络，自在交流 · LAN Messenger</p>
         </div>
         <span id="status" class="status">尚未监听</span
         ><button id="refresh" class="secondary" type="button">刷新</button>
@@ -408,15 +481,12 @@
             placeholder="搜索昵称或 IP"
           />
           <nav id="contacts" class="contact-list" aria-label="选择会话"></nav>
-          <p class="muted">联系人来自真实连接。离线会话与消息保存在本机。</p>
         </aside>
         <section class="chat" aria-label="当前聊天">
           <header class="chat-head">
-            <div>
+            <div class="peer-copy">
               <h2 id="peer-name">选择一位朋友</h2>
-              <p id="peer-detail" class="muted">
-                开启监听后，输入对方设备的 IP 连接
-              </p>
+              <p id="peer-detail" class="muted">未选择会话</p>
             </div>
             <div class="head-actions">
               <button id="reconnect" type="button" class="secondary" disabled>
@@ -446,8 +516,7 @@
               aria-label="消息内容"
             ></textarea>
             <div class="composer-footer">
-              <span id="draft-count" class="muted"
-                >0 / 8192 字节 · 明文传输</span
+              <span id="draft-count" class="muted">0 / 8192 字节</span
               ><button id="send" type="button" disabled>发送消息</button>
             </div>
           </form>
@@ -476,10 +545,7 @@
               ><button id="rename" type="button" class="secondary">
                 保存昵称
               </button>
-              <div id="addresses" class="address">尚未监听</div>
-              <p class="muted">
-                把监听 IP 与端口告诉对方。双方均需先开启监听。
-              </p>
+              <div id="addresses" class="address" tabindex="0">尚未监听</div>
             </section>
             <section>
               <h2>连接朋友</h2>
@@ -487,6 +553,7 @@
                 >对方 IP<input
                   id="address"
                   placeholder="例如 192.168.1.25"
+                  title="输入数字形式的私有或回环 IP；双方均需先开启监听。"
                   autocomplete="off" /></label
               ><label
                 >对方端口<input
@@ -496,32 +563,37 @@
                   max="65535"
                   value="45873" /></label
               ><button id="connect" type="button" disabled>连接设备</button>
-              <p class="muted">
-                仅接受数字形式的私有或回环
-                IP，不扫描网络。连接失败时核对同一网络、端口和系统防火墙；应用不会修改防火墙。
-              </p>
             </section>
             <section>
-              <h2>信任与历史</h2>
-              <p class="safety">
-                局域网 TCP
-                为明文传输，昵称由对方自行声明，未认证身份。仅连接可信设备，勿发送密码或敏感信息。本插件只收发文本，不访问或传输文件。
-              </p>
-              <p class="muted">
-                最近最多 500 条消息 / 1 MiB
-                保存在本机。切换页面仍会收信；最后使用的应用窗口关闭、撤权或退出会停止连接。
-              </p>
-              <p class="muted">
-                “已写入连接”不等于对方收到；“已送达”表示对方已保存消息。
-              </p>
+              <h2>历史记录</h2>
               <button id="clear" type="button" class="secondary">
                 清空本机消息历史
               </button>
+              <details id="connection-details" class="connection-details">
+                <summary>连接与隐私说明</summary>
+                <div class="connection-details-content">
+                  <p>
+                    把监听 IP
+                    与端口告诉对方，双方均需先开启监听。仅接受数字形式的私有或回环
+                    IP，不扫描网络。连接失败时核对同一网络、端口和系统防火墙；应用不会修改防火墙。
+                  </p>
+                  <p>
+                    局域网 TCP
+                    为明文传输，昵称由对方自行声明，未认证身份。仅连接可信设备，勿发送密码或敏感信息。本插件只收发文本，不访问或传输文件。
+                  </p>
+                  <p>
+                    联系人来自真实连接，离线会话与最近最多 500 条消息 / 1 MiB
+                    保存在本机。切换页面仍会收信；最后使用的应用窗口关闭、撤权或退出会停止连接。
+                  </p>
+                  <p>
+                    “已写入连接”不等于对方收到；“已送达”表示对方已保存消息。
+                  </p>
+                </div>
+              </details>
             </section>
           </div>
         </details>
       </div>
-      <p id="notice" role="status"></p>
     </main>
     <script>
       (() => {
@@ -551,8 +623,10 @@
         const selectedPeer = () =>
           ui.state?.peers.find((peer) => peer.id === ui.selected);
         function notice(message = "", error = false) {
-          $("notice").textContent = message;
-          $("notice").classList.toggle("error", error);
+          if (!message) return;
+          void starter
+            .notify(message, { tone: error ? "error" : "info" })
+            .catch(() => {});
         }
         function permitted() {
           return (
@@ -575,9 +649,7 @@
               },
               $("draft").value.length > 0 || ui.nicknameDirty,
             )
-            .catch(() =>
-              notice("草稿尚未交给宿主保存，请保留此页面后重试。", true),
-            );
+            .catch(() => notice("草稿尚未保存，请保留此页面后重试。", true));
         }
         function validated(value) {
           if (
@@ -641,6 +713,10 @@
           const focused = document.activeElement?.dataset.peer;
           $("contacts").replaceChildren();
           $("peer-count").textContent = String(ui.state?.peers.length ?? 0);
+          $("peer-count").setAttribute(
+            "aria-label",
+            `${ui.state?.peers.length ?? 0} 位联系人`,
+          );
           if (!peers.length) {
             $("contacts").append(
               element(
@@ -657,6 +733,8 @@
             const button = element("button", "contact");
             button.type = "button";
             button.dataset.peer = peer.id;
+            button.title = `${peer.nickname} · ${peer.address}:${peer.port} · ${peer.connected ? "已连接" : "离线"}${peer.unread ? ` · ${peer.unread} 条未读消息` : ""}`;
+            button.setAttribute("aria-label", button.title);
             button.setAttribute(
               "aria-pressed",
               String(peer.id === ui.selected),
@@ -674,8 +752,15 @@
             name.append(dot, element("strong", "", peer.nickname));
             copy.append(name, element("span", "muted", peer.address));
             button.append(copy);
-            if (peer.unread)
-              button.append(element("span", "badge", String(peer.unread)));
+            if (peer.unread) {
+              const unread = element(
+                "span",
+                "badge",
+                peer.unread > 99 ? "99+" : String(peer.unread),
+              );
+              unread.title = `${peer.unread} 条未读消息`;
+              button.append(unread);
+            }
             button.onclick = () => {
               ui.selected = peer.id;
               ui.messagesKey = "";
@@ -739,17 +824,21 @@
               hour: "2-digit",
               minute: "2-digit",
             });
-            row.append(
-              element("div", "message-meta", `${message.nickname} · ${time}`),
-              element("div", "bubble", message.text),
-              element(
-                "div",
-                "message-meta",
-                message.delivery === "sent" && !peer?.connected
-                  ? "未收到送达回执（当前离线）"
-                  : (delivery[message.delivery] ?? "未知状态"),
-              ),
+            const author = element(
+              "div",
+              "message-meta",
+              `${message.nickname} · ${time}`,
             );
+            author.title = author.textContent;
+            const receipt = element(
+              "div",
+              "message-meta",
+              message.delivery === "sent" && !peer?.connected
+                ? "未收到送达回执（当前离线）"
+                : (delivery[message.delivery] ?? "未知状态"),
+            );
+            receipt.title = receipt.textContent;
+            row.append(author, element("div", "bubble", message.text), receipt);
             target.append(row);
           }
           if (nearBottom) target.scrollTop = target.scrollHeight;
@@ -784,15 +873,24 @@
             ? `正在监听 · ${state.port}`
             : "尚未监听";
           $("status").classList.toggle("on", state?.running === true);
+          $("status").title = $("status").textContent;
           $("peer-name").textContent = peer?.nickname ?? "选择一位朋友";
+          $("peer-name").title = $("peer-name").textContent;
           $("peer-detail").textContent = peer
             ? `${peer.address}:${peer.port} · ${peer.connected ? "已连接" : "离线"}`
-            : "开启监听后，输入对方设备的 IP 连接";
+            : "未选择会话";
+          $("peer-detail").title = $("peer-detail").textContent;
           $("addresses").textContent = state?.running
             ? state.addresses
                 .map((address) => `${address}:${state.port}`)
                 .join("\n")
             : "尚未监听";
+          $("addresses").dataset.running = String(state?.running === true);
+          $("addresses").title = $("addresses").textContent;
+          $("addresses").setAttribute(
+            "aria-label",
+            `本机监听地址：${$("addresses").textContent}`,
+          );
           $("send").disabled =
             busy ||
             !allowed ||
@@ -813,7 +911,8 @@
           $("refresh").disabled = busy || !allowed;
           $("port").disabled = state?.running === true;
           $("draft-count").textContent =
-            `${bytes($("draft").value)} / 8192 字节 · 明文传输`;
+            `${bytes($("draft").value)} / 8192 字节`;
+          $("draft-count").title = $("draft-count").textContent;
           renderContacts();
           renderMessages();
           scheduleRead();
@@ -879,7 +978,7 @@
                 error?.code === "STORAGE_CORRUPT"
                   ? "本机聊天存档损坏或超限，原始数据已保留，未覆盖。"
                   : error?.code === "EXTENSION_INCOMPATIBLE"
-                    ? "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的宿主。"
+                    ? "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。"
                     : `操作未完成，请核对权限、IP、端口和连接状态。${typeof error?.code === "string" ? `（${error.code}）` : ""}`,
                 true,
               );
@@ -928,6 +1027,7 @@
         function confirmAction(message, request) {
           ui.confirmation = request;
           $("confirmation-text").textContent = message;
+          $("confirmation-text").title = message;
           $("confirmation").hidden = false;
           $("confirm-action").focus();
         }

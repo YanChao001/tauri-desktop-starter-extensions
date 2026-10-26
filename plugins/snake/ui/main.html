@@ -24,11 +24,39 @@
         font-size: clamp(26px, 5vw, 38px);
         letter-spacing: -0.04em;
       }
-      .eyebrow {
+      .title-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .help-button {
+        width: 2rem;
+        min-height: 2rem;
+        padding: 0;
+        border-radius: 50%;
+        border-color: var(--border);
+        background: var(--background);
         color: var(--muted-foreground);
-        margin: 0 0 4px;
-        font-size: 12px;
-        letter-spacing: 0.12em;
+      }
+      .help-content {
+        display: none;
+        position: absolute;
+        z-index: 2;
+        top: 100%;
+        left: 0;
+        width: min(24rem, calc(100vw - 4rem));
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--popover);
+        color: var(--popover-foreground);
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .help:not([data-dismissed]):hover .help-content,
+      .help:not([data-dismissed]):focus-within .help-content {
+        display: block;
       }
       .stats {
         gap: 8px;
@@ -42,10 +70,10 @@
       .stat small {
         display: block;
         color: var(--muted-foreground);
-        font-size: 11px;
+        font-size: 0.75rem;
       }
       .stat strong {
-        font-size: 23px;
+        font-size: 1.45rem;
         font-variant-numeric: tabular-nums;
       }
       .layout {
@@ -54,6 +82,10 @@
         gap: 24px;
         margin-top: 20px;
         align-items: start;
+      }
+      .layout > *,
+      .controls > * {
+        min-width: 0;
       }
       .arena {
         position: relative;
@@ -90,12 +122,13 @@
         font-size: 26px;
         margin: 0;
       }
-      .overlay p {
-        margin: 0;
-        color: var(--muted-foreground);
-      }
       button {
         min-height: 44px;
+        min-width: 0;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.35;
         cursor: pointer;
       }
       button:disabled {
@@ -135,16 +168,14 @@
         grid-row: 2;
         grid-column: 3;
       }
-      .muted {
-        color: var(--muted-foreground);
-        font-size: 13px;
-      }
       #notice {
-        min-height: 3em;
-      }
-      #error {
-        color: var(--destructive);
-        font-size: 13px;
+        block-size: 1.75em;
+        line-height: 1.75;
+        margin: 8px 0 0;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       details {
         border-top: 1px solid var(--border);
@@ -157,7 +188,6 @@
       }
       label {
         display: block;
-        font-size: 13px;
         margin-top: 12px;
       }
       label.check {
@@ -180,10 +210,13 @@
       .confirm p {
         margin: 0 0 12px;
       }
-      footer {
-        border-top: 1px solid var(--border);
-        margin-top: 20px;
-        padding-top: 12px;
+      .game-buttons .row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .game-buttons .row button {
+        height: 3.5em;
       }
       @media (max-width: 680px) {
         .layout {
@@ -192,7 +225,7 @@
         }
         .controls {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 0 16px;
         }
         .controls .game-buttons {
@@ -206,6 +239,16 @@
           padding: 6px 9px;
         }
       }
+      @media (max-width: 420px) {
+        .controls {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .pad {
+          max-width: 240px;
+          width: 100%;
+          margin: 0 auto;
+        }
+      }
       @media (prefers-reduced-motion: reduce) {
         * {
           scroll-behavior: auto !important;
@@ -217,9 +260,20 @@
   <body>
     <main inert>
       <header>
-        <div>
-          <p class="eyebrow">POCKET ARCADE / 01</p>
+        <div class="title-row">
           <h1 id="title">贪吃蛇</h1>
+          <span class="help" id="game-help">
+            <button
+              type="button"
+              id="help-button"
+              class="help-button"
+              aria-label="游戏帮助"
+              aria-describedby="help"
+            >
+              ?
+            </button>
+            <span id="help" class="help-content" role="tooltip"></span>
+          </span>
         </div>
         <div class="stats">
           <div class="stat">
@@ -245,12 +299,10 @@
             ></canvas>
             <div class="overlay" id="overlay">
               <h2 id="overlay-title">准备好了吗？</h2>
-              <p id="overlay-text">收集食物，每颗 10 分。</p>
               <button type="button" id="start" class="primary">开始游戏</button>
             </div>
           </div>
-          <p id="notice" class="muted" role="status" aria-live="polite"></p>
-          <p id="error" role="alert"></p>
+          <p id="notice" role="status" aria-live="polite"></p>
         </section>
         <aside class="controls">
           <div>
@@ -265,7 +317,6 @@
                 →
               </button>
             </div>
-            <p id="help" class="muted">方向键 / WASD / 滑动；空格暂停。</p>
           </div>
           <div class="game-buttons">
             <button type="button" id="pause" class="full">开始 / 继续</button>
@@ -283,7 +334,6 @@
             >
               保存模式纪录
             </button>
-            <p id="storage" class="muted"></p>
           </div>
           <div class="settings">
             <section
@@ -322,7 +372,7 @@
                 ></label
               >
               <label
-                ><span id="seed-label">开局种子（可重现棋局）</span
+                ><span id="seed-label">开局种子</span
                 ><input
                   type="number"
                   id="seed"
@@ -330,21 +380,16 @@
                   max="4294967295"
                   step="1"
                   inputmode="numeric"
+                  placeholder="1–4294967295"
                   value="20261026"
               /></label>
               <button type="button" id="random" style="margin-top: 8px">
                 换一个种子
               </button>
-              <p id="settings-help" class="muted">
-                设置在重新开始后生效。不同模式的纪录分别保存。
-              </p>
             </details>
           </div>
         </aside>
       </div>
-      <footer class="muted" id="footer">
-        本机离线运行。离开后暂停，返回需手动继续。音效由浏览器合成，无远程资源。
-      </footer>
     </main>
     <script>
       (() => {
@@ -498,7 +543,13 @@
           return { checkpoint: copy, game: restored };
         }
         function note(text) {
-          $("notice").textContent = text;
+          if (text) void starter.notify(text).catch(() => {});
+        }
+        let lastReportedError = "";
+        function reportError(message) {
+          if (message && message !== lastReportedError)
+            void starter.notify(message, { tone: "error" }).catch(() => {});
+          lastReportedError = message;
         }
         async function retain(force = false) {
           if (!checkpoint || disposed) return;
@@ -512,12 +563,15 @@
             .checkpoint(JSON.parse(serialized), false)
             .then(() => {
               lastRetained = serialized;
+              lastReportedError = "";
             })
             .catch(() => {
               if (!disposed)
-                $("error").textContent = tr(
-                  "无法保留进度，请暂停后重试；本页棋局仍在。",
-                  "Could not retain the checkpoint. Pause and retry; this board is retained.",
+                reportError(
+                  tr(
+                    "无法保留进度，请暂停后重试；本页棋局仍在。",
+                    "Could not retain the checkpoint. Pause and retry; this board is retained.",
+                  ),
                 );
             });
           checkpointPromise = pending;
@@ -661,22 +715,27 @@
               ],
             ) || 0;
           $("best").textContent = storage ? String(best) : "—";
+          const finished =
+            game.dead || !game.food || checkpoint.moves.length >= LIMIT;
           $("overlay").hidden = running;
           $("overlay-title").textContent = game.dead
             ? tr("本局结束", "Game over")
             : !game.food
               ? tr("棋盘填满了！", "Board cleared!")
-              : checkpoint.moves.length
-                ? tr("已暂停", "Paused")
-                : tr("准备好了吗？", "Ready to play?");
-          $("overlay-text").textContent = game.dead
-            ? tr("分数 ", "Score: ") + game.score
-            : tr(
-                "收集食物，每颗 10 分。",
-                "Collect food. Each one is worth 10 points.",
-              );
-          const finished =
-            game.dead || !game.food || checkpoint.moves.length >= LIMIT;
+              : checkpoint.moves.length >= LIMIT
+                ? tr("步数已达上限", "Move limit reached")
+                : checkpoint.moves.length
+                  ? tr("已暂停", "Paused")
+                  : tr("准备好了吗？", "Ready to play?");
+          $("notice").textContent = working
+            ? tr("正在保存…", "Saving…")
+            : running
+              ? tr("游戏中", "Playing")
+              : finished
+                ? tr("本局结束", "Game over")
+                : checkpoint.moves.length
+                  ? tr("已暂停", "Paused")
+                  : tr("准备就绪", "Ready");
           $("start").textContent = finished
             ? tr("重新开始", "New game")
             : checkpoint.moves.length
@@ -697,23 +756,42 @@
             ? tr("声音：关", "Sound: off")
             : tr("声音：开", "Sound: on");
           $("sound").setAttribute("aria-pressed", String(checkpoint.muted));
-          $("storage").textContent = storage
+          const storageHelp = storage
             ? tr(
                 "仅手动保存纪录，棋局保留在当前会话。",
                 "Records save only when requested; the board remains in this session.",
               )
             : tr(
-                "未授权存储，仍可完整游玩。会话可从宿主工具导出。",
-                "Play works without storage. Export the session using the host tools.",
+                "未授权存储，仍可完整游玩。会话可从“扩展工具”导出。",
+                "Play works without storage. Export the session using Extension tools.",
               );
-          $("help").textContent = tr(
-            "方向键 / WASD / 滑动；空格暂停。",
-            "Arrows / WASD / swipe; Space pauses.",
+          $("save").title = storageHelp;
+          $("save").setAttribute("aria-description", storageHelp);
+          $("help-button").setAttribute(
+            "aria-label",
+            tr("游戏帮助", "Game help"),
+          );
+          $("help").textContent =
+            tr(
+              "方向键 / WASD / 滑动控制，空格暂停；每颗食物 10 分。离开窗口后暂停，返回需手动继续。",
+              "Use arrows, WASD or swipe; Space pauses. Each food is worth 10 points. Leaving pauses the game; resume manually.",
+            ) +
+            " " +
+            storageHelp;
+          $("pad").setAttribute(
+            "aria-label",
+            tr("方向控制", "Direction controls"),
           );
           $("settings-title").textContent = tr(
             "下一局设置",
             "Next-game settings",
           );
+          const settingsHelp = tr(
+            "设置在重新开始后生效。不同模式的纪录分别保存。",
+            "Settings apply on restart. Each mode has a separate record.",
+          );
+          $("settings-title").title = settingsHelp;
+          $("settings-title").setAttribute("aria-description", settingsHelp);
           $("speed-label").textContent = tr("速度", "Speed");
           Array.from($("speed").options).forEach(
             (option, i) =>
@@ -725,25 +803,20 @@
           );
           $("wrap-label").textContent = tr("穿墙模式", "Wrap edges");
           $("rocks-label").textContent = tr("固定障碍", "Fixed obstacles");
-          $("seed-label").textContent = tr(
-            "开局种子（可重现棋局）",
-            "Seed (reproducible game)",
+          $("seed-label").textContent = tr("开局种子", "Seed");
+          const seedHelp = tr(
+            "输入 1–4294967295 的整数；同一种子和设置可重现棋局。",
+            "Enter an integer from 1 to 4294967295. The same seed and settings reproduce a board.",
           );
+          $("seed").title = seedHelp;
+          $("seed").setAttribute("aria-description", seedHelp);
           $("random").textContent = tr("换一个种子", "Random seed");
-          $("settings-help").textContent = tr(
-            "设置在重新开始后生效。不同模式的纪录分别保存。",
-            "Settings apply on restart. Each mode has a separate record.",
-          );
           $("confirm-text").textContent = tr(
             "重新开始将替换本局进度，是否继续？",
             "A new game replaces this board. Continue?",
           );
           $("cancel-restart").textContent = tr("保留本局", "Keep this game");
           $("confirm-restart").textContent = tr("确定重开", "Start new game");
-          $("footer").textContent = tr(
-            "离线运行。离开后暂停，返回需手动继续。音效在本机合成，无远程资源。",
-            "Runs offline. Leaving pauses the game; resume manually. Sound is synthesized locally with no remote assets.",
-          );
           canvas.setAttribute(
             "aria-label",
             tr(
@@ -847,12 +920,6 @@
           running = true;
           previous = 0;
           elapsed = 0;
-          note(
-            tr(
-              "游戏中。空格暂停；重新开始前会询问。",
-              "Playing. Space pauses; restarting requires confirmation.",
-            ),
-          );
           paint();
           frame = requestAnimationFrame(tick);
           canvas.focus();
@@ -870,13 +937,17 @@
         function newGame() {
           const seed = Number($("seed").value);
           if (!Number.isInteger(seed) || seed < 1 || seed > 4294967295) {
-            $("error").textContent = tr(
-              "请输入 1–4294967295 的整数种子。",
-              "Enter an integer seed from 1 to 4294967295.",
+            $("seed").setAttribute("aria-invalid", "true");
+            reportError(
+              tr(
+                "请输入 1–4294967295 的整数种子。",
+                "Enter an integer seed from 1 to 4294967295.",
+              ),
             );
             $("seed").focus();
             return;
           }
+          $("seed").removeAttribute("aria-invalid");
           pause();
           checkpoint = {
             schema: 1,
@@ -890,13 +961,7 @@
           game = create(checkpoint);
           best = 0;
           $("confirm").hidden = true;
-          $("error").textContent = "";
-          note(
-            tr(
-              "新棋局已准备好，点击开始。",
-              "A new board is ready. Press Start.",
-            ),
-          );
+          reportError("");
           paint();
           void retain();
         }
@@ -919,7 +984,7 @@
             return;
           pause();
           working = true;
-          $("error").textContent = "";
+          reportError("");
           paint();
           try {
             await retain();
@@ -933,9 +998,11 @@
             );
             await retain();
           } catch {
-            $("error").textContent = tr(
-              "保存失败或已取消；棋局保留且保持暂停，未自动重试。",
-              "Save failed or was cancelled. Your board remains paused and retained; no automatic retry.",
+            reportError(
+              tr(
+                "保存失败或已取消；棋局保留且保持暂停，未自动重试。",
+                "Save failed or was cancelled. Your board remains paused and retained; no automatic retry.",
+              ),
             );
           } finally {
             working = false;
@@ -957,23 +1024,17 @@
               const restored = restore(initial());
               checkpoint = restored.checkpoint;
               game = restored.game;
-              $("error").textContent = tr(
-                "导入进度无效或版本不支持，未载入；请保留原导出文件。",
-                "The imported checkpoint is invalid or unsupported and was not loaded. Keep the original export.",
+              reportError(
+                tr(
+                  "导入进度无效或版本不支持，未载入；请保留原导出文件。",
+                  "The imported checkpoint is invalid or unsupported and was not loaded. Keep the original export.",
+                ),
               );
             }
             $("speed").value = checkpoint.difficulty;
             $("wrap").checked = checkpoint.wrap;
             $("rocks").checked = checkpoint.obstacles;
             $("seed").value = checkpoint.seed;
-            note(
-              snapshot.checkpoint
-                ? tr(
-                    "会话已恢复并暂停，点击继续。",
-                    "Session restored and paused. Resume when ready.",
-                  )
-                : snapshot.view.description,
-            );
           }
           if (snapshot.view)
             recordBook = Object.fromEntries(
@@ -983,8 +1044,8 @@
           if (snapshot.busy && running)
             pause(
               tr(
-                "宿主正在操作，棋局已暂停。",
-                "The host is busy. The game paused.",
+                "正在处理操作，棋局已暂停。",
+                "An operation is in progress. The game paused.",
               ),
             );
           paint();
@@ -993,9 +1054,7 @@
           if (running) return;
           start();
         });
-        listen($("pause"), "click", () =>
-          running ? pause(tr("已暂停。", "Paused.")) : start(),
-        );
+        listen($("pause"), "click", () => (running ? pause() : start()));
         listen($("restart"), "click", askRestart);
         listen($("confirm-restart"), "click", newGame);
         listen($("cancel-restart"), "click", () => {
@@ -1018,7 +1077,20 @@
           const seed = new Uint32Array(1);
           crypto.getRandomValues(seed);
           $("seed").value = seed[0] || 1;
+          $("seed").removeAttribute("aria-invalid");
         });
+        listen($("seed"), "input", () =>
+          $("seed").removeAttribute("aria-invalid"),
+        );
+        listen($("game-help"), "pointerenter", () =>
+          $("game-help").removeAttribute("data-dismissed"),
+        );
+        listen($("help-button"), "focus", () =>
+          $("game-help").removeAttribute("data-dismissed"),
+        );
+        listen($("help-button"), "click", () =>
+          $("game-help").removeAttribute("data-dismissed"),
+        );
         document.querySelectorAll("[data-direction]").forEach((button) =>
           listen(button, "click", () => {
             unlockAudio();
@@ -1026,6 +1098,10 @@
           }),
         );
         listen(document, "keydown", (event) => {
+          if (event.key === "Escape") {
+            $("game-help").setAttribute("data-dismissed", "");
+            return;
+          }
           if (
             event.target instanceof HTMLInputElement ||
             event.target instanceof HTMLButtonElement ||
@@ -1051,7 +1127,7 @@
             if (!event.repeat) turn(d);
           } else if (event.code === "Space" && !event.repeat) {
             event.preventDefault();
-            running ? pause(tr("已暂停。", "Paused.")) : start();
+            running ? pause() : start();
           }
         });
         listen(canvas, "pointerdown", (event) => {
