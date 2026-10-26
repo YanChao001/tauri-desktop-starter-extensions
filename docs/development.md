@@ -153,7 +153,7 @@ JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或
 
 普通单选 select 由 SDK 渐进增强，仍读写原节点的值并使用原事件处理；需要原生交互时声明 `data-starter-select="native"`。支持范围、表单语义和覆写统一见 [SDK 默认外观](https://github.com/YanChao001/tauri-desktop-starter/blob/feature/workflows-and-extensions/sdk/README.md#默认外观与动效)，不要另写原型补丁或复制宿主控件实现。
 
-首屏骨架由宿主真实加载状态控制，SDK 在首个视图、主题与 DOM 呈现就绪后通知展示；作者不手工发送内部握手或人为添加启动延迟。自己的异步业务仍需真实加载 / 失败状态，后续忙碌保持正文可见。宿主工具入口位于嵌入导航或独立标题栏，正文只组织业务内容。
+首屏骨架由宿主真实加载状态控制，SDK 在首个视图、主题与 DOM 呈现就绪后通知展示；作者不手工发送内部握手或人为添加启动延迟。自己的异步业务仍需真实加载 / 失败状态，后续忙碌保持正文可见。宿主工具入口位于左侧当前扩展导航项或独立窗口标题栏，正文只组织业务内容。
 
 `starter.onChange` 接收当前 view、fields、checkpoint、忙碌、语言和主题；`starter.run` 请求本命令动作，`starter.setFields` 只更新字段，`starter.checkpoint` 报告草稿及是否未保存，`starter.saveArtifact` 请求保存已生成产物。异步失败保留输入并显示可理解的反馈，保存取消返回 false，不能标成已保存。完整类型与示例见 [宿主界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/feature/workflows-and-extensions/sdk)，不要复制一套 DTO。
 
