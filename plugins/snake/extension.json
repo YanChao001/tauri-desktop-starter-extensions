@@ -24,8 +24,6 @@
     }
   ],
   "permissions": [],
-  "optionalPermissions": [
-    "storage"
-  ],
+  "optionalPermissions": ["storage"],
   "network": []
 }

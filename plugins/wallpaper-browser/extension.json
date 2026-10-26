@@ -24,8 +24,6 @@
     }
   ],
   "permissions": [],
-  "optionalPermissions": [
-    "wallpapers:manage"
-  ],
+  "optionalPermissions": ["wallpapers:manage"],
   "network": []
 }
