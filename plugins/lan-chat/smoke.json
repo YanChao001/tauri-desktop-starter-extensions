@@ -1,0 +1,41 @@
+[
+  {
+    "command": "chat",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "zh-CN"
+    },
+    "expectJsonSubset": {
+      "version": 2,
+      "display": "局域网信使",
+      "effects": [],
+      "artifacts": []
+    }
+  },
+  {
+    "command": "chat",
+    "input": {
+      "version": 2,
+      "action": "export",
+      "state": "{}",
+      "fields": {
+        "draft": "尚未发送",
+        "export": "[12:00] 小林：你好，局域网！\n"
+      },
+      "locale": "zh-CN"
+    },
+    "expectJsonSubset": {
+      "artifacts": [
+        {
+          "name": "lan-chat.txt",
+          "mediaType": "text/plain",
+          "encoding": "utf8",
+          "content": "[12:00] 小林：你好，局域网！\n"
+        }
+      ]
+    }
+  }
+]

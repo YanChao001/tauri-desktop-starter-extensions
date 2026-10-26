@@ -1,9 +1,25 @@
 {
   "repository": "YanChao001/tauri-desktop-starter-extensions",
   "plugins": [
-    { "directory": "text-tools", "category": "text", "featured": true },
-    { "directory": "arcade-2048", "category": "games", "featured": true },
-    { "directory": "nonogram", "category": "games", "featured": false },
-    { "directory": "story-dice", "category": "tools", "featured": true }
+    {
+      "directory": "scientific-calculator",
+      "category": "tools",
+      "featured": true
+    },
+    {
+      "directory": "snake",
+      "category": "games",
+      "featured": true
+    },
+    {
+      "directory": "lan-chat",
+      "category": "tools",
+      "featured": true
+    },
+    {
+      "directory": "wallpaper-browser",
+      "category": "tools",
+      "featured": true
+    }
   ]
 }

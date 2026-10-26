@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>壁纸库</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font:
+          var(--host-font-size, 15px)/1.5 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 1240px;
+        margin: auto;
+        padding: 20px;
+      }
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+      h1 {
+        font-size: 28px;
+        letter-spacing: -0.035em;
+      }
+      h2 {
+        font-size: 18px;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+        color: inherit;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 9px 12px;
+        background: var(--card);
+      }
+      button {
+        cursor: pointer;
+        min-height: 42px;
+      }
+      button:hover {
+        background: var(--muted);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      button.primary {
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 3px;
+      }
+      input {
+        width: 100%;
+        min-width: 0;
+      }
+      header,
+      .toolbar,
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      header {
+        margin-bottom: 22px;
+      }
+      .muted {
+        color: var(--muted-foreground);
+        font-size: 13px;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 12px;
+        margin-bottom: 18px;
+      }
+      .tabs button[aria-selected="true"] {
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .search {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 12px 0;
+      }
+      .search input {
+        flex: 1;
+        width: auto;
+        min-width: 160px;
+      }
+      .search select {
+        max-width: 100%;
+      }
+      .presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .presets button {
+        min-height: 32px;
+        padding: 4px 10px;
+        font-size: 13px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.15fr);
+        gap: 20px;
+        align-items: start;
+      }
+      .results {
+        display: grid;
+        gap: 8px;
+        max-height: 620px;
+        overflow: auto;
+        padding: 3px;
+      }
+      .result {
+        text-align: left;
+        width: 100%;
+        display: grid;
+        gap: 4px;
+      }
+      .result[aria-pressed="true"] {
+        border-color: var(--primary);
+        background: color-mix(in oklab, var(--primary) 8%, var(--card));
+      }
+      .result strong {
+        overflow-wrap: anywhere;
+      }
+      .preview {
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--card);
+        position: sticky;
+        top: 12px;
+      }
+      .preview-image {
+        width: 100%;
+        aspect-ratio: 16/10;
+        object-fit: contain;
+        background: var(--muted);
+        border-radius: 9px;
+        display: block;
+        margin-bottom: 14px;
+      }
+      .placeholder {
+        display: grid;
+        place-items: center;
+        aspect-ratio: 16/10;
+        background: var(--muted);
+        border-radius: 9px;
+        padding: 25px;
+        text-align: center;
+        color: var(--muted-foreground);
+      }
+      .preview h2 {
+        overflow-wrap: anywhere;
+      }
+      .metadata {
+        display: grid;
+        gap: 5px;
+        margin: 12px 0;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 13px;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+      .card {
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 11px;
+        background: var(--card);
+      }
+      .card img {
+        width: 100%;
+        aspect-ratio: 16/10;
+        object-fit: cover;
+        border-radius: 7px;
+        background: var(--muted);
+      }
+      .card h2 {
+        font-size: 15px;
+        overflow-wrap: anywhere;
+        margin: 8px 0;
+      }
+      .card.active {
+        border-color: var(--primary);
+      }
+      .card .actions {
+        gap: 5px;
+      }
+      .card button {
+        font-size: 13px;
+        padding: 5px 8px;
+        min-height: 34px;
+      }
+      #notice,
+      #error,
+      #permission {
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 14px;
+      }
+      #error {
+        color: var(--destructive);
+        border-color: var(--destructive);
+      }
+      #permission {
+        background: var(--muted);
+      }
+      [hidden] {
+        display: none !important;
+      }
+      dialog {
+        max-width: min(430px, calc(100vw - 32px));
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px;
+        background: var(--card);
+        color: var(--foreground);
+      }
+      dialog::backdrop {
+        background: color-mix(in oklab, var(--foreground) 25%, transparent);
+      }
+      dialog label {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      @media (max-width: 680px) {
+        main {
+          padding: 12px;
+        }
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .preview {
+          position: static;
+        }
+        .results {
+          max-height: 330px;
+        }
+        .gallery {
+          grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1 id="title">壁纸库</h1>
+          <p class="muted" id="subtitle"></p>
+        </div>
+        <button id="settings" type="button"></button>
+      </header>
+      <p id="permission" hidden></p>
+      <p id="error" role="alert" hidden></p>
+      <p id="notice" role="status" hidden></p>
+      <div class="tabs" role="tablist" aria-label="Wallpaper collections">
+        <button
+          id="remote-tab"
+          type="button"
+          role="tab"
+          aria-controls="remote-panel"
+          aria-selected="true"
+        ></button>
+        <button
+          id="local-tab"
+          type="button"
+          role="tab"
+          aria-controls="local-panel"
+          aria-selected="false"
+          tabindex="-1"
+        ></button>
+      </div>
+      <section id="remote-panel" role="tabpanel" aria-labelledby="remote-tab">
+        <p class="muted" id="source-note"></p>
+        <form id="search-form" class="search">
+          <input
+            id="query"
+            maxlength="100"
+            value="landscape"
+            aria-label="Search Wikimedia Commons"
+          />
+          <label
+            ><span id="network-label" class="muted"></span>
+            <select id="network-mode" aria-label="Wallpaper network mode">
+              <option value="system">跟随系统代理</option>
+              <option value="direct">直接连接</option>
+            </select>
+          </label>
+          <button id="search" type="submit" class="primary"></button>
+        </form>
+        <div class="presets" id="presets"></div>
+        <div class="layout">
+          <div>
+            <p id="result-summary" class="muted" aria-live="polite"></p>
+            <div id="results" class="results"></div>
+          </div>
+          <aside id="preview" class="preview" aria-live="polite"></aside>
+        </div>
+      </section>
+      <section
+        id="local-panel"
+        role="tabpanel"
+        aria-labelledby="local-tab"
+        hidden
+      >
+        <div class="toolbar">
+          <p id="local-summary" class="muted"></p>
+          <div class="row">
+            <label
+              ><span id="fit-label"></span>
+              <select id="fit">
+                <option value="cover">覆盖</option>
+                <option value="contain">完整显示</option>
+              </select></label
+            ><button id="refresh" type="button"></button
+            ><button id="import" type="button" class="primary"></button>
+          </div>
+        </div>
+        <div id="gallery" class="gallery"></div>
+      </section>
+      <dialog id="confirm-dialog">
+        <h2 id="dialog-title"></h2>
+        <p id="dialog-description" class="muted"></p>
+        <label id="rename-label" hidden
+          ><span id="rename-caption"></span
+          ><input id="rename-value" maxlength="120"
+        /></label>
+        <div class="actions">
+          <button id="dialog-cancel" type="button"></button
+          ><button id="dialog-confirm" type="button" class="primary"></button>
+        </div>
+      </dialog>
+    </main>
+    <script>
+      (() => {
+        "use strict";
+        const $ = (id) => document.getElementById(id);
+        let snapshot = null,
+          busy = false,
+          tab = "remote",
+          entries = [],
+          selected = null,
+          preview = null;
+        let library = { revision: 0, items: [], limit: 24 };
+        const tr = (zh, en) => (snapshot?.locale === "en" ? en : zh);
+        const allowed = () =>
+          snapshot?.grantedPermissions.includes("wallpapers:manage") &&
+          Boolean(starter.services?.request);
+        function text(tag, value, className) {
+          const element = document.createElement(tag);
+          element.textContent = value;
+          if (className) element.className = className;
+          return element;
+        }
+        function message(value, error = false) {
+          const element = $(error ? "error" : "notice");
+          element.textContent = value;
+          element.hidden = !value;
+        }
+        function button(label, action, primary = false, actionName = "") {
+          const element = text("button", label);
+          element.type = "button";
+          if (actionName) {
+            element.dataset.action = actionName;
+            if (
+              ["add-to-gallery", "download-original", "open-source"].includes(
+                actionName,
+              )
+            )
+              element.id = actionName;
+          }
+          if (primary) element.className = "primary";
+          element.disabled = busy || !allowed();
+          element.onclick = () => void work(action);
+          return element;
+        }
+        async function request(action, extra = {}) {
+          const remote = [
+            "search",
+            "preview",
+            "import-remote",
+            "download-original",
+          ].includes(action);
+          return starter.services.request("wallpaper", {
+            action,
+            ...extra,
+            ...(remote ? { networkMode: $("network-mode").value } : {}),
+          });
+        }
+        async function work(action) {
+          if (busy || !allowed()) return;
+          const active = document.activeElement;
+          const returnFocus = active?.id
+            ? () => $(active.id)
+            : active?.dataset.pageId
+              ? () =>
+                  Array.from(document.querySelectorAll(".result")).find(
+                    (element) =>
+                      element.dataset.pageId === active.dataset.pageId,
+                  )
+              : active?.dataset.action
+                ? () =>
+                    Array.from(document.querySelectorAll(".card button")).find(
+                      (element) =>
+                        element.dataset.action === active.dataset.action &&
+                        element.closest(".card").dataset.wallpaperId ===
+                          active.closest(".card")?.dataset.wallpaperId,
+                    )
+                : () => null;
+          busy = true;
+          message("");
+          message("", true);
+          render();
+          try {
+            await action();
+          } catch (error) {
+            message(
+              error?.code === "SETTINGS_CONFLICT"
+                ? tr(
+                    "设置已在其他窗口改变，请刷新图库后重试。",
+                    "Settings changed in another window. Refresh the gallery and retry.",
+                  )
+                : String(error?.message || error),
+              true,
+            );
+          } finally {
+            busy = false;
+            render();
+            if (document.activeElement === document.body) {
+              const target = returnFocus();
+              if (target && !target.disabled && target.getClientRects().length)
+                target.focus({ preventScroll: true });
+            }
+          }
+        }
+        async function refresh() {
+          library = await request("list");
+        }
+        async function search() {
+          const query = $("query").value.trim();
+          if (!query) return;
+          const response = await request("search", { query });
+          entries = response.items;
+          selected = null;
+          preview = null;
+          message(
+            entries.length
+              ? tr(
+                  "选择图片预览并核对来源，之后再下载或导入。",
+                  "Select an image to preview and review its source before downloading or importing.",
+                )
+              : tr(
+                  "没有找到明确标为公共领域 / CC0 的图片，试试其他关键词。",
+                  "No explicitly Public domain / CC0 images found. Try another keyword.",
+                ),
+          );
+          await starter.checkpoint(
+            { query, tab, networkMode: $("network-mode").value },
+            false,
+          );
+        }
+        async function select(item) {
+          const response = await request("preview", { pageId: item.pageId });
+          selected = response.image;
+          preview = response.dataUrl;
+        }
+        async function confirm(kind, item) {
+          const dialog = $("confirm-dialog");
+          $("dialog-title").textContent =
+            kind === "rename"
+              ? tr("重命名壁纸", "Rename wallpaper")
+              : tr("移出本机图库？", "Remove from local gallery?");
+          $("dialog-description").textContent =
+            kind === "rename"
+              ? item.name
+              : tr(
+                  "这不会删除原始图片文件；如果当前正在使用它，应用背景会恢复为纯色。",
+                  "The original image file remains. If active, the application returns to a plain background.",
+                );
+          $("rename-label").hidden = kind !== "rename";
+          $("rename-value").value = item.name;
+          $("rename-caption").textContent = tr("图片名称", "Image name");
+          $("dialog-cancel").textContent = tr("取消", "Cancel");
+          $("dialog-confirm").textContent = tr("确认", "Confirm");
+          dialog.showModal();
+          if (kind === "rename") $("rename-value").focus();
+          return new Promise((resolve) => {
+            dialog.onclose = () =>
+              resolve(
+                dialog.returnValue === "yes"
+                  ? kind === "rename"
+                    ? $("rename-value").value.trim()
+                    : true
+                  : null,
+              );
+            $("dialog-cancel").onclick = () => dialog.close("no");
+            $("dialog-confirm").onclick = () => {
+              if (kind !== "rename" || $("rename-value").value.trim())
+                dialog.close("yes");
+            };
+            dialog.oncancel = () => {
+              dialog.returnValue = "no";
+            };
+          });
+        }
+        function render() {
+          document.documentElement.lang = snapshot?.locale || "zh-CN";
+          $("title").textContent = tr("壁纸库", "Wallpaper Library");
+          $("subtitle").textContent = tr(
+            "开放许可图片 · 本机收藏 · 应用背景",
+            "Openly licensed images · Local collection · App background",
+          );
+          $("settings").textContent = tr(
+            "宿主图库设置",
+            "Host gallery settings",
+          );
+          $("remote-tab").textContent = tr("发现壁纸", "Discover");
+          $("local-tab").textContent = tr("本机图库", "Local gallery");
+          $("source-note").textContent = tr(
+            "来源：Wikimedia Commons。仅显示明确标为公共领域 / CC0 的图片；每次下载都会重新核对许可。搜索关键词会发送至该服务。",
+            "Source: Wikimedia Commons. Only explicitly Public domain / CC0 images are shown; licenses are rechecked before download. Search keywords are sent to this service.",
+          );
+          $("permission").hidden = allowed();
+          $("permission").textContent = tr(
+            "请在扩展权限中授予“壁纸管理”，以使用搜索、下载和本机图库。该权限不会改变操作系统壁纸。",
+            "Grant wallpaper management in extension permissions to search, download and manage the gallery. It does not change the operating system wallpaper.",
+          );
+          $("search").textContent = busy
+            ? tr("处理中…", "Working…")
+            : tr("搜索", "Search");
+          for (const id of [
+            "search",
+            "settings",
+            "refresh",
+            "import",
+            "query",
+            "fit",
+            "network-mode",
+          ])
+            $(id).disabled = busy || !allowed();
+          $("refresh").textContent = tr("刷新", "Refresh");
+          $("import").textContent = tr("导入图片", "Import image");
+          $("fit-label").textContent = tr("显示方式", "Fit");
+          $("network-label").textContent = tr("连接：", "Connection: ");
+          $("network-mode").options[0].text = tr(
+            "跟随系统代理（推荐）",
+            "Follow system proxy (recommended)",
+          );
+          $("network-mode").options[1].text = tr(
+            "直接连接",
+            "Direct connection",
+          );
+          $("fit").options[0].text = tr("覆盖", "Cover");
+          $("fit").options[1].text = tr("完整显示", "Contain");
+          for (const name of ["remote", "local"]) {
+            $(name + "-panel").hidden = tab !== name;
+            $(name + "-tab").setAttribute(
+              "aria-selected",
+              String(tab === name),
+            );
+            $(name + "-tab").tabIndex = tab === name ? 0 : -1;
+          }
+          $("presets").replaceChildren();
+          for (const [zh, en, query] of [
+            ["山川", "Mountains", "mountains"],
+            ["海洋", "Ocean", "ocean"],
+            ["森林", "Forest", "forest"],
+            ["星空", "Space", "space nebula"],
+          ])
+            $("presets").append(
+              button(tr(zh, en), async () => {
+                $("query").value = query;
+                await search();
+              }),
+            );
+          $("result-summary").textContent = tr(
+            `${entries.length} 张符合许可的结果`,
+            `${entries.length} licensed results`,
+          );
+          $("results").replaceChildren();
+          for (const item of entries) {
+            const card = button("", () => select(item));
+            card.className = "result";
+            card.dataset.pageId = String(item.pageId);
+            card.setAttribute(
+              "aria-pressed",
+              String(selected?.pageId === item.pageId),
+            );
+            card.append(
+              text("strong", item.title),
+              text(
+                "span",
+                `${item.width} × ${item.height} · ${item.license}`,
+                "muted",
+              ),
+            );
+            $("results").append(card);
+          }
+          $("preview").replaceChildren();
+          if (!selected)
+            $("preview").append(
+              text(
+                "p",
+                tr(
+                  "搜索并选择一张图片，预览会在这里显示。",
+                  "Search and select an image to preview it here.",
+                ),
+                "placeholder",
+              ),
+            );
+          else {
+            const image = document.createElement("img");
+            image.className = "preview-image";
+            image.id = "preview-image";
+            image.alt = selected.title;
+            image.src = preview;
+            $("preview").append(image, text("h2", selected.title));
+            const meta = document.createElement("div");
+            meta.className = "metadata";
+            meta.append(
+              text("p", tr("作者：", "Creator: ") + selected.author),
+              text("p", tr("许可：", "License: ") + selected.license),
+              text(
+                "p",
+                `${selected.width} × ${selected.height} · ${(selected.bytes / 1048576).toFixed(1)} MiB`,
+              ),
+              text("p", selected.sourceUrl, "muted"),
+            );
+            $("preview").append(meta);
+            const actions = document.createElement("div");
+            actions.className = "actions";
+            actions.append(
+              button(
+                tr("加入本机图库", "Add to gallery"),
+                async () => {
+                  const response = await request("import-remote", {
+                    pageId: selected.pageId,
+                  });
+                  library = response.library;
+                  message(
+                    tr(
+                      "已导入压缩图库版本；原图可单独下载。",
+                      "Added a compressed gallery version. Download the original separately.",
+                    ),
+                  );
+                },
+                true,
+                "add-to-gallery",
+              ),
+              button(
+                tr("下载原图…", "Save original…"),
+                async () => {
+                  const response = await request("download-original", {
+                    pageId: selected.pageId,
+                  });
+                  message(
+                    response.cancelled
+                      ? tr("已取消保存。", "Save cancelled.")
+                      : tr(
+                          "原图已保存至所选位置。",
+                          "Original saved to the chosen location.",
+                        ),
+                  );
+                },
+                false,
+                "download-original",
+              ),
+              button(
+                tr("查看来源与许可", "View source & license"),
+                () => request("open-source", { pageId: selected.pageId }),
+                false,
+                "open-source",
+              ),
+            );
+            $("preview").append(
+              actions,
+              text(
+                "p",
+                tr(
+                  "图库版本会缩放压缩。原图下载上限 16 MiB / 1600 万像素。来源按钮在浏览器打开文件页，以便核验作者与许可。",
+                  "Gallery versions are resized and compressed. Originals are limited to 16 MiB / 16 million pixels. The source button opens the file page in your browser to verify its creator and license.",
+                ),
+                "muted",
+              ),
+            );
+          }
+          $("local-summary").textContent = tr(
+            `${library.items.length} / ${library.limit} 张 · ${busy ? "处理中" : "修改立即保存"}`,
+            `${library.items.length} / ${library.limit} images · ${busy ? "Working" : "Changes save immediately"}`,
+          );
+          $("gallery").replaceChildren();
+          for (const item of library.items) {
+            const card = document.createElement("article");
+            card.className = "card" + (item.active ? " active" : "");
+            card.dataset.wallpaperId = item.id;
+            const image = document.createElement("img");
+            if (typeof item.dataUrl === "string") image.src = item.dataUrl;
+            image.alt = item.name;
+            image.loading = "lazy";
+            card.append(
+              typeof item.dataUrl === "string"
+                ? image
+                : text(
+                    "p",
+                    tr("无法预览此图片", "Preview unavailable"),
+                    "placeholder",
+                  ),
+              text("h2", item.name),
+            );
+            if (item.active)
+              card.append(
+                text(
+                  "p",
+                  tr("当前应用背景", "Current app background"),
+                  "muted",
+                ),
+              );
+            const actions = document.createElement("div");
+            actions.className = "actions";
+            actions.append(
+              button(
+                tr("设为背景", "Apply"),
+                async () => {
+                  library = await request("apply", {
+                    id: item.id,
+                    expectedRevision: library.revision,
+                    fit: $("fit").value,
+                  });
+                  message(
+                    tr("已设置应用背景。", "Application background updated."),
+                  );
+                },
+                true,
+                "apply",
+              ),
+              button(
+                tr("重命名", "Rename"),
+                async () => {
+                  const name = await confirm("rename", item);
+                  if (name)
+                    library = await request("rename", { id: item.id, name });
+                },
+                false,
+                "rename",
+              ),
+              button(
+                tr("移除", "Remove"),
+                async () => {
+                  if (await confirm("remove", item))
+                    library = await request("remove", {
+                      id: item.id,
+                      expectedRevision: library.revision,
+                    });
+                },
+                false,
+                "remove",
+              ),
+            );
+            card.append(actions);
+            $("gallery").append(card);
+          }
+          if (!library.items.length)
+            $("gallery").append(
+              text(
+                "p",
+                tr(
+                  "图库还是空的。可以导入自己的图片，或在“发现壁纸”中添加。",
+                  "Your gallery is empty. Import an image or add one from Discover.",
+                ),
+                "muted",
+              ),
+            );
+        }
+        $("search-form").onsubmit = (event) => {
+          event.preventDefault();
+          void work(search);
+        };
+        $("refresh").onclick = () => void work(refresh);
+        $("settings").onclick = () => void work(() => request("open-settings"));
+        $("import").onclick = () =>
+          void work(async () => {
+            const response = await request("import");
+            if (response.cancelled)
+              message(tr("已取消导入。", "Import cancelled."));
+            else {
+              library = response.library;
+              message(
+                tr("图片已加入本机图库。", "Image added to the local gallery."),
+              );
+            }
+          });
+        for (const name of ["remote", "local"]) {
+          $(name + "-tab").onclick = () => {
+            tab = name;
+            render();
+            if (name === "local") void work(refresh);
+          };
+          $(name + "-tab").onkeydown = (event) => {
+            if (
+              ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+            ) {
+              event.preventDefault();
+              const next =
+                event.key === "Home"
+                  ? "remote"
+                  : event.key === "End"
+                    ? "local"
+                    : name === "remote"
+                      ? "local"
+                      : "remote";
+              $(next + "-tab").click();
+              $(next + "-tab").focus();
+            }
+          };
+        }
+        starter.onChange((next) => {
+          snapshot = next;
+          render();
+        });
+        void starter.ready
+          .then(async (next) => {
+            snapshot = next;
+            const saved = next.checkpoint;
+            if (
+              saved &&
+              typeof saved.query === "string" &&
+              saved.query.length <= 100
+            )
+              $("query").value = saved.query;
+            if (saved && ["system", "direct"].includes(saved.networkMode))
+              $("network-mode").value = saved.networkMode;
+            render();
+            if (allowed()) await work(refresh);
+          })
+          .catch((error) => message(String(error?.message || error), true));
+      })();
+    </script>
+  </body>
+</html>

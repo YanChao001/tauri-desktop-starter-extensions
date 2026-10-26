@@ -1,0 +1,33 @@
+{
+  "formatVersion": 3,
+  "apiVersion": 2,
+  "minHostVersion": "0.1.5",
+  "id": "market.lan-chat",
+  "version": "1.0.0",
+  "name": "局域网信使",
+  "author": "Tauri Desktop Starter",
+  "description": "通过真实局域网 TCP 与可信设备聊天：联系人、未读、消息回执、昵称、持久历史与会话导出。纯文本明文传输，不上传云端，不读取或传输文件。",
+  "icon": "message-circle",
+  "permissions": [
+    "messaging:lan"
+  ],
+  "optionalPermissions": [],
+  "network": [],
+  "commands": [
+    {
+      "id": "chat",
+      "title": "局域网聊天",
+      "function": "chat",
+      "inputFormat": "json",
+      "resultFormat": "view",
+      "permissions": [
+        "messaging:lan"
+      ],
+      "ui": {
+        "sidebar": true,
+        "window": true,
+        "document": "main"
+      }
+    }
+  ]
+}

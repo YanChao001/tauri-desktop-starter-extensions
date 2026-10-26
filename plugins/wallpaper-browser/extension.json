@@ -1,0 +1,31 @@
+{
+  "formatVersion": 3,
+  "apiVersion": 2,
+  "minHostVersion": "0.1.5",
+  "id": "market.wallpaper-browser",
+  "version": "1.0.0",
+  "name": "壁纸库",
+  "author": "Tauri Desktop Starter",
+  "description": "浏览 Wikimedia Commons 明确标为公共领域或 CC0 的壁纸，预览、下载原图、导入本机图库、设置应用背景，并管理自己的图片。网络与图库操作由明确授权的宿主服务执行，不改变操作系统桌面壁纸。",
+  "icon": "image",
+  "commands": [
+    {
+      "id": "browse",
+      "title": "壁纸库",
+      "function": "browse",
+      "inputFormat": "json",
+      "resultFormat": "view",
+      "ui": {
+        "sidebar": true,
+        "window": true,
+        "document": "main"
+      },
+      "permissions": []
+    }
+  ],
+  "permissions": [],
+  "optionalPermissions": [
+    "wallpapers:manage"
+  ],
+  "network": []
+}

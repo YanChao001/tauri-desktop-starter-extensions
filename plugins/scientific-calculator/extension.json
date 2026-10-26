@@ -1,0 +1,31 @@
+{
+  "formatVersion": 3,
+  "apiVersion": 2,
+  "minHostVersion": "0.1.5",
+  "id": "market.scientific-calculator",
+  "version": "1.0.0",
+  "name": "科学计算器",
+  "author": "Tauri Desktop Starter",
+  "description": "科学表达式、三角函数、记忆与历史、多函数曲线、求根和数值积分。Scientific expressions, memory, history, function graphs, roots and numerical integration.",
+  "icon": "calculator",
+  "commands": [
+    {
+      "id": "workspace",
+      "title": "科学计算器 / Scientific calculator",
+      "function": "workspace",
+      "inputFormat": "json",
+      "resultFormat": "view",
+      "ui": {
+        "sidebar": true,
+        "window": true,
+        "document": "main"
+      },
+      "permissions": []
+    }
+  ],
+  "permissions": [],
+  "optionalPermissions": [
+    "storage"
+  ],
+  "network": []
+}

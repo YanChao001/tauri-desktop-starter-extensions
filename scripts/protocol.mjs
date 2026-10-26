@@ -30,6 +30,8 @@ const capabilities = new Set([
   "network:https",
   "network:local",
   "storage",
+  "messaging:lan",
+  "wallpapers:manage",
 ]);
 function publicHost(host) {
   const address = host.replace(/^\[|\]$/g, "");
@@ -204,7 +206,7 @@ export function validateManifest(manifest) {
   }
   if (
     manifest.icon != null &&
-    !["puzzle", "calculator", "gamepad", "notebook", "terminal"].includes(
+    !["puzzle", "calculator", "gamepad", "notebook", "terminal", "image", "message-circle"].includes(
       manifest.icon,
     )
   )

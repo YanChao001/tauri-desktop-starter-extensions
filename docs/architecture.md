@@ -50,13 +50,28 @@ flowchart TD
 | 通用视图   | Wasm 返回视图 JSON                                  | 标准表单、按钮、表格、图表与说明     |
 | 自定义界面 | 上述视图 + 清单引用的单文件 HTML / CSS / JavaScript | 游戏、创作、画布与需要自由排版的应用 |
 
-四个市场插件采用自定义界面，分别将棋盘、线索、灵感锁和编辑区放在业务需要的位置；不会再把所有输入堆在棋盘或正文前。界面可以使用普通 DOM / Canvas 或框架构建的单文件结果，无需额外布局 DSL。Wasm 的 JS / TS 构建环境仍没有 DOM，与浏览器界面脚本不能混为一谈。
+四款市场插件采用自定义界面：科学计算器组织键盘、表达式与曲线，贪吃蛇在 Canvas 运行本地游戏，信使组织联系人与消息，壁纸库组织图片与本机图库。它们都是自包含 HTML / CSS / JavaScript，不增加 React / Vite 构建依赖。其他作者也可使用框架生成的单文件结果，无需额外布局 DSL。Wasm 的 JS / TS 构建环境仍没有 DOM，与浏览器界面脚本不能混为一谈。
 
 自定义 UI 在包内通过 uiDocuments 交付，由视图命令的 ui.document 指定文档 ID；源码位于 plugins/<directory>/ui/<id>.html。打包快照包含 HTML；目录预览记录文档 ID、字节数与哈希，签名覆盖完整包。开发步骤见 [自定义界面开发](./development.md#自定义界面开发)，协议、额度和桥类型由配套宿主 [扩展指南](https://github.com/YanChao001/tauri-desktop-starter/blob/feature/workflows-and-extensions/docs/extensions.md#自定义界面) 与 [SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/feature/workflows-and-extensions/sdk) 维护。
 
-宿主只提供统一工具栏与有限的状态 / 主题 / 语言 token，插件决定正文布局。返回扩展中心、在独立窗口打开、界面重载和会话工具集中在同一个“扩展工具”入口。独立窗口使用简化标题栏，只保留窗口控制；语言与主题沿用宿主设置。安装审阅后一次完成授权与启用，可选权限默认不勾选。
+插件决定正文布局，宿主注入状态、主题、语言、字体与减少动效设置，并提供可覆写的基础控件样式。打开独立窗口、界面重载和会话工具集中在“扩展工具”入口，菜单没有返回扩展中心操作；主窗口导航由宿主承担。独立窗口提供语言与主题入口，可跟随宿主语言。安装审阅后一次完成授权与启用，可选权限默认不勾选。
 
-无同源权限的 sandbox、响应 CSP、文档启动限制和受控 MessagePort 共同建立 UI 边界。作者不能直接访问宿主 DOM、可用原生 IPC、系统凭据或任意路径，不能加载远程页面 / 脚本；网络和持久化由 Wasm 返回既有 effects。窗口、代次、租约与资源哈希在原生读取时复核。它不是额外的 OS 资源沙箱，仍需审核代码并分别验收真实 WebView。细节见 [安全规范](./security.md#执行隔离与数据能力)。
+无同源权限的 sandbox、响应 CSP、文档启动限制和受控 MessagePort 共同建立 UI 边界。作者不能直接访问宿主 DOM、可用原生 IPC、系统凭据或任意路径，不能加载远程页面 / 脚本。通用网络和私有 KV 使用既有 Wasm effects；长连接与图库使用下面的固定原生服务。窗口、代次、租约与资源哈希在原生读取时复核。它不是额外的 OS 资源沙箱，仍需审核代码并分别验收真实 WebView。细节见 [安全规范](./security.md#执行隔离与数据能力)。
+
+## Wasm、界面与原生服务
+
+| 职责                   | 当前实例                                              | 生命周期                             |
+| ---------------------- | ----------------------------------------------------- | ------------------------------------ |
+| 有界计算与校验         | 计算器表达式 / 数值算法、贪吃蛇得分重放、信使文本导出 | 每次 Wasm 调用使用新实例             |
+| 高频显示与交互         | Canvas 游戏步进、曲线拖动、表单与消息布局             | 当前隔离界面，检查点保留会话         |
+| 私有 KV 或通用网络效果 | 计算器工作区、贪吃蛇纪录                              | 明确动作、授权及 effect 回执         |
+| 固定桌面服务           | LAN 监听与聊天、Commons 与现有应用图库                | 原生服务持有能力，逐次核验身份与授权 |
+
+SDK 只暴露 `lan` 与 `wallpaper` 服务，不是任意服务注册或原生命令路由。两者分别要求 `messaging:lan` 与 `wallpapers:manage`；普通 HTTP 授权不能代替它们，新声明也不能让旧宿主自动具备实现。
+
+LAN 长连接归属使用服务的原生窗口。切换路由或重建 iframe 不会停止已经开启的监听；最后一个相关原生窗口关闭、明确停止、撤权、替换或退出才回收连接，历史仍保留。导入会话不会自动监听、重连或发送，明文与身份边界见 [安全规范](./security.md#原生服务与外部来源)。
+
+壁纸服务复用应用现有图库与设置 revision，不创建第二份背景偏好。远程来源固定 Commons，操作时重新核对 Public domain / CC0、图片地址和资源额度。下载原图进入系统另存流程；加入图库使用重绘压缩结果。设置应用背景不等于设置操作系统桌面壁纸。
 
 ## 运行与数据边界
 
@@ -64,18 +79,20 @@ Wasm 负责请求分派、计算、业务校验和视图状态。宿主在固定
 
 插件通过受控 effect 请求私有存储或声明的网络操作。宿主注入当轮授权和存储快照，核验后执行 effect，再以 `host-result` 和明确回执继续调用插件。插件不能自行伪造宿主授权，也不能因为结果接收失败就假定副作用没有发生。存储写入使用 revision 比较；冲突和已完成但响应省略等结果应保留草稿并说明状态，不自动重放写入。
 
-| 数据或能力                      | 所有者与边界                                                         |
-| ------------------------------- | -------------------------------------------------------------------- |
-| 插件源码、清单、锁文件、fixture | 市场仓库维护，经过 PR 审查；不含用户数据或生产私钥                   |
-| `target/`、`dist/` 与待发布包   | 本机 / CI 生成，不提交；发布附件作为客户端下载来源                   |
-| 已安装包、授权、安装代次和来源  | 桌面宿主管理；本开发目录不是用户安装目录                             |
-| 视图 `state`、表单与导入会话    | 插件会话输入，需重新验证；不自动等同可信数据或业务备份               |
-| 插件私有存储                    | 宿主按插件隔离并提供配额、原子写入和 revision；插件定义自身数据语义  |
-| 用户文本与文件                  | 由用户显式提供并满足相应授权；文件标识不等于任意路径访问             |
-| 网络与凭据                      | 宿主核验声明和授权后请求；系统凭据由宿主保管并注入，不把密钥读回插件 |
-| 文件产物                        | 插件返回有界内容，由用户选择位置保存；插件不指定任意目标路径         |
+| 数据或能力                      | 所有者与边界                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| 插件源码、清单、锁文件、fixture | 市场仓库维护，经过 PR 审查；不含用户数据或生产私钥                              |
+| `target/`、`dist/` 与待发布包   | 本机 / CI 生成，不提交；发布附件作为客户端下载来源                              |
+| 已安装包、授权、安装代次和来源  | 桌面宿主管理；本开发目录不是用户安装目录                                        |
+| 视图 `state`、表单与导入会话    | 插件会话输入，需重新验证；不自动等同可信数据或业务备份                          |
+| 插件私有存储                    | 宿主按插件隔离并提供配额、原子写入和 revision；插件定义自身数据语义             |
+| 用户文本与文件                  | 由用户显式提供并满足相应授权；文件标识不等于任意路径访问                        |
+| 通用网络与凭据                  | 宿主核验声明和授权后请求；系统凭据由宿主保管并注入，不把密钥读回插件            |
+| LAN 联系人与消息历史            | 独立原生服务按插件 ID 保存，不属于插件 KV；导航不停止连接，窗口生命周期控制回收 |
+| 图库、应用背景与原图            | 复用现有图库和设置；原图另存须用户选位置，不向界面返回路径                      |
+| 文件产物                        | 插件返回有界内容，由用户选择位置保存；插件不指定任意目标路径                    |
 
-当前市场插件只按需使用文本和私有存储，不请求网络、系统凭据或任意文件系统。精确声明以各自 `extension.json` 为准。浏览器演示不能代替桌面 Wasm 安装、worker 和系统能力验收。
+精确声明以各自 `extension.json` 为准。当前两款离线插件使用可选私有存储，信使使用 LAN 服务，壁纸库使用壁纸服务，均不开放任意文件系统或 Shell。浏览器中的服务替身不能代替桌面安装、真实网络、对话框及多窗口生命周期验收。
 
 ## 源码职责
 
@@ -92,7 +109,7 @@ Wasm 负责请求分派、计算、业务校验和视图状态。宿主在固定
 | [.github/actions/host-tool/action.yml](../.github/actions/host-tool/action.yml)              | 从指定宿主版本构建权威无界面工具                        |
 | [.github/workflows/publish.yml](../.github/workflows/publish.yml)                            | 分开构建与生产签名发布任务                              |
 
-宿主的[extension_runtime.rs](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src-tauri/src/extension_runtime.rs)维护 ABI 和资源约束，[extension_view.rs](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src-tauri/src/extension_view.rs)维护视图校验，[extension_execution.rs](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src-tauri/src/extension_execution.rs)管理效果往返，[extension-view.tsx](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src/features/extensions/extension-view.tsx)负责实际控件渲染。跨仓库链接指向宿主集成分支供定位，发布验收必须使用已审核的确定提交。
+宿主的 [extension_runtime.rs](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src-tauri/src/extension_runtime.rs) 维护 ABI 和资源约束，[extension_view.rs](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src-tauri/src/extension_view.rs) 维护视图校验，[extension_execution.rs](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src-tauri/src/extension_execution.rs) 管理效果往返，[extension-view.tsx](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/src/features/extensions/extension-view.tsx) 负责通用控件渲染。原生服务入口与长期选择见宿主 [ADR 0013](https://github.com/YanChao001/tauri-desktop-starter/blob/feature/workflows-and-extensions/docs/adr/0013-extension-desktop-services.md)；发布验收必须使用已审核的确定提交，不能把文档分支链接作为版本证据。
 
 ## 兼容与演进
 
