@@ -38,6 +38,13 @@ fn render(input: &str) -> Result<Value, String> {
     {
         return Err("Unsupported chat view request".into());
     }
+    if !request.state.is_empty() {
+        let state: BTreeMap<String, Value> =
+            serde_json::from_str(&request.state).map_err(|_| "Invalid chat view state")?;
+        if !state.is_empty() {
+            return Err("Unsupported chat view state; original data was preserved".into());
+        }
+    }
     let en = request.locale == "en";
     let field = |key: &str| request.fields.get(key).cloned().unwrap_or_default();
     let name = field("nickname");
@@ -47,9 +54,9 @@ fn render(input: &str) -> Result<Value, String> {
         || name.chars().count() > 40
         || name.chars().any(char::is_control)
         || draft.len() > 8192
-        || draft.contains('\0')
+        || unsafe_text(&draft)
         || exported.len() > 256 * 1024
-        || exported.contains('\0')
+        || unsafe_text(&exported)
     {
         return Err("Chat nickname, draft or export exceeds its limit".into());
     }
@@ -79,6 +86,12 @@ fn render(input: &str) -> Result<Value, String> {
         "blocks":[{"kind":"markdown","text":if en {"Open this extension's custom interface to start a listener, connect by IP and exchange real messages. This view does not simulate peers or delivery."} else {"请在本扩展的自定义界面中开启监听、输入对方 IP 连接并收发真实消息。此视图不会模拟联系人或消息送达。"}}],
         "effects":[],"artifacts":artifacts,"errors":{}
     }))
+}
+
+fn unsafe_text(value: &str) -> bool {
+    value
+        .chars()
+        .any(|character| character.is_control() && !matches!(character, '\n' | '\r' | '\t'))
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -117,10 +130,33 @@ mod tests {
             input(Some("send"), json!({})),
             input(Some("export"), json!({})),
             input(None, json!({"nickname":"bad\nname"})),
+            input(None, json!({"nickname":"🌍".repeat(31)})),
+            input(None, json!({"draft":"bad\u{7}text"})),
+            input(Some("export"), json!({"export":"bad\u{1b}text"})),
             input(None, json!({"draft":"x".repeat(8193)})),
             input(Some("export"), json!({"export":"x".repeat(262145)})),
         ] {
             assert!(render(&value).is_err());
         }
+    }
+    #[test]
+    fn state_is_validated_without_resetting_future_or_invalid_data() {
+        for state in ["not-json", "null", "[]", "{\"version\":3}"] {
+            let mut request: Value = serde_json::from_str(&input(None, json!({}))).unwrap();
+            request["state"] = state.into();
+            assert!(render(&request.to_string()).is_err());
+        }
+        let mut request: Value = serde_json::from_str(&input(None, json!({}))).unwrap();
+        request["state"] = "{}".into();
+        assert!(render(&request.to_string()).is_ok());
+    }
+    #[test]
+    fn export_preserves_literal_text_at_the_utf8_limit() {
+        let prefix = "<script>literal & safe</script>\r\n\t界";
+        let text = format!("{prefix}{}", "x".repeat(262_144 - prefix.len()));
+        assert_eq!(text.len(), 262_144);
+        let view = render(&input(Some("export"), json!({"export":text}))).unwrap();
+        assert_eq!(view["artifacts"][0]["content"], text);
+        assert_eq!(view["artifacts"][0]["mediaType"], "text/plain");
     }
 }

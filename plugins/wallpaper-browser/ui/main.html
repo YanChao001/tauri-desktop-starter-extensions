@@ -161,8 +161,6 @@
       .results {
         display: grid;
         gap: 8px;
-        max-height: 620px;
-        overflow: auto;
         padding: 3px;
       }
       .result {
@@ -266,7 +264,7 @@
       }
       .gallery {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
         gap: 14px;
         margin-top: 16px;
       }
@@ -347,11 +345,11 @@
         .preview {
           position: static;
         }
-        .results {
-          max-height: 330px;
-        }
         .gallery {
-          grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+          grid-template-columns: repeat(
+            auto-fill,
+            minmax(min(100%, 170px), 1fr)
+          );
         }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -369,7 +367,7 @@
         </div>
         <button id="settings" type="button" data-variant="outline"></button>
       </header>
-      <p id="permission" class="sr-only" role="status" hidden></p>
+      <p id="permission" class="muted" role="status" hidden></p>
       <div class="tabs" role="tablist" aria-label="Wallpaper collections">
         <button
           id="remote-tab"
@@ -458,7 +456,11 @@
         </div>
         <div id="gallery" class="gallery"></div>
       </section>
-      <dialog id="confirm-dialog">
+      <dialog
+        id="confirm-dialog"
+        aria-labelledby="dialog-title"
+        aria-describedby="dialog-description"
+      >
         <h2 id="dialog-title"></h2>
         <p id="dialog-description" class="muted"></p>
         <label id="rename-label" hidden
@@ -484,12 +486,22 @@
           tab = "remote",
           entries = [],
           selected = null,
-          preview = null;
+          preview = null,
+          entriesQuery = "",
+          initialized = false,
+          accessEpoch = 0,
+          refreshPending = false,
+          libraryLoaded = false,
+          dialogKind = null,
+          dialogItem = null,
+          lastResultsState = "";
         let library = { revision: 0, items: [], limit: 24 };
         const tr = (zh, en) => (snapshot?.locale === "en" ? en : zh);
         const allowed = () =>
-          snapshot?.grantedPermissions.includes("wallpapers:manage") &&
+          snapshot?.grantedPermissions?.includes("wallpapers:manage") &&
           Boolean(starter.services?.request);
+        const granted = (capability) =>
+          allowed() && snapshot.grantedPermissions.includes(capability);
         function text(tag, value, className) {
           const element = document.createElement(tag);
           element.textContent = value;
@@ -510,6 +522,11 @@
         }
         function failure(error, searching = false) {
           switch (error?.code) {
+            case "INVALID_ARGUMENT":
+              return tr(
+                "图片、名称或搜索参数不可用，请检查输入并重试。",
+                "The image, name or search parameters are unavailable. Review your input and retry.",
+              );
             case "SETTINGS_CONFLICT":
               return tr(
                 "设置已在其他窗口改变，请刷新图库后重试。",
@@ -552,7 +569,13 @@
                   );
           }
         }
-        function button(label, action, primary = false, actionName = "") {
+        function button(
+          label,
+          action,
+          primary = false,
+          actionName = "",
+          capability = "wallpapers:manage",
+        ) {
           const element = text("button", label);
           element.type = "button";
           if (actionName) {
@@ -566,43 +589,224 @@
           }
           if (primary) element.className = "primary";
           else element.dataset.variant = "outline";
-          element.disabled = busy || !allowed();
+          element.disabled = busy || !granted(capability);
           element.onclick = () => void work(action);
           return element;
         }
+        function isObject(value) {
+          return (
+            value !== null && typeof value === "object" && !Array.isArray(value)
+          );
+        }
+        function validText(value, limit) {
+          return (
+            Boolean(value.trim()) &&
+            Array.from(value).length <= limit &&
+            !/[\u0000-\u001f\u007f-\u009f]/.test(value)
+          );
+        }
+        function isImageData(value) {
+          return (
+            typeof value === "string" &&
+            value.length <= 2 * 1024 * 1024 &&
+            /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(
+              value,
+            )
+          );
+        }
+        function isImage(value) {
+          return (
+            isObject(value) &&
+            /^[a-f0-9]{16}$/.test(value.resultId) &&
+            typeof value.title === "string" &&
+            Array.from(value.title).length <= 120 &&
+            ["originalUrl", "previewUrl", "sourceUrl"].every(
+              (key) =>
+                typeof value[key] === "string" &&
+                value[key].length <= 4096 &&
+                /^https:\/\//.test(value[key]),
+            ) &&
+            ["width", "height"].every(
+              (key) =>
+                Number.isSafeInteger(value[key]) &&
+                value[key] >= 0 &&
+                value[key] <= 30000,
+            )
+          );
+        }
+        function isLibrary(value) {
+          return (
+            isObject(value) &&
+            Number.isInteger(value.revision) &&
+            value.revision >= 0 &&
+            value.revision <= 2147483647 &&
+            value.limit === 24 &&
+            Array.isArray(value.items) &&
+            value.items.length <= value.limit &&
+            new Set(value.items.map((item) => item?.id)).size ===
+              value.items.length &&
+            value.items.every(
+              (item) =>
+                isObject(item) &&
+                /^[a-fA-F0-9]{64}$/.test(item.id) &&
+                typeof item.name === "string" &&
+                item.name.length <= 1024 &&
+                typeof item.active === "boolean" &&
+                (item.dataUrl === null || isImageData(item.dataUrl)),
+            )
+          );
+        }
+        function validResponse(action, response) {
+          if (!isObject(response)) return false;
+          switch (action) {
+            case "list":
+            case "apply":
+            case "rename":
+            case "remove":
+              return isLibrary(response);
+            case "import-resource":
+              return isLibrary(response.library);
+            case "import":
+              return response.cancelled === true || isLibrary(response.library);
+            case "open-settings":
+              return response.opened === true;
+            default:
+              return false;
+          }
+        }
         async function request(action, extra = {}) {
-          const remote = [
-            "search",
-            "preview",
-            "import-remote",
-            "download-original",
-          ].includes(action);
-          return starter.services.request("wallpaper", {
+          if (!allowed()) throw { code: "EXTENSION_UNAVAILABLE" };
+          const epoch = accessEpoch;
+          const response = await starter.services.request("wallpaper", {
             action,
             ...extra,
-            ...(remote ? { networkMode: $("network-mode").value } : {}),
           });
+          if (epoch !== accessEpoch || !allowed())
+            throw { code: "EXTENSION_UNAVAILABLE" };
+          if (!validResponse(action, response))
+            throw { code: "EXTENSION_RUN_FAILED" };
+          return response;
+        }
+        function networkMode() {
+          return $("network-mode").value === "system" &&
+            granted("network:system-proxy")
+            ? "system"
+            : "direct";
+        }
+        async function withImage(url, action) {
+          if (!granted("network:images"))
+            throw { code: "EXTENSION_UNAVAILABLE" };
+          const epoch = accessEpoch;
+          const resource = await starter.services.request("resources", {
+            action: "fetch-image",
+            url,
+            networkMode: networkMode(),
+          });
+          const resourceId =
+            isObject(resource) && typeof resource.resourceId === "string"
+              ? resource.resourceId
+              : null;
+          try {
+            if (epoch !== accessEpoch || !granted("network:images"))
+              throw { code: "EXTENSION_UNAVAILABLE" };
+            if (
+              !resourceId ||
+              resourceId.length > 160 ||
+              !/^[A-Za-z0-9_-]+$/.test(resourceId) ||
+              !["image/jpeg", "image/png", "image/webp"].includes(
+                resource.mime,
+              ) ||
+              !Number.isSafeInteger(resource.bytes) ||
+              resource.bytes <= 0 ||
+              resource.bytes > 16 * 1024 * 1024 ||
+              !Number.isSafeInteger(resource.width) ||
+              !Number.isSafeInteger(resource.height) ||
+              resource.width <= 0 ||
+              resource.height <= 0 ||
+              resource.width > 8192 ||
+              resource.height > 8192 ||
+              resource.width * resource.height > 16000000 ||
+              !/^[a-f0-9]{64}$/.test(resource.sha256)
+            )
+              throw { code: "EXTENSION_RUN_FAILED" };
+            return await action(resource);
+          } finally {
+            if (resourceId)
+              await starter.services
+                .request("resources", { action: "release", resourceId })
+                .catch(() => {});
+          }
+        }
+        function readResults(next) {
+          const source = next?.view?.state;
+          if (typeof source !== "string" || source.length > 240000) return;
+          let state;
+          try {
+            state = JSON.parse(source);
+          } catch {
+            return;
+          }
+          if (
+            !isObject(state) ||
+            state.schema !== 1 ||
+            !Array.isArray(state.items) ||
+            state.items.length > 12 ||
+            !state.items.every(isImage) ||
+            new Set(state.items.map((item) => item.resultId)).size !==
+              state.items.length ||
+            typeof state.query !== "string" ||
+            !validText(state.query, 100)
+          )
+            return;
+          const key = JSON.stringify([state.query, state.items]);
+          if (key === lastResultsState) return;
+          lastResultsState = key;
+          entries = state.items;
+          entriesQuery =
+            state.items.length || state.error === ""
+              ? state.query
+              : entriesQuery;
+          if (
+            selected &&
+            !entries.some((item) => item.resultId === selected.resultId)
+          ) {
+            selected = null;
+            preview = null;
+          }
+        }
+        function focusTarget() {
+          const active = document.activeElement;
+          const id = active?.id;
+          const resultId = active?.dataset.resultId;
+          const action = active?.dataset.action;
+          const wallpaperId = active?.closest(".card")?.dataset.wallpaperId;
+          return () =>
+            id
+              ? $(id)
+              : resultId
+                ? Array.from(document.querySelectorAll(".result")).find(
+                    (element) => element.dataset.resultId === resultId,
+                  )
+                : action
+                  ? Array.from(
+                      document.querySelectorAll("button[data-action]"),
+                    ).find(
+                      (element) =>
+                        element.dataset.action === action &&
+                        element.closest(".card")?.dataset.wallpaperId ===
+                          wallpaperId,
+                    )
+                  : null;
+        }
+        function restoreFocus(find) {
+          if (document.activeElement !== document.body) return;
+          const target = find();
+          if (target && !target.disabled && target.getClientRects().length)
+            target.focus({ preventScroll: true });
         }
         async function work(action) {
           if (busy || !allowed()) return;
-          const active = document.activeElement;
-          const returnFocus = active?.id
-            ? () => $(active.id)
-            : active?.dataset.resultId
-              ? () =>
-                  Array.from(document.querySelectorAll(".result")).find(
-                    (element) =>
-                      element.dataset.resultId === active.dataset.resultId,
-                  )
-              : active?.dataset.action
-                ? () =>
-                    Array.from(document.querySelectorAll(".card button")).find(
-                      (element) =>
-                        element.dataset.action === active.dataset.action &&
-                        element.closest(".card").dataset.wallpaperId ===
-                          active.closest(".card")?.dataset.wallpaperId,
-                    )
-                : () => null;
+          const returnFocus = focusTarget();
           busy = true;
           render();
           try {
@@ -612,57 +816,123 @@
           } finally {
             busy = false;
             render();
-            if (document.activeElement === document.body) {
-              const target = returnFocus();
-              if (target && !target.disabled && target.getClientRects().length)
-                target.focus({ preventScroll: true });
+            restoreFocus(returnFocus);
+            if (refreshPending) {
+              refreshPending = false;
+              if (tab === "local" && allowed()) void work(refresh);
             }
           }
         }
         async function refresh() {
           library = await request("list");
+          libraryLoaded = true;
         }
-        function checkpointNavigation() {
-          return starter.checkpoint(
-            {
-              query: $("query").value,
-              tab,
-              networkMode: $("network-mode").value,
-            },
-            false,
-          );
+        let checkpointTimer = null,
+          checkpointRunning = false,
+          pendingCheckpoint = null,
+          lastCheckpoint = "";
+        function checkpointNavigation(immediate = false) {
+          pendingCheckpoint = JSON.stringify({
+            query: $("query").value,
+            tab,
+            networkMode: $("network-mode").value,
+            fit: $("fit").value,
+          });
+          clearTimeout(checkpointTimer);
+          if (immediate) void flushCheckpoint();
+          else checkpointTimer = setTimeout(() => void flushCheckpoint(), 250);
+        }
+        async function flushCheckpoint() {
+          if (checkpointRunning) return;
+          checkpointRunning = true;
+          try {
+            while (pendingCheckpoint !== null) {
+              const value = pendingCheckpoint;
+              pendingCheckpoint = null;
+              if (value === lastCheckpoint) continue;
+              await starter.checkpoint(JSON.parse(value), false);
+              lastCheckpoint = value;
+            }
+          } catch {
+            message(
+              tr(
+                "界面草稿未保存，请稍后再试。",
+                "The interface draft was not saved. Try again shortly.",
+              ),
+              true,
+            );
+          } finally {
+            checkpointRunning = false;
+          }
         }
         async function search() {
           const query = $("query").value.trim();
-          if (!query) return;
-          let response;
-          try {
-            response = await request("search", { query });
-          } catch (error) {
-            message(failure(error, true), true);
-            return;
-          }
-          entries = response.items;
-          selected = null;
-          preview = null;
-          if (!entries.length)
+          if (!granted("network:https")) {
             message(
               tr(
-                "没有找到图片，试试其他关键词。",
-                "No images found. Try another keyword.",
+                "请授予 HTTPS 网络权限以搜索图片；本机图库仍可使用。",
+                "Grant HTTPS network access to search images. The local gallery remains available.",
               ),
+              true,
             );
-          await checkpointNavigation();
+            return;
+          }
+          if (!validText(query, 100)) {
+            message(
+              tr(
+                "搜索关键词需为 1–100 个字符，且不含控制字符。",
+                "Enter 1–100 search characters without control characters.",
+              ),
+              true,
+            );
+            return;
+          }
+          checkpointNavigation(true);
+          try {
+            const epoch = accessEpoch;
+            const view = await starter.run("search", {
+              query,
+              networkMode: networkMode(),
+            });
+            if (epoch !== accessEpoch || !granted("network:https"))
+              throw { code: "EXTENSION_UNAVAILABLE" };
+            readResults({ view });
+            if (view?.errors?.query) {
+              message(view.errors.query, true);
+              return;
+            }
+            if (!entries.length)
+              message(
+                tr(
+                  "没有找到图片，试试其他关键词。",
+                  "No images found. Try another keyword.",
+                ),
+              );
+          } catch (error) {
+            message(failure(error, true), true);
+          }
         }
         async function select(item) {
-          const response = await request("preview", {
-            resultId: item.resultId,
+          if (!granted("network:images")) {
+            selected = item;
+            preview = null;
+            return;
+          }
+          const epoch = accessEpoch;
+          await withImage(item.previewUrl, async ({ resourceId }) => {
+            const response = await starter.services.request("resources", {
+              action: "preview",
+              resourceId,
+            });
+            if (epoch !== accessEpoch || !granted("network:images"))
+              throw { code: "EXTENSION_UNAVAILABLE" };
+            if (!isObject(response) || !isImageData(response.dataUrl))
+              throw { code: "EXTENSION_RUN_FAILED" };
+            selected = item;
+            preview = response.dataUrl;
           });
-          selected = response.image;
-          preview = response.dataUrl;
         }
-        async function confirm(kind, item) {
-          const dialog = $("confirm-dialog");
+        function renderDialog(kind, item) {
           $("dialog-title").textContent =
             kind === "rename"
               ? tr("重命名壁纸", "Rename wallpaper")
@@ -676,14 +946,24 @@
                 );
           $("dialog-description").title = $("dialog-description").textContent;
           $("rename-label").hidden = kind !== "rename";
-          $("rename-value").value = item.name;
           $("rename-caption").textContent = tr("图片名称", "Image name");
           $("dialog-cancel").textContent = tr("取消", "Cancel");
           $("dialog-confirm").textContent = tr("确认", "Confirm");
+        }
+        async function confirm(kind, item) {
+          const dialog = $("confirm-dialog");
+          dialogKind = kind;
+          dialogItem = item;
+          dialog.returnValue = "no";
+          renderDialog(kind, item);
+          $("rename-value").value = item.name;
+          $("rename-value").setCustomValidity("");
           dialog.showModal();
           if (kind === "rename") $("rename-value").focus();
           return new Promise((resolve) => {
-            dialog.onclose = () =>
+            dialog.onclose = () => {
+              dialogKind = null;
+              dialogItem = null;
               resolve(
                 dialog.returnValue === "yes"
                   ? kind === "rename"
@@ -691,10 +971,29 @@
                     : true
                   : null,
               );
+            };
             $("dialog-cancel").onclick = () => dialog.close("no");
             $("dialog-confirm").onclick = () => {
-              if (kind !== "rename" || $("rename-value").value.trim())
-                dialog.close("yes");
+              const field = $("rename-value");
+              if (kind === "rename" && !validText(field.value.trim(), 120)) {
+                field.setCustomValidity(
+                  tr(
+                    "名称需为 1–120 个字符，且不含控制字符。",
+                    "Enter 1–120 name characters without control characters.",
+                  ),
+                );
+                field.reportValidity();
+                return;
+              }
+              dialog.close("yes");
+            };
+            $("rename-value").oninput = () =>
+              $("rename-value").setCustomValidity("");
+            $("rename-value").onkeydown = (event) => {
+              if (event.key === "Enter" && !event.isComposing) {
+                event.preventDefault();
+                if (!event.repeat) $("dialog-confirm").click();
+              }
             };
             dialog.oncancel = () => {
               dialog.returnValue = "no";
@@ -702,7 +1001,24 @@
           });
         }
         function render() {
+          const returnFocus = focusTarget();
+          const previousDetails = $("preview").querySelector("details");
+          const detailsOpen =
+            previousDetails?.open &&
+            previousDetails.dataset.resultId === selected?.resultId;
           document.documentElement.lang = snapshot?.locale || "zh-CN";
+          if (dialogKind && dialogItem) renderDialog(dialogKind, dialogItem);
+          document.title = tr("壁纸库", "Wallpaper Library");
+          document
+            .querySelector('[role="tablist"]')
+            .setAttribute(
+              "aria-label",
+              tr("壁纸分类", "Wallpaper collections"),
+            );
+          $("network-mode").setAttribute(
+            "aria-label",
+            tr("壁纸网络连接方式", "Wallpaper network mode"),
+          );
           $("title").textContent = tr("壁纸库", "Wallpaper Library");
           $("settings").textContent = tr("图库设置", "Gallery settings");
           $("remote-tab").textContent = tr("发现壁纸", "Discover");
@@ -721,34 +1037,61 @@
             tr("搜索必应图片", "Search Bing Images"),
           );
           $("query").placeholder = tr("搜索图片", "Search images");
-          $("permission").hidden = allowed();
-          $("permission").textContent = tr(
-            "请在扩展权限中授予“壁纸管理”，以使用搜索、下载和本机图库。该权限不会改变操作系统壁纸。",
-            "Grant wallpaper management in extension permissions to search, download and manage the gallery. It does not change the operating system wallpaper.",
-          );
+          const missing = [];
           if (!allowed())
-            $("source-note").textContent =
-              $("permission").textContent + " " + $("source-note").textContent;
+            missing.push(
+              tr(
+                "本机图库需要壁纸管理权限。",
+                "The local gallery needs wallpaper management.",
+              ),
+            );
+          else {
+            if (!granted("network:https"))
+              missing.push(
+                tr(
+                  "搜索需 HTTPS 网络权限；本机图库仍可使用。",
+                  "Search needs HTTPS network access; the local gallery remains available.",
+                ),
+              );
+            if (!granted("network:images"))
+              missing.push(
+                tr(
+                  "远程图片需单独授权。",
+                  "Remote images need their own grant.",
+                ),
+              );
+            if (!granted("links:open"))
+              missing.push(
+                tr(
+                  "来源链接需单独授权。",
+                  "Source links need their own grant.",
+                ),
+              );
+          }
+          $("permission").hidden = missing.length === 0;
+          $("permission").textContent = missing.join(" ");
           $("search").textContent = busy
             ? tr("处理中…", "Working…")
             : tr("搜索", "Search");
-          for (const id of [
-            "search",
-            "settings",
-            "refresh",
-            "import",
-            "query",
-            "fit",
-            "network-mode",
-          ])
+          for (const id of ["settings", "refresh", "import", "fit"])
             $(id).disabled = busy || !allowed();
+          for (const id of ["search", "query", "network-mode"])
+            $(id).disabled = busy || !granted("network:https");
+          $("network-mode").options[0].disabled = !granted(
+            "network:system-proxy",
+          );
+          if (
+            !granted("network:system-proxy") &&
+            $("network-mode").value === "system"
+          )
+            $("network-mode").value = "direct";
           $("refresh").textContent = tr("刷新", "Refresh");
           $("import").textContent = tr("导入图片", "Import image");
           $("fit-label").textContent = tr("显示方式", "Fit");
           $("network-label").textContent = tr("连接：", "Connection: ");
           $("network-mode").options[0].text = tr(
-            "跟随系统代理（推荐）",
-            "Follow system proxy (recommended)",
+            "跟随系统代理（需授权）",
+            "Follow system proxy (separate grant)",
           );
           $("network-mode").options[1].text = tr(
             "直接连接",
@@ -772,15 +1115,22 @@
             ["星空", "Space", "space nebula"],
           ])
             $("presets").append(
-              button(tr(zh, en), async () => {
-                $("query").value = query;
-                await search();
-              }),
+              button(
+                tr(zh, en),
+                async () => {
+                  $("query").value = query;
+                  await search();
+                },
+                false,
+                "preset-" + query,
+                "network:https",
+              ),
             );
           $("result-summary").textContent = tr(
-            `${entries.length} 张图片`,
-            `${entries.length} images`,
+            `${entries.length} 张图片${entriesQuery ? " · " + entriesQuery : ""}`,
+            `${entries.length} images${entriesQuery ? " · " + entriesQuery : ""}`,
           );
+          $("result-summary").title = $("result-summary").textContent;
           $("results").replaceChildren();
           for (const item of entries) {
             const card = button("", () => select(item));
@@ -813,12 +1163,30 @@
               ),
             );
           else {
-            const image = document.createElement("img");
-            image.className = "preview-image";
-            image.id = "preview-image";
-            image.alt = selected.title;
-            image.src = preview;
-            $("preview").append(image, text("h2", selected.title));
+            if (preview) {
+              const image = document.createElement("img");
+              image.className = "preview-image";
+              image.id = "preview-image";
+              image.alt = selected.title;
+              image.src = preview;
+              $("preview").append(image);
+            } else
+              $("preview").append(
+                text(
+                  "p",
+                  granted("network:images")
+                    ? tr(
+                        "再次选择图片以载入预览。",
+                        "Select the image again to load its preview.",
+                      )
+                    : tr(
+                        "远程图片未授权，仍可查看来源信息。",
+                        "Remote images are not granted. Source details remain available.",
+                      ),
+                  "placeholder",
+                ),
+              );
+            $("preview").append(text("h2", selected.title));
             const meta = document.createElement("div");
             meta.className = "metadata";
             if (selected.author)
@@ -845,10 +1213,11 @@
             );
             const detailsPanel = document.createElement("details");
             detailsPanel.className = "image-details";
-            detailsPanel.append(
-              text("summary", tr("图片信息", "Image details")),
-              meta,
-            );
+            detailsPanel.dataset.resultId = selected.resultId;
+            detailsPanel.open = Boolean(detailsOpen);
+            const summary = text("summary", tr("图片信息", "Image details"));
+            summary.id = "image-details-summary";
+            detailsPanel.append(summary, meta);
             $("preview").append(detailsPanel);
             const actions = document.createElement("div");
             actions.className = "actions";
@@ -856,10 +1225,15 @@
               button(
                 tr("加入本机图库", "Add to gallery"),
                 async () => {
-                  const response = await request("import-remote", {
-                    resultId: selected.resultId,
+                  const item = selected;
+                  await withImage(item.originalUrl, async ({ resourceId }) => {
+                    const response = await request("import-resource", {
+                      resourceId,
+                      name: item.title,
+                    });
+                    library = response.library;
+                    libraryLoaded = true;
                   });
-                  library = response.library;
                   message(
                     tr(
                       "已导入压缩图库版本；原图可单独下载。",
@@ -869,37 +1243,66 @@
                 },
                 true,
                 "add-to-gallery",
+                "network:images",
               ),
               button(
                 tr("下载原图…", "Save original…"),
                 async () => {
-                  const response = await request("download-original", {
-                    resultId: selected.resultId,
+                  const item = selected;
+                  await withImage(item.originalUrl, async (resource) => {
+                    const extension =
+                      resource.mime === "image/png"
+                        ? "png"
+                        : resource.mime === "image/webp"
+                          ? "webp"
+                          : "jpg";
+                    const response = await starter.services.request(
+                      "resources",
+                      {
+                        action: "save",
+                        resourceId: resource.resourceId,
+                        name: "wallpaper-" + item.resultId + "." + extension,
+                      },
+                    );
+                    if (
+                      !isObject(response) ||
+                      typeof response.cancelled !== "boolean"
+                    )
+                      throw { code: "EXTENSION_RUN_FAILED" };
+                    message(
+                      response.cancelled
+                        ? tr("已取消保存。", "Save cancelled.")
+                        : tr(
+                            "原图已保存至所选位置。",
+                            "Original saved to the chosen location.",
+                          ),
+                    );
                   });
-                  message(
-                    response.cancelled
-                      ? tr("已取消保存。", "Save cancelled.")
-                      : tr(
-                          "原图已保存至所选位置。",
-                          "Original saved to the chosen location.",
-                        ),
-                  );
                 },
                 false,
                 "download-original",
+                "network:images",
               ),
               button(
                 tr("查看来源与许可", "View source & license"),
-                () => request("open-source", { resultId: selected.resultId }),
+                () =>
+                  starter.services.request("links", {
+                    url: selected.sourceUrl,
+                  }),
                 false,
                 "open-source",
+                "links:open",
               ),
             );
             $("preview").append(actions);
           }
           $("local-summary").textContent = tr(
-            `${library.items.length} / ${library.limit} 张`,
-            `${library.items.length} / ${library.limit} images`,
+            libraryLoaded
+              ? `${library.items.length} / ${library.limit} 张`
+              : "尚未载入图库",
+            libraryLoaded
+              ? `${library.items.length} / ${library.limit} images`
+              : "Gallery not loaded",
           );
           $("gallery").replaceChildren();
           for (const item of library.items) {
@@ -973,8 +1376,18 @@
           }
           if (!library.items.length)
             $("gallery").append(
-              text("p", tr("暂无图片", "No images yet"), "muted"),
+              text(
+                "p",
+                libraryLoaded
+                  ? tr("暂无图片", "No images yet")
+                  : tr(
+                      "点击刷新载入本机图库。",
+                      "Refresh to load the local gallery.",
+                    ),
+                "muted",
+              ),
             );
+          restoreFocus(returnFocus);
         }
         $("search-form").onsubmit = (event) => {
           event.preventDefault();
@@ -987,6 +1400,9 @@
           }
         };
         $("refresh").onclick = () => void work(refresh);
+        $("query").oninput = () => checkpointNavigation();
+        $("network-mode").onchange = () => checkpointNavigation(true);
+        $("fit").onchange = () => checkpointNavigation(true);
         $("settings").onclick = () => void work(() => request("open-settings"));
         $("import").onclick = () =>
           void work(async () => {
@@ -995,6 +1411,7 @@
               message(tr("已取消导入。", "Import cancelled."));
             else {
               library = response.library;
+              libraryLoaded = true;
               message(
                 tr("图片已加入本机图库。", "Image added to the local gallery."),
               );
@@ -1004,10 +1421,11 @@
           $(name + "-tab").onclick = () => {
             tab = name;
             render();
-            void checkpointNavigation().catch((error) =>
-              message(failure(error), true),
-            );
-            if (name === "local") void work(refresh);
+            checkpointNavigation(true);
+            if (name === "local") {
+              if (busy) refreshPending = true;
+              else void work(refresh);
+            }
           };
           $(name + "-tab").onkeydown = (event) => {
             if (
@@ -1041,6 +1459,7 @@
         document.addEventListener("keydown", (event) => {
           if (
             event.key === "Escape" &&
+            !$("confirm-dialog").open &&
             (sourceHelp.matches(":hover") ||
               sourceHelp.contains(document.activeElement))
           ) {
@@ -1050,25 +1469,67 @@
         });
         starter.onChange((next) => {
           const wasAllowed = allowed();
+          const previousGrants = (snapshot?.grantedPermissions || [])
+            .slice()
+            .sort()
+            .join(",");
           snapshot = next;
+          if (
+            previousGrants !==
+            (next.grantedPermissions || []).slice().sort().join(",")
+          )
+            accessEpoch++;
+          if (wasAllowed && !allowed()) {
+            entries = [];
+            entriesQuery = "";
+            lastResultsState = "";
+            selected = null;
+            preview = null;
+            library = { revision: 0, items: [], limit: 24 };
+            libraryLoaded = false;
+            refreshPending = false;
+            if ($("confirm-dialog").open) $("confirm-dialog").close("no");
+          } else if (!granted("network:images")) {
+            preview = null;
+          }
+          if (allowed()) readResults(next);
           render();
           if (wasAllowed && !allowed())
             message($("permission").textContent, true);
+          if (initialized && !wasAllowed && allowed()) {
+            if (busy) refreshPending = true;
+            else void work(refresh);
+          }
         });
         void starter.ready
           .then(async (next) => {
             snapshot = next;
             const saved = next.checkpoint;
+            $("network-mode").value = granted("network:system-proxy")
+              ? "system"
+              : "direct";
+            const draftQuery = next.fields?.query;
+            if (typeof draftQuery === "string" && draftQuery.length <= 400)
+              $("query").value = draftQuery;
             if (
               saved &&
               typeof saved.query === "string" &&
-              saved.query.length <= 100
+              Array.from(saved.query).length <= 100
             )
               $("query").value = saved.query;
-            if (saved && ["system", "direct"].includes(saved.networkMode))
+            if (
+              saved &&
+              ["system", "direct"].includes(saved.networkMode) &&
+              (saved.networkMode !== "system" ||
+                granted("network:system-proxy"))
+            )
               $("network-mode").value = saved.networkMode;
+            if (saved && ["cover", "contain"].includes(saved.fit))
+              $("fit").value = saved.fit;
             if (saved && ["remote", "local"].includes(saved.tab))
               tab = saved.tab;
+            if (allowed()) readResults(next);
+            initialized = true;
             render();
             if (allowed()) await work(refresh);
             else message($("permission").textContent, true);

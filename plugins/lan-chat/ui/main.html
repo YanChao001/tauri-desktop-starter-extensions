@@ -60,6 +60,10 @@
         color: var(--primary);
         background: var(--accent);
       }
+      .status.error,
+      #draft-count[data-invalid="true"] {
+        color: var(--destructive);
+      }
       .layout {
         display: grid;
         grid-template-columns: 230px minmax(0, 1fr) 260px;
@@ -319,11 +323,6 @@
         gap: 5px;
         font-size: 0.8rem;
       }
-      .pair {
-        display: grid;
-        grid-template-columns: 1fr 82px;
-        gap: 7px;
-      }
       .connection-details {
         border: 1px solid var(--border);
         background: var(--muted);
@@ -378,10 +377,6 @@
       #confirmation-text {
         flex: 1 1 12rem;
         min-width: 0;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
         overflow-wrap: anywhere;
       }
       [hidden] {
@@ -459,7 +454,8 @@
         <div>
           <h1>局域网信使</h1>
         </div>
-        <span id="status" class="status">尚未监听</span
+        <span id="status" class="status" role="status" aria-live="polite"
+          >尚未监听</span
         ><button id="refresh" class="secondary" type="button">刷新</button>
       </header>
       <div id="permission" hidden>
@@ -514,6 +510,7 @@
               maxlength="8192"
               placeholder="写点什么吧…  Enter 发送，Shift + Enter 换行"
               aria-label="消息内容"
+              aria-describedby="draft-count"
             ></textarea>
             <div class="composer-footer">
               <span id="draft-count" class="muted">0 / 8192 字节</span
@@ -600,6 +597,164 @@
         "use strict";
         const $ = (id) => document.getElementById(id);
         const encoder = new TextEncoder();
+        const translations = {
+          局域网信使: "LAN Messenger",
+          刷新: "Refresh",
+          "请在扩展中心为本插件启用“局域网消息”能力，再返回此页。聊天不会自动开启监听。":
+            "Enable LAN messaging for this plugin in the extension center, then return here. Listening starts only when you request it.",
+          确认历史操作: "Confirm history operation",
+          确认操作: "Confirm",
+          取消: "Cancel",
+          联系人和会话: "Contacts and conversations",
+          会话: "Conversations",
+          搜索联系人: "Search contacts",
+          "搜索昵称或 IP": "Search nickname or IP",
+          选择会话: "Select a conversation",
+          当前聊天: "Current conversation",
+          选择一位朋友: "Select a friend",
+          未选择会话: "No conversation selected",
+          重新连接: "Reconnect",
+          导出会话: "Export conversation",
+          移除联系人: "Remove contact",
+          消息记录: "Message history",
+          发送给当前联系人: "Send to the selected contact",
+          "写点什么吧… Enter 发送，Shift + Enter 换行":
+            "Write a message… Enter to send, Shift + Enter for a new line",
+          消息内容: "Message text",
+          发送消息: "Send message",
+          连接与设置: "Connection and settings",
+          我的设备: "My device",
+          聊天昵称: "Chat nickname",
+          取一个昵称: "Choose a nickname",
+          监听端口: "Listening port",
+          开启监听: "Start listening",
+          停止监听与连接: "Stop listener and connections",
+          保存昵称: "Save nickname",
+          连接朋友: "Connect to a friend",
+          "对方 IP": "Peer IP",
+          "例如 192.168.1.25": "For example, 192.168.1.25",
+          "输入数字形式的私有或回环 IP；双方均需先开启监听。":
+            "Enter a private or loopback IP literal. Both devices must start listening first.",
+          对方端口: "Peer port",
+          连接设备: "Connect device",
+          历史记录: "History",
+          清空本机消息历史: "Clear local message history",
+          连接与隐私说明: "Connection and privacy",
+          "把监听 IP 与端口告诉对方，双方均需先开启监听。仅接受数字形式的私有或回环 IP，不扫描网络。连接失败时核对同一网络、端口和系统防火墙；应用不会修改防火墙。":
+            "Share your listening IP and port. Both devices must listen first. Only private or loopback IP literals are accepted; no network scanning is performed. Check the network, port and system firewall if a connection fails. The app does not change your firewall.",
+          "局域网 TCP 为明文传输，昵称由对方自行声明，未认证身份。仅连接可信设备，勿发送密码或敏感信息。本插件只收发文本，不访问或传输文件。":
+            "LAN TCP messages are unencrypted. Peers choose their own nicknames without identity verification. Connect only to trusted devices and avoid passwords or sensitive information. This plugin exchanges text only; it does not access or transfer files.",
+          "联系人来自真实连接，离线会话与最近最多 500 条消息 / 1 MiB 保存在本机。切换页面仍会收信；最后使用的应用窗口关闭、撤权或退出会停止连接。":
+            "Contacts come from real connections. Offline conversations and up to 500 recent messages / 1 MiB stay on this device. Messages can arrive after navigation. Connections stop when the last window using the service closes, permission is revoked or the app exits.",
+          "“已写入连接”不等于对方收到；“已送达”表示对方已保存消息。":
+            "Written to the connection does not confirm receipt. Delivered means the other device has saved the message.",
+          尚未监听: "Not listening",
+          正在读取状态: "Reading status",
+          状态读取失败: "Refresh failed",
+          "状态已过期，请刷新重试。":
+            "Status is out of date. Refresh to retry.",
+          "正在监听 · {port}": "Listening · {port}",
+          "本机监听地址：{addresses}": "Local listening addresses: {addresses}",
+          "{count} 位联系人": "{count} contacts",
+          没有匹配的联系人: "No matching contacts",
+          "连接成功后，朋友会出现在这里。":
+            "Friends appear here after a successful connection.",
+          已连接: "Connected",
+          离线: "Offline",
+          "{count} 条未读消息": "{count} unread messages",
+          友: "?",
+          "打个招呼，开启对话": "Say hello to start a conversation",
+          让同一网络里的朋友靠近一点: "Connect with a friend on your network",
+          "当前会话还没有消息。":
+            "There are no messages in this conversation yet.",
+          "先开启监听，再使用 IP 连接可信设备。":
+            "Start listening, then connect to a trusted device by IP.",
+          "已写入连接，等待回执": "Written to connection; awaiting receipt",
+          已送达: "Delivered",
+          发送失败: "Send failed",
+          已接收: "Received",
+          "未收到送达回执（当前离线）":
+            "No delivery receipt (currently offline)",
+          未知状态: "Unknown status",
+          "{count} / 8192 字节": "{count} / 8192 bytes",
+          "消息不能包含控制字符（换行和制表符除外）。":
+            "Messages cannot contain control characters other than line breaks and tabs.",
+          "草稿尚未保存，请保留此页面后重试。":
+            "The draft has not been saved. Keep this page open and retry.",
+          "检查点无法安全恢复，原始数据已保留。请先导出会话，再重新打开或处理原始会话。":
+            "The checkpoint cannot be restored safely. Original data has been preserved. Export the session before reopening or repairing it.",
+          "服务报告连接或历史写入错误，请检查连接并刷新。":
+            "The service reported a connection or history write error. Check the connection and refresh.",
+          "已发起连接，正在等待对方协议握手。":
+            "Connection requested; waiting for the peer handshake.",
+          "消息已写入连接，等待送达回执。":
+            "Message written to the connection; awaiting delivery receipt.",
+          "操作已完成。": "Operation completed.",
+          "本机聊天存档损坏或超限，原始数据已保留，未覆盖。":
+            "Local chat history is damaged or exceeds its limit. Original data has been preserved.",
+          "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。":
+            "Local chat history uses an incompatible version. Original data has been preserved. Use a compatible app version.",
+          "操作未完成，请核对权限、IP、端口和连接状态。":
+            "The operation did not complete. Check permission, IP, port and connection status.",
+          "端口需要是 1 到 65535 的整数。":
+            "The port must be an integer from 1 to 65535.",
+          "昵称需要 1 到 40 个可见字符，且不超过 120 UTF-8 字节。":
+            "Use 1 to 40 visible characters and no more than 120 UTF-8 bytes for the nickname.",
+          "移除“{nickname}”及其本机消息历史？":
+            "Remove “{nickname}” and its local message history?",
+          "清空所有本机聊天消息？联系人与对方设备上的消息将保留。":
+            "Clear all local chat messages? Contacts and messages on the other device will be kept.",
+          "（我）": " (me)",
+          "局域网信使 · {nickname}": "LAN Messenger · {nickname}",
+          "导出时间：{time}": "Exported: {time}",
+          "因导出大小限制，省略最早 {count} 条消息。":
+            "{count} oldest messages omitted to stay within the export size limit.",
+          "会话已导出。": "Conversation exported.",
+          "已取消导出，消息仍保存在本机。":
+            "Export cancelled. Messages remain on this device.",
+          "会话导出未完成，请重试。":
+            "Conversation export did not complete. Retry.",
+          "界面连接未完成，请重新打开本插件。":
+            "The interface did not connect. Reopen this plugin.",
+        };
+        const locale = () => (ui.snapshot?.locale === "en" ? "en" : "zh-CN");
+        function t(key, values = {}) {
+          const pattern = locale() === "en" ? (translations[key] ?? key) : key;
+          return pattern.replace(/\{(\w+)\}/g, (_, name) =>
+            String(values[name] ?? ""),
+          );
+        }
+        // Remember the original text nodes; translating must preserve inputs and focus.
+        const fixedText = [];
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+        );
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          if (node.parentElement?.closest("script,style")) continue;
+          const key = node.textContent.trim().replace(/\s+/g, " ");
+          if (Object.hasOwn(translations, key)) fixedText.push({ node, key });
+        }
+        const fixedAttributes = [];
+        for (const node of document.querySelectorAll(
+          "[aria-label],[placeholder],[title]",
+        ))
+          for (const attribute of ["aria-label", "placeholder", "title"]) {
+            const key = node
+              .getAttribute(attribute)
+              ?.trim()
+              .replace(/\s+/g, " ");
+            if (Object.hasOwn(translations, key))
+              fixedAttributes.push({ node, attribute, key });
+          }
+        function translate() {
+          for (const { node, key } of fixedText)
+            node.textContent = `${t(key)} `;
+          for (const { node, attribute, key } of fixedAttributes)
+            node.setAttribute(attribute, t(key));
+          document.title = t("局域网信使");
+        }
         const ui = {
           state: null,
           selected: "",
@@ -618,12 +773,35 @@
           lastError: null,
           confirmation: null,
           nicknameDirty: false,
+          checkpointPending: false,
+          checkpointTimer: null,
+          queuedCheckpoint: null,
+          checkpointBlocked: false,
+          checkpointError: false,
+          readError: null,
+          draftRevision: 0,
         };
         const bytes = (text) => encoder.encode(text).length;
+        const token = (value) =>
+          typeof value === "string" && /^[a-f0-9]{32}$/.test(value);
+        const unsafeText = (value) =>
+          /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(value);
+        const validName = (value) =>
+          typeof value === "string" &&
+          value.trim().length > 0 &&
+          bytes(value) <= 120 &&
+          [...value].length <= 40 &&
+          !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
+        const validPort = (value) =>
+          Number.isInteger(value) && value >= 1 && value <= 65535;
+        const validTime = (value) =>
+          Number.isSafeInteger(value) &&
+          value >= 0 &&
+          value <= 8640000000000000;
         const selectedPeer = () =>
           ui.state?.peers.find((peer) => peer.id === ui.selected);
         function notice(message = "", error = false) {
-          if (!message) return;
+          if (!message || ui.disposed) return;
           void starter
             .notify(message, { tone: error ? "error" : "info" })
             .catch(() => {});
@@ -634,59 +812,117 @@
           );
         }
         function checkpoint() {
-          if (!ui.snapshot || ui.disposed) return;
-          starter
-            .checkpoint(
-              {
-                version: 1,
-                selected: ui.selected,
-                draft: $("draft").value,
-                address: $("address").value,
-                port: $("port").value,
-                remotePort: $("remote-port").value,
-                nickname: $("nickname").value,
-                nicknameDirty: ui.nicknameDirty,
-              },
-              $("draft").value.length > 0 || ui.nicknameDirty,
-            )
-            .catch(() => notice("草稿尚未保存，请保留此页面后重试。", true));
+          if (!ui.snapshot || ui.disposed || ui.checkpointBlocked) return;
+          ui.queuedCheckpoint = {
+            value: {
+              version: 1,
+              selected: ui.selected,
+              draft: $("draft").value,
+              address: $("address").value,
+              port: $("port").value,
+              remotePort: $("remote-port").value,
+              nickname: $("nickname").value,
+              nicknameDirty: ui.nicknameDirty,
+            },
+            dirty: $("draft").value.length > 0 || ui.nicknameDirty,
+          };
+          if (!ui.checkpointPending && !ui.checkpointTimer)
+            void flushCheckpoint();
+        }
+        async function flushCheckpoint() {
+          if (ui.disposed || !ui.queuedCheckpoint) return;
+          const queued = ui.queuedCheckpoint;
+          ui.queuedCheckpoint = null;
+          ui.checkpointPending = true;
+          try {
+            await starter.checkpoint(queued.value, queued.dirty);
+            ui.checkpointError = false;
+          } catch {
+            if (!ui.checkpointError)
+              notice(t("草稿尚未保存，请保留此页面后重试。"), true);
+            ui.checkpointError = true;
+          } finally {
+            ui.checkpointPending = false;
+            if (!ui.disposed && ui.queuedCheckpoint)
+              ui.checkpointTimer = setTimeout(() => {
+                ui.checkpointTimer = null;
+                void flushCheckpoint();
+              }, 150);
+          }
         }
         function validated(value) {
           if (
             !value ||
             typeof value !== "object" ||
+            Array.isArray(value) ||
             typeof value.running !== "boolean" ||
-            typeof value.nickname !== "string" ||
+            !validName(value.nickname) ||
+            !token(value.nodeId) ||
+            !Number.isInteger(value.port) ||
+            value.port < 0 ||
+            value.port > 65535 ||
+            (value.running && value.port === 0) ||
             !Array.isArray(value.peers) ||
             value.peers.length > 64 ||
             !Array.isArray(value.messages) ||
             value.messages.length > 500 ||
-            !Array.isArray(value.addresses)
+            !Array.isArray(value.addresses) ||
+            value.addresses.length > 64 ||
+            value.addresses.some(
+              (address) =>
+                typeof address !== "string" ||
+                !address ||
+                bytes(address) > 100 ||
+                unsafeText(address),
+            ) ||
+            (value.lastError !== null &&
+              (typeof value.lastError !== "string" ||
+                bytes(value.lastError) > 2048))
           )
             throw new Error("Invalid LAN status");
-          for (const peer of value.peers)
+          const peerIds = new Set();
+          for (const peer of value.peers) {
             if (
               !peer ||
-              typeof peer.id !== "string" ||
-              typeof peer.nickname !== "string" ||
+              !token(peer.id) ||
+              peerIds.has(peer.id) ||
+              !validName(peer.nickname) ||
               typeof peer.address !== "string" ||
+              !peer.address ||
+              bytes(peer.address) > 100 ||
+              unsafeText(peer.address) ||
               typeof peer.connected !== "boolean" ||
-              !Number.isInteger(peer.port) ||
-              !Number.isInteger(peer.unread)
+              !validPort(peer.port) ||
+              !validTime(peer.lastSeen) ||
+              !Number.isInteger(peer.unread) ||
+              peer.unread < 0 ||
+              peer.unread > 500
             )
               throw new Error("Invalid LAN contact");
-          for (const message of value.messages)
+            peerIds.add(peer.id);
+          }
+          const messageIds = new Set();
+          for (const message of value.messages) {
             if (
               !message ||
-              typeof message.id !== "string" ||
-              typeof message.peerId !== "string" ||
-              typeof message.nickname !== "string" ||
+              !token(message.id) ||
+              messageIds.has(message.id) ||
+              !peerIds.has(message.peerId) ||
+              !token(message.sender) ||
+              !validName(message.nickname) ||
               typeof message.text !== "string" ||
+              !message.text.trim() ||
+              bytes(message.text) > 8192 ||
+              unsafeText(message.text) ||
               typeof message.outgoing !== "boolean" ||
-              typeof message.at !== "number" ||
-              typeof message.delivery !== "string"
+              !validTime(message.at) ||
+              !["received", "sent", "delivered", "failed"].includes(
+                message.delivery,
+              )
             )
               throw new Error("Invalid LAN message");
+            messageIds.add(message.id);
+          }
           return value;
         }
         function element(tag, className, text) {
@@ -707,7 +943,12 @@
                 Number(b.connected) - Number(a.connected) ||
                 b.lastSeen - a.lastSeen,
             );
-          const key = JSON.stringify([peers, ui.selected]);
+          const key = JSON.stringify([
+            peers,
+            ui.selected,
+            locale(),
+            ui.pending,
+          ]);
           if (key === ui.contactsKey) return;
           ui.contactsKey = key;
           const focused = document.activeElement?.dataset.peer;
@@ -715,7 +956,7 @@
           $("peer-count").textContent = String(ui.state?.peers.length ?? 0);
           $("peer-count").setAttribute(
             "aria-label",
-            `${ui.state?.peers.length ?? 0} 位联系人`,
+            t("{count} 位联系人", { count: ui.state?.peers.length ?? 0 }),
           );
           if (!peers.length) {
             $("contacts").append(
@@ -723,8 +964,8 @@
                 "p",
                 "muted",
                 $("search").value
-                  ? "没有匹配的联系人"
-                  : "连接成功后，朋友会出现在这里。",
+                  ? t("没有匹配的联系人")
+                  : t("连接成功后，朋友会出现在这里。"),
               ),
             );
             return;
@@ -732,15 +973,16 @@
           for (const peer of peers) {
             const button = element("button", "contact");
             button.type = "button";
+            button.disabled = ui.pending;
             button.dataset.peer = peer.id;
-            button.title = `${peer.nickname} · ${peer.address}:${peer.port} · ${peer.connected ? "已连接" : "离线"}${peer.unread ? ` · ${peer.unread} 条未读消息` : ""}`;
+            button.title = `${peer.nickname} · ${peer.address}:${peer.port} · ${peer.connected ? t("已连接") : t("离线")}${peer.unread ? ` · ${t("{count} 条未读消息", { count: peer.unread })}` : ""}`;
             button.setAttribute("aria-label", button.title);
             button.setAttribute(
               "aria-pressed",
               String(peer.id === ui.selected),
             );
             button.append(
-              element("span", "avatar", [...peer.nickname][0] ?? "友"),
+              element("span", "avatar", [...peer.nickname][0] ?? t("友")),
             );
             const copy = element("span", "contact-copy");
             const name = element("span", "contact-name");
@@ -748,7 +990,10 @@
               "span",
               `dot${peer.connected ? " online" : ""}`,
             );
-            dot.setAttribute("aria-label", peer.connected ? "已连接" : "离线");
+            dot.setAttribute(
+              "aria-label",
+              peer.connected ? t("已连接") : t("离线"),
+            );
             name.append(dot, element("strong", "", peer.nickname));
             copy.append(name, element("span", "muted", peer.address));
             button.append(copy);
@@ -758,10 +1003,11 @@
                 "badge",
                 peer.unread > 99 ? "99+" : String(peer.unread),
               );
-              unread.title = `${peer.unread} 条未读消息`;
+              unread.title = t("{count} 条未读消息", { count: peer.unread });
               button.append(unread);
             }
             button.onclick = () => {
+              if (ui.pending) return;
               ui.selected = peer.id;
               ui.messagesKey = "";
               render();
@@ -779,7 +1025,12 @@
           const messages = (ui.state?.messages ?? []).filter(
             (message) => message.peerId === ui.selected,
           );
-          const key = JSON.stringify([ui.selected, messages]);
+          const key = JSON.stringify([
+            ui.selected,
+            peer?.connected,
+            messages,
+            locale(),
+          ]);
           if (key === ui.messagesKey) return;
           const changedPeer = !ui.messagesKey;
           ui.messagesKey = key;
@@ -795,30 +1046,32 @@
               element(
                 "strong",
                 "",
-                peer ? "打个招呼，开启对话" : "让同一网络里的朋友靠近一点",
+                peer
+                  ? t("打个招呼，开启对话")
+                  : t("让同一网络里的朋友靠近一点"),
               ),
               element(
                 "p",
                 "muted",
                 peer
-                  ? "当前会话还没有消息。"
-                  : "先开启监听，再使用 IP 连接可信设备。",
+                  ? t("当前会话还没有消息。")
+                  : t("先开启监听，再使用 IP 连接可信设备。"),
               ),
             );
             target.append(empty);
           }
           const delivery = {
-            sent: "已写入连接，等待回执",
-            delivered: "已送达",
-            failed: "发送失败",
-            received: "已接收",
+            sent: t("已写入连接，等待回执"),
+            delivered: t("已送达"),
+            failed: t("发送失败"),
+            received: t("已接收"),
           };
           for (const message of messages) {
             const row = element(
               "article",
               `message${message.outgoing ? " outgoing" : ""}`,
             );
-            const time = new Date(message.at).toLocaleString("zh-CN", {
+            const time = new Date(message.at).toLocaleString(locale(), {
               month: "numeric",
               day: "numeric",
               hour: "2-digit",
@@ -834,8 +1087,8 @@
               "div",
               "message-meta",
               message.delivery === "sent" && !peer?.connected
-                ? "未收到送达回执（当前离线）"
-                : (delivery[message.delivery] ?? "未知状态"),
+                ? t("未收到送达回执（当前离线）")
+                : (delivery[message.delivery] ?? t("未知状态")),
             );
             receipt.title = receipt.textContent;
             row.append(author, element("div", "bubble", message.text), receipt);
@@ -846,17 +1099,24 @@
         function scheduleRead() {
           clearTimeout(ui.readTimer);
           const peer = selectedPeer();
-          if (!peer?.unread || !ui.visible || document.hidden || ui.pending)
+          if (
+            !peer?.unread ||
+            !ui.visible ||
+            document.hidden ||
+            ui.pending ||
+            ui.checkpointBlocked
+          )
             return;
           ui.readTimer = setTimeout(() => {
             if (
               selectedPeer()?.unread &&
+              ui.selected === peer.id &&
               !ui.pending &&
               ui.visible &&
               !document.hidden
             )
               call(
-                { action: "markRead", peerId: ui.selected },
+                { action: "markRead", peerId: peer.id },
                 { background: true },
               );
           }, 250);
@@ -868,51 +1128,79 @@
           const state = ui.state;
           const peer = selectedPeer();
           const busy = ui.pending || ui.snapshot?.busy === true;
+          const writeBlocked = busy || ui.checkpointBlocked || !allowed;
+          const invalidDraft =
+            bytes($("draft").value) > 8192 || unsafeText($("draft").value);
           $("confirm-action").disabled = busy;
-          $("status").textContent = state?.running
-            ? `正在监听 · ${state.port}`
-            : "尚未监听";
+          $("status").textContent = ui.readError
+            ? t("状态读取失败")
+            : state?.running
+              ? t("正在监听 · {port}", { port: state.port })
+              : !state && allowed
+                ? t("正在读取状态")
+                : t("尚未监听");
           $("status").classList.toggle("on", state?.running === true);
-          $("status").title = $("status").textContent;
-          $("peer-name").textContent = peer?.nickname ?? "选择一位朋友";
+          $("status").classList.toggle("error", ui.readError !== null);
+          $("status").title = ui.readError
+            ? t("状态已过期，请刷新重试。")
+            : $("status").textContent;
+          $("peer-name").textContent = peer?.nickname ?? t("选择一位朋友");
           $("peer-name").title = $("peer-name").textContent;
           $("peer-detail").textContent = peer
-            ? `${peer.address}:${peer.port} · ${peer.connected ? "已连接" : "离线"}`
-            : "未选择会话";
+            ? `${peer.address}:${peer.port} · ${peer.connected ? t("已连接") : t("离线")}`
+            : t("未选择会话");
           $("peer-detail").title = $("peer-detail").textContent;
           $("addresses").textContent = state?.running
             ? state.addresses
                 .map((address) => `${address}:${state.port}`)
                 .join("\n")
-            : "尚未监听";
+            : t("尚未监听");
           $("addresses").dataset.running = String(state?.running === true);
           $("addresses").title = $("addresses").textContent;
           $("addresses").setAttribute(
             "aria-label",
-            `本机监听地址：${$("addresses").textContent}`,
+            t("本机监听地址：{addresses}", {
+              addresses: $("addresses").textContent,
+            }),
           );
           $("send").disabled =
-            busy ||
-            !allowed ||
+            writeBlocked ||
             !peer?.connected ||
             !$("draft").value.trim() ||
-            bytes($("draft").value) > 8192;
-          $("start").disabled = busy || !allowed || state?.running === true;
-          $("stop").disabled = busy || !state?.running;
-          $("connect").disabled = busy || !state?.running;
-          $("rename").disabled = busy || !allowed;
+            invalidDraft;
+          $("draft").setAttribute("aria-invalid", String(invalidDraft));
+          $("draft-count").dataset.invalid = String(invalidDraft);
+          $("start").disabled = writeBlocked || state?.running === true;
+          $("stop").disabled = writeBlocked || !state?.running;
+          $("connect").disabled = writeBlocked || !state?.running;
+          $("rename").disabled = writeBlocked;
           $("reconnect").disabled =
-            busy || !state?.running || !peer || peer.connected;
+            writeBlocked || !state?.running || !peer || peer.connected;
           $("export").disabled =
             busy ||
+            !allowed ||
             !state?.messages.some((message) => message.peerId === ui.selected);
-          $("forget").disabled = busy || !peer || peer.connected;
-          $("clear").disabled = busy || !state?.messages.length;
+          $("forget").disabled = writeBlocked || !peer || peer.connected;
+          $("clear").disabled = writeBlocked || !state?.messages.length;
           $("refresh").disabled = busy || !allowed;
-          $("port").disabled = state?.running === true;
-          $("draft-count").textContent =
-            `${bytes($("draft").value)} / 8192 字节`;
-          $("draft-count").title = $("draft-count").textContent;
+          for (const id of ["draft", "nickname", "address", "remote-port"])
+            $(id).disabled = ui.checkpointBlocked;
+          $("port").disabled = ui.checkpointBlocked || state?.running === true;
+          $("draft-count").textContent = t("{count} / 8192 字节", {
+            count: bytes($("draft").value),
+          });
+          $("draft-count").title = unsafeText($("draft").value)
+            ? t("消息不能包含控制字符（换行和制表符除外）。")
+            : $("draft-count").textContent;
+          if (ui.confirmation) {
+            const request = ui.confirmation.request;
+            $("confirmation-text").textContent =
+              request.action === "forget"
+                ? t("移除“{nickname}”及其本机消息历史？", {
+                    nickname: ui.confirmation.nickname,
+                  })
+                : t("清空所有本机聊天消息？联系人与对方设备上的消息将保留。");
+          }
           renderContacts();
           renderMessages();
           scheduleRead();
@@ -921,7 +1209,9 @@
           if (
             ui.pending ||
             ui.disposed ||
+            ui.snapshot?.busy === true ||
             !permitted() ||
+            (ui.checkpointBlocked && request.action !== "status") ||
             (background && ui.backgroundPending)
           )
             return false;
@@ -940,6 +1230,7 @@
             if (ui.disposed || !permitted() || epoch !== ui.actionEpoch)
               return false;
             ui.state = state;
+            ui.readError = null;
             if (
               !ui.selected ||
               !state.peers.some((peer) => peer.id === ui.selected)
@@ -955,33 +1246,38 @@
             if (!ui.nicknameDirty && document.activeElement !== $("nickname"))
               $("nickname").value = state.nickname;
             if (state.lastError && state.lastError !== ui.lastError) {
-              ui.lastError = state.lastError;
-              notice(`服务提示：${state.lastError}`, true);
-            } else if (!background)
+              notice(t("服务报告连接或历史写入错误，请检查连接并刷新。"), true);
+            } else if (!background && request.action !== "status")
               notice(
                 request.action === "connect"
-                  ? "已发起连接，正在等待对方协议握手。"
+                  ? t("已发起连接，正在等待对方协议握手。")
                   : request.action === "send"
-                    ? "消息已写入连接，等待送达回执。"
-                    : "操作已完成。",
+                    ? t("消息已写入连接，等待送达回执。")
+                    : t("操作已完成。"),
               );
+            ui.lastError = state.lastError;
             if (request.action === "nickname" || request.action === "start")
               checkpoint();
             return true;
           } catch (error) {
-            if (
-              !ui.disposed &&
-              epoch === ui.actionEpoch &&
-              (!background || !ui.state)
-            )
-              notice(
-                error?.code === "STORAGE_CORRUPT"
-                  ? "本机聊天存档损坏或超限，原始数据已保留，未覆盖。"
-                  : error?.code === "EXTENSION_INCOMPATIBLE"
-                    ? "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。"
-                    : `操作未完成，请核对权限、IP、端口和连接状态。${typeof error?.code === "string" ? `（${error.code}）` : ""}`,
-                true,
-              );
+            if (!ui.disposed && permitted() && epoch === ui.actionEpoch) {
+              const code =
+                typeof error?.code === "string" ? error.code : "UNKNOWN";
+              const report = !background || ui.readError !== code;
+              if (request.action === "status" || request.action === "markRead")
+                ui.readError = code;
+              if (report)
+                notice(
+                  error?.code === "STORAGE_CORRUPT"
+                    ? t("本机聊天存档损坏或超限，原始数据已保留，未覆盖。")
+                    : error?.code === "EXTENSION_INCOMPATIBLE"
+                      ? t(
+                          "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。",
+                        )
+                      : t("操作未完成，请核对权限、IP、端口和连接状态。"),
+                  true,
+                );
+            }
             return false;
           } finally {
             if (background) ui.backgroundPending = false;
@@ -992,17 +1288,28 @@
         function port(id) {
           const value = Number($(id).value);
           if (!Number.isInteger(value) || value < 1 || value > 65535) {
-            notice("端口需要是 1 到 65535 的整数。", true);
+            notice(t("端口需要是 1 到 65535 的整数。"), true);
             return null;
           }
           return value;
         }
+        function nickname() {
+          const value = $("nickname").value;
+          if (validName(value)) return value;
+          notice(
+            t("昵称需要 1 到 40 个可见字符，且不超过 120 UTF-8 字节。"),
+            true,
+          );
+          $("nickname").focus();
+          return null;
+        }
         $("start").onclick = () => {
           const value = port("port");
-          if (value)
+          const name = nickname();
+          if (value && name)
             call({
               action: "start",
-              nickname: $("nickname").value,
+              nickname: name,
               port: value,
             });
         };
@@ -1016,50 +1323,80 @@
               port: value,
             });
         };
-        $("rename").onclick = () =>
-          call({ action: "nickname", nickname: $("nickname").value });
+        $("rename").onclick = () => {
+          const name = nickname();
+          if (name) call({ action: "nickname", nickname: name });
+        };
         $("refresh").onclick = () => call({ action: "status" });
         $("reconnect").onclick = () => {
           const peer = selectedPeer();
           if (peer)
             call({ action: "connect", address: peer.address, port: peer.port });
         };
-        function confirmAction(message, request) {
-          ui.confirmation = request;
-          $("confirmation-text").textContent = message;
-          $("confirmation-text").title = message;
+        function confirmAction(request, trigger, nickname = "") {
+          if (
+            ui.pending ||
+            ui.snapshot?.busy ||
+            ui.checkpointBlocked ||
+            !permitted()
+          )
+            return;
+          ui.confirmation = { request, trigger, nickname };
           $("confirmation").hidden = false;
+          render();
           $("confirm-action").focus();
         }
-        $("confirm-action").onclick = () => {
-          const request = ui.confirmation;
+        function closeConfirmation() {
+          const confirmation = ui.confirmation;
           ui.confirmation = null;
           $("confirmation").hidden = true;
-          if (request) call(request);
+          return confirmation;
+        }
+        function restoreConfirmationFocus(confirmation) {
+          const trigger = confirmation && $(confirmation.trigger);
+          (trigger && !trigger.disabled ? trigger : $("refresh")).focus();
+        }
+        $("confirm-action").onclick = async () => {
+          if ($("confirm-action").disabled) return;
+          const confirmation = closeConfirmation();
+          if (confirmation) await call(confirmation.request);
+          if (!ui.disposed && permitted())
+            restoreConfirmationFocus(confirmation);
         };
-        $("cancel-action").onclick = () => {
-          ui.confirmation = null;
-          $("confirmation").hidden = true;
-        };
+        $("cancel-action").onclick = () =>
+          restoreConfirmationFocus(closeConfirmation());
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && ui.confirmation) {
+            event.preventDefault();
+            restoreConfirmationFocus(closeConfirmation());
+          }
+        });
         $("forget").onclick = () => {
           const peer = selectedPeer();
           if (peer)
-            confirmAction(`移除“${peer.nickname}”及其本机消息历史？`, {
-              action: "forget",
-              peerId: peer.id,
-            });
+            confirmAction(
+              {
+                action: "forget",
+                peerId: peer.id,
+              },
+              "forget",
+              peer.nickname,
+            );
         };
         $("clear").onclick = () =>
-          confirmAction(
-            "清空所有本机聊天消息？联系人与对方设备上的消息将保留。",
-            { action: "clearHistory" },
-          );
+          confirmAction({ action: "clearHistory" }, "clear");
         async function sendMessage() {
           const peer = selectedPeer();
           const content = $("draft").value;
+          const revision = ui.draftRevision;
           if (ui.pending || !peer || $("send").disabled) return;
           if (await call({ action: "send", peerId: peer.id, text: content })) {
-            if ($("draft").value === content) $("draft").value = "";
+            if (
+              ui.selected === peer.id &&
+              ui.draftRevision === revision &&
+              $("draft").value === content
+            )
+              $("draft").value = "";
             checkpoint();
             render();
           }
@@ -1072,6 +1409,7 @@
           void sendMessage();
         };
         $("draft").oninput = () => {
+          ui.draftRevision++;
           checkpoint();
           render();
         };
@@ -1090,41 +1428,59 @@
           $(id).onchange = checkpoint;
         $("export").onclick = async () => {
           const peer = selectedPeer();
-          if (!peer || ui.pending) return;
+          if (
+            !peer ||
+            ui.pending ||
+            $("export").disabled ||
+            !permitted() ||
+            ui.disposed
+          )
+            return;
           const all = ui.state.messages.filter(
             (message) => message.peerId === peer.id,
           );
           const lines = all.map(
             (message) =>
-              `[${new Date(message.at).toLocaleString("zh-CN")}] ${message.nickname}${message.outgoing ? "（我）" : ""}：\n${message.text}\n`,
+              `[${new Date(message.at).toLocaleString(locale())}] ${message.nickname}${message.outgoing ? t("（我）") : ""}:\n${message.text}\n`,
           );
-          let omitted = 0;
-          let body = lines.join("\n");
-          while (bytes(body) > 200 * 1024 && lines.length) {
-            lines.shift();
-            omitted++;
-            body = lines.join("\n");
+          const exportedAt = new Date().toLocaleString(locale());
+          const header = (omitted) =>
+            `${t("局域网信使 · {nickname}", { nickname: peer.nickname })}\n${t("导出时间：{time}", { time: exportedAt })}\n${omitted ? `${t("因导出大小限制，省略最早 {count} 条消息。", { count: omitted })}\n` : ""}\n`;
+          const budget = 200 * 1024 - bytes(header(lines.length));
+          let first = lines.length;
+          let used = 0;
+          while (first > 0) {
+            const next =
+              bytes(lines[first - 1]) + (first < lines.length ? 1 : 0);
+            if (used + next > budget) break;
+            first--;
+            used += next;
           }
-          body = `局域网信使 · ${peer.nickname}\n导出时间：${new Date().toLocaleString("zh-CN")}\n${omitted ? `因导出大小限制，省略最早 ${omitted} 条消息。\n` : ""}\n${body}`;
+          const body = header(first) + lines.slice(first).join("\n");
           ui.pending = true;
           ui.actionEpoch++;
+          const epoch = ui.actionEpoch;
           render();
           try {
             await starter.run("export", {
               nickname: ui.state.nickname,
-              draft: $("draft").value,
+              // The actual unsent draft belongs to the checkpoint; it may exceed
+              // the send limit while being edited and must not prevent an export.
+              draft: "",
               export: body,
             });
+            if (ui.disposed || !permitted() || epoch !== ui.actionEpoch) return;
+            const saved = await starter.saveArtifact(0);
+            if (ui.disposed || !permitted() || epoch !== ui.actionEpoch) return;
             notice(
-              (await starter.saveArtifact(0))
-                ? "会话已导出。"
-                : "已取消导出，消息仍保存在本机。",
+              saved ? t("会话已导出。") : t("已取消导出，消息仍保存在本机。"),
             );
           } catch {
-            notice("会话导出未完成，请重试。", true);
+            if (epoch === ui.actionEpoch && permitted())
+              notice(t("会话导出未完成，请重试。"), true);
           } finally {
             ui.pending = false;
-            render();
+            if (!ui.disposed) render();
           }
         };
         async function poll() {
@@ -1147,40 +1503,106 @@
           if (ui.visible) poll();
         });
         observer.observe(document.body);
-        const off = starter.onChange((snapshot) => {
+        function restore(snapshot) {
+          const saved = snapshot.checkpoint;
+          if (saved === null || saved === undefined) {
+            if (
+              typeof snapshot.fields?.draft === "string" &&
+              bytes(snapshot.fields.draft) <= 32768
+            )
+              $("draft").value = snapshot.fields.draft;
+            return;
+          }
+          const allowedKeys = [
+            "version",
+            "selected",
+            "draft",
+            "address",
+            "port",
+            "remotePort",
+            "nickname",
+            "nicknameDirty",
+          ];
+          if (
+            typeof saved !== "object" ||
+            Array.isArray(saved) ||
+            saved.version !== 1 ||
+            Object.keys(saved).some((key) => !allowedKeys.includes(key)) ||
+            (saved.selected !== undefined &&
+              saved.selected !== "" &&
+              !token(saved.selected)) ||
+            (saved.nicknameDirty !== undefined &&
+              typeof saved.nicknameDirty !== "boolean")
+          )
+            throw new Error("Unsupported LAN checkpoint");
+          const fields = [
+            ["draft", "draft", 32768],
+            ["address", "address", 100],
+            ["port", "port", 5],
+            ["remotePort", "remote-port", 5],
+            ["nickname", "nickname", 160],
+          ];
+          for (const [key, , limit] of fields) {
+            if (saved[key] === undefined) continue;
+            if (
+              typeof saved[key] !== "string" ||
+              bytes(saved[key]) > limit ||
+              ((key === "port" || key === "remotePort") &&
+                (!/^\d{1,5}$/.test(saved[key]) ||
+                  !validPort(Number(saved[key]))))
+            )
+              throw new Error("Invalid LAN checkpoint");
+          }
+          // Validate the entire checkpoint before changing any of the current inputs.
+          ui.selected = saved.selected ?? "";
+          for (const [key, id] of fields)
+            if (saved[key] !== undefined) $(id).value = saved[key];
+          ui.nicknameDirty =
+            saved.nicknameDirty === true && typeof saved.nickname === "string";
+        }
+        function updateSnapshot(snapshot) {
+          if (ui.disposed) return;
+          const wasAllowed = permitted();
+          const previousLocale = locale();
           ui.snapshot = snapshot;
+          const allowed = permitted();
+          if (wasAllowed !== allowed) {
+            ui.actionEpoch++;
+            if (!allowed) {
+              ui.state = null;
+              ui.contactsKey = "";
+              ui.messagesKey = "";
+              ui.readError = null;
+              ui.lastError = null;
+              closeConfirmation();
+            }
+          }
+          if (previousLocale !== locale()) translate();
           if (!ui.restored) {
             ui.restored = true;
-            const saved = snapshot.checkpoint;
-            if (saved?.version === 1) {
-              if (typeof saved.selected === "string")
-                ui.selected = saved.selected;
-              for (const [key, id, limit] of [
-                ["draft", "draft", 8192],
-                ["address", "address", 100],
-                ["port", "port", 5],
-                ["remotePort", "remote-port", 5],
-                ["nickname", "nickname", 120],
-              ])
-                if (
-                  typeof saved[key] === "string" &&
-                  bytes(saved[key]) <= limit
-                )
-                  $(id).value = saved[key];
-              ui.nicknameDirty =
-                saved.nicknameDirty === true &&
-                typeof saved.nickname === "string";
-            } else if (typeof snapshot.fields.draft === "string")
-              $("draft").value = snapshot.fields.draft;
+            try {
+              restore(snapshot);
+            } catch {
+              ui.checkpointBlocked = true;
+              notice(
+                t(
+                  "检查点无法安全恢复，原始数据已保留。请先导出会话，再重新打开或处理原始会话。",
+                ),
+                true,
+              );
+            }
           }
           render();
-        });
+          if (!wasAllowed && allowed) void poll();
+        }
+        const off = starter.onChange(updateSnapshot);
         window.addEventListener(
           "pagehide",
           () => {
             ui.disposed = true;
             clearTimeout(ui.pollTimer);
             clearTimeout(ui.readTimer);
+            clearTimeout(ui.checkpointTimer);
             observer.disconnect();
             off();
           },
@@ -1188,11 +1610,11 @@
         );
         starter.ready
           .then((snapshot) => {
-            ui.snapshot = snapshot;
-            render();
+            if (!ui.snapshot) updateSnapshot(snapshot);
             poll();
           })
-          .catch(() => notice("界面连接未完成，请重新打开本插件。", true));
+          .catch(() => notice(t("界面连接未完成，请重新打开本插件。"), true));
+        translate();
         render();
       })();
     </script>

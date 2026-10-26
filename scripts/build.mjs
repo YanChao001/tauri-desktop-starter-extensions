@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
 import {
-  readFile,
   mkdir,
   mkdtemp,
   rename,
   rm,
-  stat,
+  rmdir,
+  lstat,
   writeFile,
 } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
@@ -23,12 +23,19 @@ import {
   resolveHostTool,
   validatePlugin,
 } from "./host-tool.mjs";
+import {
+  assertUnlinkedPath,
+  ensureDirectory,
+  parseJson,
+  readBounded,
+} from "./files.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 export const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export function packagePlugin(manifest, wasm, uiDocuments = {}) {
   validateManifest(manifest);
   if (
+    !Buffer.isBuffer(wasm) ||
     wasm.length > 16 * 1024 * 1024 ||
     !wasm.subarray(0, 8).equals(Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]))
   )
@@ -37,7 +44,9 @@ export function packagePlugin(manifest, wasm, uiDocuments = {}) {
     !uiDocuments ||
     typeof uiDocuments !== "object" ||
     Array.isArray(uiDocuments) ||
-    Object.values(uiDocuments).some((value) => typeof value !== "string")
+    Object.values(uiDocuments).some(
+      (value) => typeof value !== "string" || !value.isWellFormed(),
+    )
   )
     throw new Error("Invalid UI documents");
   const documents = Object.entries(uiDocuments)
@@ -71,6 +80,11 @@ export function packagePlugin(manifest, wasm, uiDocuments = {}) {
 export function validateListings(listings) {
   if (
     !listings ||
+    typeof listings !== "object" ||
+    Array.isArray(listings) ||
+    Object.keys(listings).some(
+      (key) => !["repository", "plugins"].includes(key),
+    ) ||
     !validRepository(listings.repository) ||
     !Array.isArray(listings.plugins) ||
     listings.plugins.length > 100
@@ -80,9 +94,12 @@ export function validateListings(listings) {
   for (const listing of listings.plugins) {
     if (
       !listing ||
+      typeof listing !== "object" ||
+      Array.isArray(listing) ||
       Object.keys(listing).some(
         (key) => !["directory", "category", "featured"].includes(key),
       ) ||
+      typeof listing.directory !== "string" ||
       !/^[a-z][a-z0-9-]{0,63}$/.test(listing.directory) ||
       !["text", "data", "tools", "games"].includes(listing.category) ||
       typeof listing.featured !== "boolean" ||
@@ -95,28 +112,44 @@ export function validateListings(listings) {
 export async function build({ revision, runBuild = true }) {
   if (!Number.isInteger(revision) || revision <= 0 || revision > 0xffffffff)
     throw new Error("MARKET_REVISION must be a positive u32");
-  const listings = JSON.parse(
-    await readFile(join(root, "listings.json"), "utf8"),
+  const listings = parseJson(
+    await readBounded(join(root, "listings.json"), 64 * 1024),
   );
   validateListings(listings);
   const executable = await resolveHostTool();
   const dist = join(root, "dist");
   const output = join(root, "dist", `market-${revision}`);
-  await mkdir(dist, { recursive: true });
-  try {
-    await stat(output);
-    throw new Error(`Release directory already exists: ${output}`);
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
-  }
-  const staging = await mkdtemp(join(dist, `.market-${revision}-`));
+  await ensureDirectory(dist);
+  const lock = join(dist, `.market-${revision}.lock`);
+  await mkdir(lock);
+  let staging;
   let finished = false;
   try {
+    try {
+      await lstat(output);
+      throw new Error(`Release directory already exists: ${output}`);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    staging = await mkdtemp(join(dist, `.market-${revision}-`));
     const entries = [],
       ids = new Set();
     for (const listing of listings.plugins) {
       const plugin = join(root, "plugins", listing.directory);
+      await assertUnlinkedPath(plugin, true);
+      const artifact = parseJson(
+        await readBounded(join(plugin, "build.json"), 4096),
+      ).artifact;
+      if (
+        typeof artifact !== "string" ||
+        !/^[a-z][a-z0-9_]*\.wasm$/.test(artifact)
+      )
+        throw new Error("Invalid artifact name");
+      const target = join(root, "target", listing.directory);
+      await ensureDirectory(target);
       if (runBuild) {
+        await readBounded(join(plugin, "Cargo.toml"), 1024 * 1024);
+        await readBounded(join(plugin, "Cargo.lock"), 4 * 1024 * 1024);
         const formatted = spawnSync(
           "cargo",
           [
@@ -147,7 +180,7 @@ export async function build({ revision, runBuild = true }) {
             "--manifest-path",
             join(plugin, "Cargo.toml"),
             "--target-dir",
-            join(root, "target", listing.directory),
+            target,
           ],
           {
             stdio: "inherit",
@@ -161,11 +194,6 @@ export async function build({ revision, runBuild = true }) {
           throw new Error(`Build failed: ${listing.directory}`);
       }
       // Each listing declares its artifact name; paths stay inside its isolated target directory.
-      const artifact = JSON.parse(
-        await readFile(join(plugin, "build.json"), "utf8"),
-      ).artifact;
-      if (!/^[a-z][a-z0-9_]*\.wasm$/.test(artifact))
-        throw new Error("Invalid artifact name");
       const { manifest, wasm, uiDocuments } = await validatePlugin({
         executable,
         manifestPath: join(plugin, "extension.json"),
@@ -213,13 +241,17 @@ export async function build({ revision, runBuild = true }) {
     console.log(`Built ${entries.length} package(s): ${output}`);
     return output;
   } finally {
-    if (!finished) {
-      if (
-        dirname(resolve(staging)) !== resolve(dist) ||
-        !basename(staging).startsWith(`.market-${revision}-`)
-      )
-        throw new Error("Unexpected staging directory");
-      await rm(staging, { recursive: true });
+    try {
+      if (!finished && staging) {
+        if (
+          dirname(resolve(staging)) !== resolve(dist) ||
+          !basename(staging).startsWith(`.market-${revision}-`)
+        )
+          throw new Error("Unexpected staging directory");
+        await rm(staging, { recursive: true });
+      }
+    } finally {
+      await rmdir(lock);
     }
   }
 }

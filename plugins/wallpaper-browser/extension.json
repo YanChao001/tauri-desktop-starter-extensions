@@ -1,12 +1,12 @@
 {
   "formatVersion": 3,
   "apiVersion": 2,
-  "minHostVersion": "0.1.5",
+  "minHostVersion": "0.1.6",
   "id": "market.wallpaper-browser",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "name": "壁纸库",
   "author": "Tauri Desktop Starter",
-  "description": "按关键词搜索必应图片，预览、下载第三方来源原图、导入本机图库、设置应用背景，并管理自己的图片。不按许可筛选，图片许可由原站决定。网络与图库操作需要授予壁纸管理权限，不改变操作系统桌面壁纸。",
+  "description": "按关键词搜索必应图片，预览与保存原图，管理本机图库和应用背景。不按许可筛选；搜索、远程图片、来源外链与系统代理分别可选授权，拒绝联网仍可使用本机图库。不改变操作系统桌面壁纸。",
   "icon": "image",
   "commands": [
     {
@@ -24,6 +24,11 @@
     }
   ],
   "permissions": ["wallpapers:manage"],
-  "optionalPermissions": [],
-  "network": []
+  "optionalPermissions": [
+    "network:https",
+    "network:images",
+    "links:open",
+    "network:system-proxy"
+  ],
+  "network": [{ "origin": "https://cn.bing.com", "methods": ["GET"] }]
 }

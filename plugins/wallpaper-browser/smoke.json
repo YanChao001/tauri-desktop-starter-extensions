@@ -6,7 +6,12 @@
       "action": null,
       "state": "",
       "fields": {},
-      "locale": "zh-CN"
+      "locale": "zh-CN",
+      "host": {
+        "permissions": [],
+        "storage": null
+      },
+      "results": []
     },
     "expectJsonSubset": {
       "version": 2,
@@ -22,13 +27,193 @@
       "action": null,
       "state": "",
       "fields": {},
-      "locale": "en"
+      "locale": "en",
+      "host": {
+        "permissions": [],
+        "storage": null
+      },
+      "results": []
     },
     "expectJsonSubset": {
-      "version": 2,
       "display": "Wallpaper Library",
-      "effects": [],
-      "artifacts": []
+      "effects": []
     }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "search",
+      "state": "",
+      "fields": {
+        "query": "landscape",
+        "networkMode": "direct"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectJsonSubset": {
+      "effects": [
+        {
+          "kind": "http",
+          "id": "bing-search",
+          "request": {
+            "url": "https://cn.bing.com/images/search?q=landscape&first=1&count=12&adlt=strict&mkt=zh-CN&cc=CN&setlang=zh-Hans",
+            "method": "GET",
+            "headers": {
+              "Accept": "text/html",
+              "User-Agent": "TauriDesktopStarterWallpaper/1.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+            },
+            "body": null,
+            "credential": null,
+            "networkMode": "direct"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"query\":\"landscape\",\"networkMode\":\"direct\",\"items\":[],\"pending\":{\"query\":\"landscape\",\"networkMode\":\"direct\"},\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": [
+        {
+          "id": "bing-search",
+          "value": {
+            "url": "https://cn.bing.com/images/search?q=landscape&first=1&count=12&adlt=strict&mkt=zh-CN&cc=CN&setlang=zh-Hans",
+            "status": 200,
+            "headers": {},
+            "body": "<input id='sb_form_q' value='landscape'><a class='iusc' href='/images/search?q=landscape&amp;expw=1920&amp;exph=1080' m='{\"murl\":\"https://images.wikipedia.org/one.jpg\",\"purl\":\"https://www.wikipedia.org/one\",\"turl\":\"https://ts2.mm.bing.net/th?id=OIP.test\",\"t\":\"Fixture landscape\"}'>image</a>"
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Images",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"query\":\"landscape\",\"networkMode\":\"direct\",\"items\":[],\"pending\":{\"query\":\"landscape\",\"networkMode\":\"direct\"},\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": [
+        {
+          "id": "bing-search",
+          "value": null,
+          "error": {
+            "code": "EXTENSION_TIMEOUT",
+            "message": "fixture timeout",
+            "retryable": true
+          }
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "errors": {
+        "query": "Image search failed. Check your connection or try another keyword."
+      }
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "search",
+      "state": "",
+      "fields": {
+        "query": "landscape"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["wallpapers:manage"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "errors": {
+        "query": "Grant HTTPS network access to search images. The local gallery remains available."
+      }
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "search",
+      "state": "",
+      "fields": {
+        "query": "landscape",
+        "networkMode": "system"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "errors": {
+        "query": "System proxy access needs its own grant. Grant it or choose a direct connection."
+      }
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"query\":\"landscape\",\"networkMode\":\"direct\",\"items\":[],\"pending\":{\"query\":\"landscape\",\"networkMode\":\"direct\"},\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": [],
+        "storage": null
+      },
+      "results": [
+        {
+          "id": "wrong-operation",
+          "value": {},
+          "error": null
+        }
+      ]
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
   }
 ]

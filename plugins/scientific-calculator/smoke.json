@@ -270,7 +270,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"ans\":42,\"memory\":0,\"history\":[{\"expression\":\"6*7\",\"value\":42,\"angle\":\"rad\"}],\"result\":\"42\",\"notice\":\"\",\"fields\":{\"expression\":\"6*7\",\"angle\":\"rad\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\"},\"pending\":true}",
+      "state": "{\"schema\":1,\"ans\":42,\"memory\":0,\"history\":[{\"expression\":\"6*7\",\"value\":42,\"angle\":\"rad\"}],\"result\":\"42\",\"notice\":\"\",\"fields\":{\"expression\":\"6*7\",\"angle\":\"rad\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\"},\"pending\":true,\"pending_revision\":7}",
       "fields": {},
       "locale": "en",
       "results": [
@@ -278,7 +278,36 @@
           "id": "save-workspace",
           "value": {
             "revision": 8,
-            "values": {}
+            "values": {
+              "calculator-workspace": {
+                "schema": 1,
+                "ans": 42,
+                "memory": 0,
+                "history": [
+                  {
+                    "expression": "6*7",
+                    "value": 42,
+                    "angle": "rad"
+                  }
+                ],
+                "result": "42",
+                "notice": "",
+                "fields": {
+                  "expression": "6*7",
+                  "angle": "rad",
+                  "functions": "x",
+                  "xmin": "-10",
+                  "xmax": "10",
+                  "ymin": "-3",
+                  "ymax": "3",
+                  "a": "0",
+                  "b": "3",
+                  "curve": "0"
+                },
+                "pending": false,
+                "pending_revision": null
+              }
+            }
           },
           "error": null
         }
@@ -294,7 +323,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"ans\":42,\"memory\":0,\"history\":[{\"expression\":\"6*7\",\"value\":42,\"angle\":\"rad\"}],\"result\":\"42\",\"notice\":\"\",\"fields\":{\"expression\":\"6*7\",\"angle\":\"rad\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\"},\"pending\":true}",
+      "state": "{\"schema\":1,\"ans\":42,\"memory\":0,\"history\":[{\"expression\":\"6*7\",\"value\":42,\"angle\":\"rad\"}],\"result\":\"42\",\"notice\":\"\",\"fields\":{\"expression\":\"6*7\",\"angle\":\"rad\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\"},\"pending\":true,\"pending_revision\":7}",
       "fields": {},
       "locale": "en",
       "results": [
@@ -335,5 +364,78 @@
       }
     },
     "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "root",
+      "state": "",
+      "fields": {
+        "functions": "sign(x-0.12345)+1-1e-10",
+        "a": "0",
+        "b": "1"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {
+        "a": "Root did not converge; the interval may contain a singularity"
+      },
+      "effects": []
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "calculate",
+      "state": "",
+      "fields": {
+        "expression": "sin(-1e-20)",
+        "angle": "deg"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "-1.745329251994e-22"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "calculate",
+      "state": "",
+      "fields": {
+        "expression": "sqrt(-1)"
+      },
+      "locale": "zh-CN"
+    },
+    "expectJsonSubset": {
+      "errors": {
+        "expression": "平方根的参数不能为负数。"
+      },
+      "effects": []
+    }
   }
 ]

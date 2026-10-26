@@ -4,26 +4,26 @@
 
 ## 按改动选择检查
 
-| 修改范围                             | 必做检查                                                     | 仍需单独验收                                      |
-| ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------- |
-| 文档、示例命令                       | 对照实际脚本、路径和 CLI 参数；检查相关 Markdown 格式及链接  | 平台特有命令未执行时明确说明                      |
-| 市场脚本、目录协议、签名或发布流程   | `node --test scripts/*.test.mjs`；涉及产物时执行完整 `check` | 生产 Secret、GitHub 权限和真实发布结果            |
-| 插件规则、state / fields 或 PDK 导出 | 插件原生规则单测、格式检查、真实 Wasm `validate` / `test`    | 实际宿主交互与边界                                |
-| 清单、权限、视图、导出产物           | 完整 `check`，覆盖所有命令的手写 fixture                     | 安装、可选授权、中文 / 英文、窄屏、键盘与保存流程 |
-| 私有存储、并发或宿主 effects         | 规则单测与成功 / 失败回执 fixture；宿主对应 broker 服务回归  | 多窗口 CAS、取消、重开及持久化恢复                |
-| 宿主 API / ABI 协议联动              | 重新构建指定宿主工具后完整 `check`，同步宿主相关测试         | 目标平台桌面与正式安装环境                        |
+| 修改范围                             | 必做检查                                                    | 仍需单独验收                                      |
+| ------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------- |
+| 文档、示例命令                       | 对照实际脚本、路径和 CLI 参数；检查相关 Markdown 格式及链接 | 平台特有命令未执行时明确说明                      |
+| 市场脚本、目录协议、签名或发布流程   | 脚本与插件界面回归；涉及产物时执行完整 `check`              | 生产 Secret、GitHub 权限和真实发布结果            |
+| 插件规则、state / fields 或 PDK 导出 | 插件原生规则单测、格式检查、真实 Wasm `validate` / `test`   | 实际宿主交互与边界                                |
+| 清单、权限、视图、导出产物           | 完整 `check`，覆盖所有命令的手写 fixture                    | 安装、可选授权、中文 / 英文、窄屏、键盘与保存流程 |
+| 私有存储、并发或宿主 effects         | 规则单测与成功 / 失败回执 fixture；宿主对应 broker 服务回归 | 多窗口 CAS、取消、重开及持久化恢复                |
+| 宿主 API / ABI 协议联动              | 重新构建指定宿主工具后完整 `check`，同步宿主相关测试        | 目标平台桌面与正式安装环境                        |
 
 按需运行，已有检查通过后，除非继续修改、失败或仍有明确疑点，不必反复执行所有编译。市场 `check` 会检查格式、构建和真实 Wasm，不会自动执行每个插件的原生 Rust 单测；两层都需要覆盖相关变更。
 
-## 脚本与规则单测
+## 脚本、界面与规则单测
 
-从**市场仓库根目录**运行市场脚本回归：
+从**市场仓库根目录**运行市场脚本与插件界面回归：
 
 ```sh
-node --test scripts/*.test.mjs
+node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs
 ```
 
-这些测试覆盖签名、包完整性、清单 / 目录规则、发布来源以及构建工具调用约束。它们不需要生产密钥，也不等同于编译并真实运行四个插件。
+这些测试覆盖签名、包完整性、清单 / 目录规则、发布来源、构建工具调用约束，以及插件界面的状态恢复和异步交互。界面测试在 Node 中执行真实界面脚本，并使用必要的 DOM / SDK 替身；它们不需要 npm 依赖或生产密钥，也不等同于真实 WebView、原生服务或编译并运行四个插件的 Wasm。
 
 规则函数优先使用原生 Rust 单测，以便快速检查 Unicode、随机序列、合并或解谜规则、状态重放、撤销、额度和冲突处理。从**市场仓库根目录**分别运行受影响插件：
 
@@ -35,6 +35,8 @@ cargo test --locked --manifest-path plugins/wallpaper-browser/Cargo.toml --targe
 ```
 
 PDK 导出在原生单测中不运行。原生通过后仍可能存在 Wasm 目标依赖、导出函数、运行资源或视图契约错误，所以必须继续执行真实 Wasm 验收。
+
+修改 Rust 代码时，同时对相同清单和 target 目录运行 `cargo clippy --locked --manifest-path <Cargo.toml> --target-dir <原生测试目录> --all-targets -- -D warnings`。CI 与发布构建会按 `listings.json` 遍历全部收录插件执行原生单测和 Clippy，市场脚本与插件使用市场工具链，宿主 CLI 单独使用宿主工具链。
 
 ## 真实 Wasm 与手写 fixture
 
@@ -150,24 +152,21 @@ fixture 数组不会自动把上一条输出 state / fields 传给下一条，�
 
 ## 固定原生服务验收
 
-服务调用与 Wasm fixture 是两条边界。信使的 Wasm 用例只验证入口和安全导出；壁纸的初始化用例不执行搜索、下载、图库或设置操作。服务请求应在宿主独立测试中验证授权、安装代次、窗口归属、入参、真实副作用和回收；浏览器使用替身时明确标识，不能写成真实服务已通过。
+服务调用与 Wasm fixture 是两条边界。信使的 Wasm 用例只验证入口和安全导出；壁纸的离线用例可验证搜索 HTTP effect 与匹配回执的解析链，但不执行真实公网请求、图片下载、图库或设置操作。服务请求应在宿主独立测试中验证授权、安装代次、窗口归属、入参、真实副作用和回收；浏览器使用替身时明确标识，不能写成真实服务已通过。
 
-| 功能       | 原生服务层验证                                                                                                 | 仍需真实环境验证                                                     |
-| ---------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| LAN        | 双端真实环回 TCP、握手与 ACK、历史原子保存、坏帧、连接额度、窗口关闭和撤权回收                                 | 两台实体设备、私有网卡路由、防火墙提示、离线重连、多窗口与跨导航收信 |
-| 壁纸搜索   | 必应 HTML 解析、结果身份隔离 / TTL、URL / DNS / SSRF、system / direct 边界、MIME / 解码及额度、旧 page ID 兼容 | 目标网络中的真实原生必应搜索、缩略图与第三方原图下载，系统另存与取消 |
-| 图库与背景 | 压缩重绘、现有图库配额、revision CAS、移除当前背景及其他偏好保留                                               | WebView 预览、真实图库导入 / 移除、应用背景多窗口同步                |
+| 功能       | 原生服务层验证                                                                                        | 仍需真实环境验证                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| LAN        | 双端真实环回 TCP、握手与 ACK、历史原子保存、坏帧、连接额度、窗口关闭和撤权回收                        | 两台实体设备、私有网卡路由、防火墙提示、离线重连、多窗口与跨导航收信 |
+| 搜索规则   | 市场插件原生 parser 单测、真实 Wasm 生成 HTTP effect / 消费回执、查询与结果 URL 校验                  | 目标网络的必应网页、验证码 / 限流 / 改版与实际结果来源               |
+| 图片资源   | 宿主公共 URL / DNS / SSRF、direct / system 授权、MIME / 解码额度、资源身份 / epoch / TTL / 配额及清理 | 第三方图片真实下载、WebView data URL 预览、系统另存与取消            |
+| 图库与背景 | 本机导入、资源压缩导入、现有图库配额、revision CAS、移除当前背景及其他偏好保留                        | 真实图库导入 / 移除、应用背景多窗口同步                              |
+| 外部链接   | 独立授权、公共 HTTPS 校验、拒绝本机 / 非 HTTPS / 控制字符与过长 URL                                   | 目标平台实际打开系统浏览器                                           |
 
-壁纸服务默认 `system` 模式使用用户已配置的系统 / 环境代理；`direct` 禁用代理。测试应覆盖没有匹配代理或被 `NO_PROXY` 排除时仍执行目标全部 DNS 公网校验及地址固定，以及仅用户代理传输主机允许本机 / 内网、插件不能注入代理 URL。新结果 URL 拒绝 IP 字面量和保留域名，跨窗口、换安装身份、过期和伪造 `resultId` 拒绝，下载操作不得接收任意 URL。代理解析目标时不声称已验证最终 IP，HTTPS、证书、结果来源、禁止重定向和解码额度仍须生效；通用 HTTP broker 不受此模式影响。旧 Commons page ID 兼容路径仍验证固定来源与 Public domain / CC0。
+HTTP effect 与图片获取默认 `direct`，`system` 需要独立 `network:system-proxy`，不能用于本机来源。测试应覆盖缺少基础权限或系统代理授权、未声明 HTTP 来源 / 方法、未知模式和注入代理地址均拒绝；没有匹配代理或被 `NO_PROXY` 排除时仍执行全部目标 DNS 公网校验和地址固定。代理远端解析不能证明最终 IP，HTTPS、正常证书、禁止重定向与内容额度仍需生效，不能再断言通用 HTTP 永远禁用系统代理。
 
-真实联网用例默认忽略，需明确选择网络环境后运行。先按 [宿主 Rust 测试要求](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/testing.md#rust-测试) 准备环境与前端产物，再从**宿主仓库根目录**显式执行：
+图片资源用例需覆盖 `fetch-image` 的公共 URL 与传输限制、`preview` 安全 data URL、保存取消、主动释放、10 分钟过期、所有者 / 全局数量与字节预算，以及关闭、撤权和替换期间的晚到请求。图库只接受有效 `resourceId` 与名称，不再以 `resultId` / `pageId` 证明搜索来源。插件 parser 单测覆盖重复结果、查询文本 / 注释 / 属性 / script 内伪造空结果标记、错误响应、HTML 改版、HTTPS URL 与标题来源；真实 Wasm fixture 同时检查 effect 和匹配回执，而非仅断言启动视图。
 
-```sh
-cargo test --locked --manifest-path src-tauri/Cargo.toml --lib extension_wallpaper::tests::live_bing_search_preview_and_original_use_validated_sources -- --ignored --exact
-cargo test --locked --manifest-path src-tauri/Cargo.toml --lib extension_wallpaper::tests::live_direct_mode_refuses_the_current_synthetic_provider_dns -- --ignored --exact
-```
-
-第一项在真实原生网络执行 `system` 必应搜索、结果标识解析、缩略图与第三方原图下载并解码 / JPEG 重绘，不写用户图库或打开另存对话框，不代表原图已保存。第二项检查本机实际 DNS；遇到 Fake-IP / 非公网结果必须拒绝直连，否则只核验当前 DNS，不能当作直连下载已通过。浏览器请求、服务替身和预先准备图片的解码通过都不能替代这些网络结果。实际执行的模式、宿主提交与结果写入 PR；真实 WebView、系统对话框、用户图库与正式安装版另行验收。
+原先宿主内的 `extension_wallpaper::tests::live_bing_*` 等供应商联网用例已随业务迁出删除，不能继续把旧命令当成当前验收入口。真实联网另在明确选择的目标环境中验收：记录宿主与插件版本、direct / system 模式、搜索网页、缩略图、原图及解码结果；浏览器替身或预先准备图片的解码不能代替公网结果。真实 WebView、系统对话框、用户图库、多机、跨平台与正式安装版另行验收，未执行时如实说明。
 
 ## 界面与安装验收
 
@@ -185,6 +184,7 @@ cargo test --locked --manifest-path src-tauri/Cargo.toml --lib extension_wallpap
 - 单选 select 保留 `value` / `selectedIndex`、input / change、表单关联与 reset、fieldset / optgroup 禁用；多选、size 大于 1 和显式 native 例外仍为原生，作者 CSS 可覆写。
 - 计算器连续拖动 / 缩放时本地画布响应，字段和 checkpoint 合并最新值，操作结束后的实际 Wasm 计算使用新视口；环境刷新暂时忙碌后继续提交末次草稿，覆盖忙碌通知之前拒绝、空闲之后才收到拒绝两种时序，一般失败及同一草稿再次冲突不循环重试，不触发通道频率错误或恢复旧草稿。
 - 信使延迟及乱序状态回执不会阻塞手动连接、发送、昵称和输入；跨轮询继续输入时保留焦点、选区与新草稿，旧查询不覆盖较新的手动操作结果。
+- 壁纸拒绝可选网络 / 图片 / 外链 / 代理授权后，本机图库仍能列出、导入和管理；搜索通过真实 Wasm effect / 回执解析，资源服务使用明确替身，不把替身的预览、保存和释放写成真实公网或系统对话框验收。
 
 宿主浏览器测试默认使用无头模式，不抢占正在工作的桌面。已有生产构建和 Playwright 用例可从**宿主仓库根目录**运行：
 
@@ -198,10 +198,14 @@ pnpm test:ui
 
 ## CI 与交付证据
 
-[`ci.yml`](../.github/workflows/ci.yml) 在 PR 和 `main` 推送时使用 Ubuntu，先运行市场脚本回归，再检出指定宿主、构建工具、编译所有插件并执行离线 `check`。CI 的新工作区使用固定测试修订号，不代表本地可以反复复用同一产物目录。宿主由 `STARTER_HOST_REF` 仓库变量选择，未配置时为 `develop`；应在跨仓库协议修改时固定到已经推送且审核过的兼容提交。
+[`ci.yml`](../.github/workflows/ci.yml) 在 PR 和 `main` 推送时使用 Ubuntu，先运行市场脚本与插件界面回归、全部收录插件的原生单测和 Clippy，再检出指定宿主、构建工具、编译所有插件并执行离线 `check`。CI 的新工作区使用固定测试修订号，不代表本地可以反复复用同一产物目录。宿主由 `STARTER_HOST_REF` 仓库变量选择，未配置时为 `develop`；应在跨仓库协议修改时固定到已经推送且审核过的兼容提交，生产发布强制要求完整 SHA，详见 [固定配套宿主](./publishing.md#固定配套宿主)。
 
 CI 配置存在不表示某次已经成功运行，也不表示 Windows / macOS、真实桌面或正式 Release 已通过。PR 描述记录本次实际的宿主提交、平台、执行命令及结果，说明未验证范围。发布前还要核对生产公钥、目录有效期、增量修订号、完整附件和线上 latest，步骤统一维护在 [发布指南](./publishing.md)。
 
 ## 自定义界面无头回归
 
-构建 CLI、内置包与市场 Wasm 后，在宿主根目录运行 pnpm test:extensions:ui，覆盖真实 HTML / SDK / 离线 Wasm、主题、键盘、草稿重载、无障碍与隔离负例。浏览器使用替代协议 / 对话框边界，不代表真实 Tauri IPC、原生窗口或全部平台已验收。具体准备和产物见 [宿主测试说明](https://github.com/YanChao001/tauri-desktop-starter/blob/feature/workflows-and-extensions/docs/testing.md#自定义扩展界面)。
+构建 CLI、内置包与市场 Wasm 后，在宿主根目录运行 `pnpm test:extensions:ui`，覆盖真实 HTML / SDK / 离线 Wasm、主题、键盘、草稿重载、无障碍与隔离负例。浏览器使用替代协议 / 对话框边界，不代表真实 Tauri IPC、原生窗口或全部平台已验收。具体准备和产物见 [宿主测试说明](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/testing.md#自定义扩展界面)。
+
+测试服务使用系统分配的临时端口，异步执行 CLI，避免并行任务争用固定端口或阻塞界面握手。仅复核壁纸的拒绝联网、直接连接和仅外链授权时，可从宿主根目录运行 `pnpm test:extensions:ui wallpaper-browser --capabilities-only`；结果写入 `artifacts/extensions/custom-ui/capabilities-run.json`。该聚焦检查不覆盖完整主题、布局和会话流程。
+
+需要保留独立验收记录时，在运行前设置 `STARTER_EXTENSION_UI_RUN_ID` 为 1–80 个英文字母、数字、连字符或下划线，例如 PowerShell 中执行 `$env:STARTER_EXTENSION_UI_RUN_ID = "marketplace-review"`。该次运行的报告、截图和诊断写入 `artifacts/extensions/custom-ui/<runId>/`，其中权限聚焦报告为 `capabilities-run.json`，完整报告为 `report.json`；未设置时沿用默认目录。

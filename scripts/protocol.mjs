@@ -15,6 +15,7 @@ const version = (value) =>
   value.split(".").every((part) => Number(part) <= 65535);
 const nonempty = (value, limit) =>
   typeof value === "string" &&
+  value.isWellFormed() &&
   value.trim().length > 0 &&
   Buffer.byteLength(value) <= limit &&
   !value.includes("\0");
@@ -29,6 +30,9 @@ const capabilities = new Set([
   "files:read",
   "network:https",
   "network:local",
+  "network:images",
+  "network:system-proxy",
+  "links:open",
   "storage",
   "messaging:lan",
   "wallpapers:manage",
@@ -92,7 +96,8 @@ export function validateUiPreview(preview) {
       .map((command) => command.ui?.document)
       .filter((id) => id != null),
   );
-  const documents = preview.uiDocuments ?? [];
+  const documents =
+    preview.uiDocuments === undefined ? [] : preview.uiDocuments;
   if (
     !Array.isArray(documents) ||
     documents.length > 32 ||
@@ -162,6 +167,21 @@ export function validateManifest(manifest) {
     declared.some((permission) => !capabilities.has(permission))
   )
     throw new Error("Invalid required or optional permissions");
+  const [hostMajor, hostMinor, hostPatch] = manifest.minHostVersion
+    .split(".")
+    .map(Number);
+  if (
+    declared.some((permission) =>
+      ["network:images", "network:system-proxy", "links:open"].includes(
+        permission,
+      ),
+    ) &&
+    hostMajor === 0 &&
+    (hostMinor < 1 || (hostMinor === 1 && hostPatch < 6))
+  )
+    throw new Error(
+      "Image resources, external links and system proxies require minHostVersion 0.1.6 or newer",
+    );
   const ids = new Set();
   for (const command of manifest.commands) {
     if (
@@ -198,7 +218,13 @@ export function validateManifest(manifest) {
               !/^[a-z0-9-]{1,64}$/.test(command.ui.document))))) ||
       (command.inputFormat === "text" &&
         (command.permissions ?? []).some((permission) =>
-          ["files:read", "network:https", "network:local"].includes(permission),
+          [
+            "files:read",
+            "network:https",
+            "network:local",
+            "network:images",
+            "network:system-proxy",
+          ].includes(permission),
         ))
     )
       throw new Error("Invalid command contribution or permissions");
@@ -206,9 +232,15 @@ export function validateManifest(manifest) {
   }
   if (
     manifest.icon != null &&
-    !["puzzle", "calculator", "gamepad", "notebook", "terminal", "image", "message-circle"].includes(
-      manifest.icon,
-    )
+    ![
+      "puzzle",
+      "calculator",
+      "gamepad",
+      "notebook",
+      "terminal",
+      "image",
+      "message-circle",
+    ].includes(manifest.icon)
   )
     throw new Error("Invalid extension icon");
   const network = manifest.network === undefined ? [] : manifest.network;
@@ -267,6 +299,14 @@ export function validateManifest(manifest) {
     hasHttps !== declared.includes("network:https")
   )
     throw new Error("Network permission does not match declared origins");
+  if (
+    declared.includes("network:system-proxy") &&
+    !hasHttps &&
+    !declared.includes("network:images")
+  )
+    throw new Error(
+      "System proxy access requires declared public HTTP or image access",
+    );
 }
 export function validateCatalog(catalog, now = Math.floor(Date.now() / 1000)) {
   if (

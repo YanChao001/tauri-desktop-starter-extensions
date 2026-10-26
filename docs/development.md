@@ -6,14 +6,14 @@
 
 市场脚本只使用 Node 内置模块，没有需要安装的 npm 运行依赖。Node 要求以 [`package.json`](../package.json) 为准，目前为 24 或以上；首次还要编译宿主工具，应选择同时满足宿主 `package.json` engines 的 Node 版本，并使用其中指定的 pnpm。不要直接把宿主 `.nvmrc` 的默认版本用于市场：两个仓库的支持范围并不完全相同。
 
-Rust 使用本仓库 [`rust-toolchain.toml`](../rust-toolchain.toml) 钉住的工具链，插件依赖以各自 `Cargo.lock` 为准。宿主工具构建还需要对应平台的 Tauri 编译依赖；按 [宿主环境说明](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/development.md#环境要求) 安装。即使工具本身不启动窗口，其所属 Rust crate 仍依赖这些库。
+Rust 使用本仓库 [`rust-toolchain.toml`](../rust-toolchain.toml) 钉住的工具链，插件依赖以各自 `Cargo.lock` 为准。宿主工具使用宿主自己的 `rust-toolchain.toml`；不要将宿主的 `RUSTUP_TOOLCHAIN` 导出到市场构建步骤，否则会覆盖市场工具链选择。宿主工具构建还需要对应平台的 Tauri 编译依赖；按 [宿主环境说明](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/development.md#环境要求) 安装。即使工具本身不启动窗口，其所属 Rust crate 仍依赖这些库。
 
 从市场仓库根目录准备插件工具链：
 
 ```sh
 rustup toolchain install
 rustup target add wasm32-unknown-unknown
-node --test scripts/*.test.mjs
+node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs
 ```
 
 主要目录的职责如下：
@@ -167,14 +167,20 @@ JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或
 
 本仓库 build 自动读取被引用的 `ui/<id>.html`，检查目录与文件不是链接、UTF-8 和额度，固定同一快照传给原生工具并打包。只修改 HTML 也必须提高插件版本；完整 JSON 包和 UI 文档摘要都会改变。界面重载恢复本窗口字段与检查点，不重新初始化 Wasm；未上报的局部状态无法保留。不同示例见各插件的 `ui/main.html`。
 
-UI 与 Wasm 是不同上下文。界面不会获得宿主 DOM、可用 Tauri IPC、任意路径或凭据原文。通用网络和私有 KV 仍由 Wasm 返回受控 effects；需要 LAN 监听与长连接、或现有图库操作时，使用下面的有限原生服务。界面脚本不要使用 Node API 或另建浏览器存储。路线选择与边界见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
+UI 与 Wasm 是不同上下文。界面不会获得宿主 DOM、可用 Tauri IPC、任意路径或凭据原文。通用 HTTP 和私有 KV 由 Wasm 返回受控 effects；LAN 长连接、短期图片资源、现有图库与外部链接使用下面的有限原生服务。供应商 URL、网页解析与结果来源解释在插件 Wasm 中实现，不向宿主追加具体网站业务。界面脚本不要使用 Node API 或另建浏览器存储。路线选择与边界见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
 
 ## 固定原生服务
 
-`starter.services.request("lan", request)` 和 `starter.services.request("wallpaper", request)` 只接受宿主定义的操作。宿主附加安装身份、哈希、代次和原生窗口，重新检查当前启用与授权；插件不能传入另一个 ID、任意命令或路径。完整字段以配套宿主 SDK 和 Rust 服务为准。
+`starter.services.request(service, request)` 只接受宿主固定的 `lan`、`wallpaper`、`resources` 与 `links` 操作。宿主附加安装身份、哈希、代次和原生窗口，重新检查当前启用与授权；插件不能传入另一个 ID、任意命令或路径。完整字段以配套宿主 SDK 和 Rust 服务为准。
 
 - **LAN** 使用 `messaging:lan`，信使将其作为必需权限。用户明确开启监听或输入数字私有 / 回环 IP 连接；不会自动发现公网设备、扫描网络或在导入会话时重连。连接属于原生窗口，导航后保持；界面仅在可见时读取状态，不能在 iframe 清理时误停整个服务。实际停止、最后服务窗口关闭、撤权、替换和退出由宿主回收。
-- **壁纸** 使用 `wallpapers:manage`，壁纸库将其作为核心浏览与管理的必需权限，覆盖现有图库、必应搜索及结果中的第三方 HTTPS 图片来源，不按许可筛选。界面传图库内容 ID 或宿主生成且未过期的 `resultId`，不传本机路径、原图 URL 或任意来源；旧 `pageId` 只用于 Commons 兼容操作。搜索 / 预览 / 下载分别处理加载、失败和取消，结果过期需重新搜索；原图系统另存与重绘压缩图加入图库是两种操作。
+- **图库** 使用 `wallpapers:manage`，仅支持 `list`、`import` 本机选择、`import-resource`、`apply`、`rename`、`remove` 和 `open-settings`，复用应用现有图库与设置。`import-resource` 接受本窗口有效的 `resourceId` 与显示名称；不接受 URL、`resultId` 或 `pageId`，没有供应商搜索接口。
+- **图片资源** 使用可选 `network:images`，以 `fetch-image` 的公共 HTTPS URL 获取资源，返回 `resourceId`、MIME、字节数、尺寸和哈希。`preview` 生成安全 data URL，`save` 经系统对话框另存已验证原图，`release` 主动释放；收到取消不能标记已保存。句柄短期有效且绑定当前安装与窗口，关闭 / 撤权清理，不把它当长期存储或会话恢复资格。请求 URL 的查询参数同样可发送数据，权限用途需要明确说明。
+- **外部链接** 使用可选 `links:open`，由 `links` 服务提交公共 HTTPS URL 并通过系统浏览器打开；不开放任意协议、路径或系统命令。
+
+壁纸库的必应搜索 URL、HTML 解析、查询匹配及来源说明由插件 Wasm 负责；HTTP effect 使用可选 `network:https` 与清单中的 `https://cn.bing.com` GET 声明。只需要本机图库时，不授予这些网络或外链权限仍能使用。图片资源与普通 HTTP 是不同授权，图库权限不能替代它们。
+
+HTTP 请求与 `resources` 的 `fetch-image` 可选 `networkMode: "direct" | "system"`，默认 `direct`。`system` 还需独立授予 `network:system-proxy`，不能用于本机来源；代理由系统 / 环境配置选择，插件不提交代理地址。公共 HTTPS 直连执行全部 DNS 公网校验并固定已核验地址；独立本机来源仍遵循 `network:local`。代理远端解析无法证明最终 IP，具体边界见 [安全规范](./security.md#原生服务与外部来源)。
 
 服务是受控宿主能力，不是可插拔通用 IPC。新增方法或权限先完成宿主实现及边界测试，再更新插件；独立 CI 必须能获取对应宿主提交。具体用户操作见 [信使说明](../plugins/lan-chat/README.md) 和 [壁纸说明](../plugins/wallpaper-browser/README.md)，信任与许可见 [安全规范](./security.md#原生服务与外部来源)。
 

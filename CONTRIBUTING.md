@@ -18,7 +18,7 @@ fixture 应声明手写的关键预期，可以使用 `expectJsonSubset` 断言 
 
 界面可以使用宿主声明式控件，或清单引用的本地单文件 HTML / CSS / JavaScript。SDK 提供可覆写默认样式与主题 / 语言，作者仍需检查按钮、键盘、画布标签、窄屏和错误提示。当前市场保持独立 Cargo 构建，不增加 React / Vite 构建依赖。会话输入、导入状态和存储内容均需在业务边界验证，不能信任预计算的得分、统计或派生结果。
 
-LAN 与壁纸使用宿主固定服务，分别要求 `messaging:lan` / `wallpapers:manage`；新操作须有配套宿主实现。LAN 是显式私有 IP 的明文聊天，原生连接跨导航保留；壁纸的搜索来源、结果标识与许可边界见 [壁纸库说明](./plugins/wallpaper-browser/README.md)，原图另存与压缩后加入现有应用图库分开验收。服务替身不等于真实多机、公网下载或 WebView 已通过，详见 [测试规范](./docs/testing.md#固定原生服务验收)。
+LAN 固定服务要求 `messaging:lan`，只连接显式私有 IP，明文通信且原生连接跨导航保留。壁纸库的必需 `wallpapers:manage` 仅管理本机图库与应用背景；搜索规则由插件 Wasm 实现，HTTP effect、图片资源、来源外链与系统代理分别需要可选的 `network:https`、`network:images`、`links:open`、`network:system-proxy`，拒绝联网仍可使用本机图库。图片资源由通用 `resources` 服务按安装身份和窗口绑定，原图另存与压缩导入图库分别验收，来源与许可由插件和原站解释，见 [壁纸库说明](./plugins/wallpaper-browser/README.md)。新权限或服务操作须有配套宿主实现；服务替身不等于真实多机、公网下载或 WebView 已通过，详见 [测试规范](./docs/testing.md#固定原生服务验收)。
 
 ## 本地检查与证据
 
@@ -31,7 +31,7 @@ LAN 与壁纸使用宿主固定服务，分别要求 `messaging:lan` / `wallpape
 | 协议、宿主能力或权限             | 先在宿主完成对应实现及验证，再用该确定版本的 `extension-tool` 检查市场；记录宿主提交 |
 | 文档                             | 核对命令和源码、格式、相对链接；不为纯文档改动重跑所有 Wasm 构建                     |
 
-原生测试示例：`cargo test --locked --manifest-path plugins/scientific-calculator/Cargo.toml`。最终市场构建会检查格式、按锁文件编译全部收录插件并执行宿主校验，但不会代替每个插件的原生业务测试。
+原生测试示例：`cargo test --locked --manifest-path plugins/scientific-calculator/Cargo.toml`。同时执行对应清单的 Clippy 检查。CI 与发布构建额外遍历全部收录插件运行原生业务测试和 Clippy；`node scripts/check.mjs` 本身只检查格式、按锁文件编译全部收录插件并执行宿主校验，两者的验证范围见 [测试规范](./docs/testing.md)。
 
 正常开发和 PR 检查无需生产签名私钥，使用 `check` 的一次性测试密钥。不要将真实私钥放到插件构建环境、仓库或日志，也不要为了本地验收更改生产公钥。仅使用测试密钥的离线验签不能证明线上目录已发布。
 

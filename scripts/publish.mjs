@@ -1,9 +1,19 @@
-import { readFileSync } from "node:fs";
+import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { verifyCatalog } from "./signing.mjs";
 import { validateCatalog, validRepository } from "./protocol.mjs";
+import { verifyRelease } from "./verify.mjs";
+import { parseJson, readBounded } from "./files.mjs";
+
+const runGh = (args) =>
+  execFileSync("gh", args, {
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 600_000,
+    maxBuffer: 32 * 1024 * 1024,
+  });
 
 const validSha = (value) =>
   typeof value === "string" &&
@@ -53,29 +63,34 @@ function verifyTagSource(repository, tag, sourceSha, run) {
   }
 }
 
-export function publish(
-  directory,
-  {
-    run = (args) =>
-      execFileSync("gh", args, { encoding: "utf8", windowsHide: true }),
-  } = {},
-) {
+export async function publish(directory, { run = runGh, encodedKey } = {}) {
   const root = resolve(import.meta.dirname, "..");
-  const catalog = verifyCatalog(
-    JSON.parse(readFileSync(join(directory, "catalog.json"), "utf8")),
-    readFileSync(join(root, "public-key.txt"), "utf8").trim(),
-  );
-  const repository = JSON.parse(
-    readFileSync(join(root, "listings.json"), "utf8"),
-  ).repository;
-  if (catalog.repository !== repository)
-    throw new Error("Invalid release repository");
-  publishCatalog(
-    catalog,
-    directory,
-    process.env.GITHUB_SHA ?? process.env.MARKET_SOURCE_SHA,
-    run,
-  );
+  const parent = await realpath(tmpdir());
+  const snapshot = await mkdtemp(join(parent, "starter-market-publish-"));
+  try {
+    const catalog = await verifyRelease(directory, {
+      encodedKey,
+      snapshotDirectory: snapshot,
+    });
+    const repository = parseJson(
+      await readBounded(join(root, "listings.json"), 64 * 1024),
+    ).repository;
+    if (catalog.repository !== repository)
+      throw new Error("Invalid release repository");
+    publishCatalog(
+      catalog,
+      snapshot,
+      process.env.GITHUB_SHA ?? process.env.MARKET_SOURCE_SHA,
+      run,
+    );
+  } finally {
+    if (
+      dirname(resolve(snapshot)) !== parent ||
+      !basename(snapshot).startsWith("starter-market-publish-")
+    )
+      throw new Error("Unexpected publication snapshot directory");
+    await rm(snapshot, { recursive: true });
+  }
 }
 export function publishCatalog(catalog, directory, sourceSha, run) {
   if (!validSha(sourceSha))
@@ -91,24 +106,37 @@ export function publishCatalog(catalog, directory, sourceSha, run) {
     catalog.revision > 0xffffffff
   )
     throw new Error("Invalid release identity");
-  const releases = JSON.parse(
+  const pages = JSON.parse(
     run([
-      "release",
-      "list",
-      "--repo",
-      repository,
-      "--exclude-drafts",
-      "--limit",
-      "100",
-      "--json",
-      "tagName",
+      "api",
+      `repos/${repository}/releases?per_page=100`,
+      "--paginate",
+      "--slurp",
     ]),
   );
-  const previous = Math.max(
+  if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page)))
+    throw new Error("Invalid release history response");
+  const releases = pages.flat();
+  if (
+    releases.some(
+      (release) =>
+        !release ||
+        typeof release.tag_name !== "string" ||
+        typeof release.draft !== "boolean",
+    )
+  )
+    throw new Error("Invalid release history entry");
+  const previous = releases.reduce(
+    (highest, release) =>
+      release.draft
+        ? highest
+        : Math.max(
+            highest,
+            /^market-(\d+)$/.test(release.tag_name)
+              ? Number(release.tag_name.slice(7))
+              : 0,
+          ),
     0,
-    ...releases.map(({ tagName }) =>
-      /^market-(\d+)$/.test(tagName) ? Number(tagName.slice(7)) : 0,
-    ),
   );
   if (catalog.revision <= previous)
     throw new Error("Market revision must increase");
@@ -148,6 +176,7 @@ export function publishCatalog(catalog, directory, sourceSha, run) {
   ]);
   // Recheck after upload: --target does not override a tag created or moved in the meantime.
   verifyTagSource(repository, tag, sourceSha, run);
+  validateCatalog(catalog);
   run([
     "release",
     "edit",
@@ -163,9 +192,9 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 ) {
-  if (!process.argv[2])
+  if (!process.argv[2] || process.argv.length !== 3)
     throw new Error(
       "Usage: node scripts/publish.mjs <verified release directory>",
     );
-  publish(resolve(process.argv[2]));
+  await publish(resolve(process.argv[2]));
 }

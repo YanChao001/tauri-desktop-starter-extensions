@@ -132,19 +132,18 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10}}",
+      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
       "fields": {},
       "locale": "en",
       "host": {
         "permissions": ["storage"],
         "storage": {
-          "revision": 8,
+          "revision": 7,
           "values": {
             "snake-records": {
               "schema": 1,
               "best": {
-                "fast-wrap-rocks": 50,
-                "normal-wall-clear": 10
+                "fast-wrap-rocks": 50
               }
             }
           }
@@ -171,7 +170,34 @@
     },
     "expectJsonSubset": {
       "description": "The best score for this mode was saved.",
-      "effects": []
+      "effects": [],
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Score",
+              "value": "10"
+            },
+            {
+              "label": "Mode best",
+              "value": "10"
+            },
+            {
+              "label": "Ticks",
+              "value": "14"
+            }
+          ]
+        },
+        {
+          "kind": "table",
+          "columns": ["mode", "best"],
+          "rows": [
+            ["fast-wrap-rocks", "50"],
+            ["normal-wall-clear", "10"]
+          ]
+        }
+      ]
     }
   },
   {
@@ -179,7 +205,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10}}",
+      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
       "fields": {},
       "locale": "en",
       "host": {
@@ -218,7 +244,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10}}",
+      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
       "fields": {},
       "locale": "en",
       "results": [
@@ -309,6 +335,106 @@
       "action": "unknown",
       "state": "",
       "fields": {},
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 1,
+              "best": {
+                "fast-wrap-rocks": 50
+              }
+            }
+          }
+        }
+      },
+      "results": [
+        {
+          "id": "save-best",
+          "value": {
+            "revision": 8,
+            "values": {
+              "snake-records": {
+                "schema": 1,
+                "best": {
+                  "normal-wall-clear": 10
+                }
+              }
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 1,
+          "values": {
+            "snake-records": {
+              "schema": 2,
+              "best": {}
+            }
+          }
+        }
+      }
+    },
+    "expectJsonSubset": {
+      "description": "Original records were retained, but their version, contents or storage snapshot are unsupported. Saving is disabled; offline play and session export remain available.",
+      "effects": [],
+      "groups": [
+        {
+          "columns": 2,
+          "actions": [
+            {
+              "id": "validate",
+              "label": "Validate checkpoint",
+              "disabled": false,
+              "primary": false
+            },
+            {
+              "id": "save-best",
+              "label": "Save best score",
+              "disabled": true,
+              "primary": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"down\"],\"muted\":false}"
+      },
       "locale": "en"
     },
     "expectError": "EXTENSION_RUN_FAILED"
