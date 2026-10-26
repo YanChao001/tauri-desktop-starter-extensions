@@ -11,9 +11,9 @@
 | [科学计算器](./plugins/scientific-calculator/README.md) | 科学表达式、RAD / DEG、记忆与历史、多函数绘图、求根和数值积分    | 可选私有存储             |
 | [贪吃蛇](./plugins/snake/README.md)                     | 方向键 / WASD / 滑动、音效、三档速度、障碍与穿墙、可重放棋局     | 可选私有存储             |
 | [局域网信使](./plugins/lan-chat/README.md)              | 手动 IP 连接、联系人、明文文本消息与送达回执、本机历史和会话导出 | 必需 `messaging:lan`     |
-| [壁纸库](./plugins/wallpaper-browser/README.md)         | Commons 公共领域 / CC0 浏览、原图另存、本机图库与应用背景管理    | 可选 `wallpapers:manage` |
+| [壁纸库](./plugins/wallpaper-browser/README.md)         | Commons 公共领域 / CC0 浏览、原图另存、本机图库与应用背景管理    | 必需 `wallpapers:manage` |
 
-计算器和贪吃蛇无需授权即可使用，主动保存工作区或纪录才需要私有存储。局域网信使使用独立授权的原生服务，在可信局域网内以明文 TCP 通信；不提供端到端加密、身份认证、云中继或文件传输。壁纸库的授权覆盖固定 Commons 来源和现有应用图库，原图下载与压缩图加入图库是不同操作；设置的是应用背景。具体操作、限制和许可见各插件 README 与 `extension.json`。
+计算器和贪吃蛇无需授权即可使用，主动保存工作区或纪录才需要私有存储。局域网信使使用独立授权的原生服务，在可信局域网内以明文 TCP 通信；不提供端到端加密、身份认证、云中继或文件传输。壁纸库的必需授权覆盖固定 Commons 来源和现有应用图库，安装审阅时一次确认权限并启用后即可使用；原图下载与压缩图加入图库是不同操作，设置的是应用背景。具体操作、限制和许可见各插件 README 与 `extension.json`。
 
 壁纸网络默认跟随用户已配置的系统代理，也可选择严格直连；界面不能指定代理 URL 或关闭 TLS。代理和直连的 DNS 信任边界不同，详见 [壁纸连接说明](./plugins/wallpaper-browser/README.md#网络连接)；固定来源、许可核验和图像额度始终保留。
 

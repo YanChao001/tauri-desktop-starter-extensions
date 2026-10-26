@@ -151,9 +151,11 @@
       .chat {
         display: flex;
         flex-direction: column;
+        min-height: 0;
       }
       .chat-head {
         display: flex;
+        flex-shrink: 0;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
@@ -170,7 +172,7 @@
       .messages {
         flex: 1;
         overflow: auto;
-        min-height: 170px;
+        min-height: 0;
         padding: 20px;
         background: color-mix(in oklab, var(--muted) 38%, var(--background));
       }
@@ -219,6 +221,7 @@
         color: var(--primary-foreground);
       }
       .composer {
+        flex-shrink: 0;
         border-top: 1px solid var(--border);
         padding: 12px 16px;
         display: grid;
@@ -337,7 +340,7 @@
           flex-direction: column;
         }
         .contacts {
-          max-height: 220px;
+          max-height: none;
         }
         .contact-list {
           flex-direction: row;
@@ -351,9 +354,12 @@
           grid-template-columns: 1fr;
         }
         .chat {
-          min-height: 470px;
+          min-height: 0;
+          max-height: none;
         }
         .messages {
+          flex: none;
+          height: clamp(14rem, 50dvh, 24rem);
           padding: 12px;
         }
         .bubble {

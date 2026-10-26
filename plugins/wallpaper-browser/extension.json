@@ -20,10 +20,10 @@
         "window": true,
         "document": "main"
       },
-      "permissions": []
+      "permissions": ["wallpapers:manage"]
     }
   ],
-  "permissions": [],
-  "optionalPermissions": ["wallpapers:manage"],
+  "permissions": ["wallpapers:manage"],
+  "optionalPermissions": [],
   "network": []
 }

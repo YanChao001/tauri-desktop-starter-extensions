@@ -433,6 +433,16 @@
         async function refresh() {
           library = await request("list");
         }
+        function checkpointNavigation() {
+          return starter.checkpoint(
+            {
+              query: $("query").value,
+              tab,
+              networkMode: $("network-mode").value,
+            },
+            false,
+          );
+        }
         async function search() {
           const query = $("query").value.trim();
           if (!query) return;
@@ -451,10 +461,7 @@
                   "No explicitly Public domain / CC0 images found. Try another keyword.",
                 ),
           );
-          await starter.checkpoint(
-            { query, tab, networkMode: $("network-mode").value },
-            false,
-          );
+          await checkpointNavigation();
         }
         async function select(item) {
           const response = await request("preview", { pageId: item.pageId });
@@ -796,6 +803,9 @@
           $(name + "-tab").onclick = () => {
             tab = name;
             render();
+            void checkpointNavigation().catch((error) =>
+              message(String(error?.message || error), true),
+            );
             if (name === "local") void work(refresh);
           };
           $(name + "-tab").onkeydown = (event) => {
@@ -832,6 +842,8 @@
               $("query").value = saved.query;
             if (saved && ["system", "direct"].includes(saved.networkMode))
               $("network-mode").value = saved.networkMode;
+            if (saved && ["remote", "local"].includes(saved.tab))
+              tab = saved.tab;
             render();
             if (allowed()) await work(refresh);
           })
