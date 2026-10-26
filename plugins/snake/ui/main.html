@@ -210,6 +210,13 @@
       .confirm p {
         margin: 0 0 12px;
       }
+      .data-error {
+        padding: 12px;
+        border: 1px solid var(--destructive);
+        border-radius: var(--radius);
+        color: var(--foreground);
+        overflow-wrap: anywhere;
+      }
       .game-buttons .row {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -285,6 +292,7 @@
           </div>
         </div>
       </header>
+      <p id="data-error" class="data-error" role="alert" hidden></p>
       <div class="layout">
         <section>
           <div class="arena">
@@ -306,7 +314,7 @@
         </section>
         <aside class="controls">
           <div>
-            <div class="pad" aria-label="方向控制" id="pad">
+            <div class="pad" role="group" aria-label="方向控制" id="pad">
               <button type="button" data-direction="up" aria-label="向上">
                 ↑</button
               ><button type="button" data-direction="left" aria-label="向左">
@@ -421,6 +429,8 @@
           working = false,
           disposed = false,
           initialized = false,
+          recoveryBlocked = false,
+          boardVisible = true,
           queue = [],
           frame = 0,
           previous = 0,
@@ -429,6 +439,10 @@
           audio,
           lastTone = 0;
         let checkpointPromise = null,
+          queuedCheckpoint = null,
+          checkpointFailure = null,
+          busyGeneration = 0,
+          retriedCheckpoint = "",
           lastRetained = "",
           unsubscribe = () => {},
           best = 0,
@@ -437,6 +451,16 @@
         const reduced = matchMedia("(prefers-reduced-motion: reduce)"),
           removers = [];
         const tr = (zh, en) => (current?.locale === "en" ? en : zh);
+        const setText = (element, text) => {
+          if (element.textContent !== text) element.textContent = text;
+        };
+        const saveAction = () =>
+          current?.view?.groups
+            ?.flatMap((group) => group.actions)
+            .find((action) => action.id === "save-best");
+        const storageBlocked = () =>
+          current?.grantedPermissions.includes("storage") &&
+          saveAction()?.disabled === true;
         const same = (a, b) => a[0] === b[0] && a[1] === b[1];
         const initial = () => ({
           schema: 1,
@@ -462,14 +486,13 @@
           return g.rng;
         }
         function spawn(g) {
-          const empty = [];
+          const empty = [],
+            occupied = new Uint8Array(SIZE * SIZE);
+          for (const [x, y] of g.snake) occupied[y * SIZE + x] = 1;
+          for (const [x, y] of g.rocks) occupied[y * SIZE + x] = 1;
           for (let y = 0; y < SIZE; y++)
             for (let x = 0; x < SIZE; x++)
-              if (
-                !g.snake.some((p) => same(p, [x, y])) &&
-                !g.rocks.some((p) => same(p, [x, y]))
-              )
-                empty.push([x, y]);
+              if (!occupied[y * SIZE + x]) empty.push([x, y]);
           g.food = empty.length ? empty[random(g) % empty.length] : null;
         }
         function create(c) {
@@ -534,7 +557,9 @@
             typeof value.muted !== "boolean" ||
             !Array.isArray(value.moves) ||
             value.moves.length > LIMIT ||
-            value.moves.some((d) => !Object.hasOwn(dirs, d))
+            value.moves.some(
+              (d) => typeof d !== "string" || !Object.hasOwn(dirs, d),
+            )
           )
             throw Error("Invalid snake checkpoint");
           const copy = structuredClone(value),
@@ -551,35 +576,89 @@
             void starter.notify(message, { tone: "error" }).catch(() => {});
           lastReportedError = message;
         }
-        async function retain(force = false) {
-          if (!checkpoint || disposed) return;
-          if (checkpointPromise) {
-            await checkpointPromise;
-            return retain(force);
+        function retain(retry = false) {
+          if (!checkpoint || disposed || recoveryBlocked)
+            return Promise.resolve(false);
+          // One pending request and one latest value, even when the host is slow.
+          queuedCheckpoint = JSON.stringify(checkpoint);
+          if (retry) {
+            checkpointFailure = null;
+            retriedCheckpoint = "";
           }
-          const serialized = JSON.stringify(checkpoint);
-          if (!force && serialized === lastRetained) return;
-          const pending = starter
-            .checkpoint(JSON.parse(serialized), false)
-            .then(() => {
-              lastRetained = serialized;
-              lastReportedError = "";
+          if (checkpointPromise) return checkpointPromise;
+          if (checkpointFailure || current?.busy) return Promise.resolve(false);
+          checkpointPromise = Promise.resolve()
+            .then(async () => {
+              while (
+                queuedCheckpoint !== null &&
+                !disposed &&
+                !recoveryBlocked &&
+                !current?.busy &&
+                !checkpointFailure
+              ) {
+                const serialized = queuedCheckpoint,
+                  generation = busyGeneration;
+                queuedCheckpoint = null;
+                if (serialized === lastRetained) continue;
+                try {
+                  await starter.checkpoint(JSON.parse(serialized), false);
+                  lastRetained = serialized;
+                  lastReportedError = "";
+                } catch (error) {
+                  if (disposed) return false;
+                  queuedCheckpoint = JSON.stringify(checkpoint);
+                  checkpointFailure = {
+                    conflict: error?.code === "CONFLICT",
+                    generation,
+                  };
+                  // Busy notifications and rejections can arrive in either order.
+                  // Retry a rejected draft once, only after an observed busy cycle.
+                  if (retryAfterBusy()) continue;
+                  pause();
+                  reportError(
+                    tr(
+                      "无法保留进度，已暂停。本页棋局仍在；请稍后点击继续或保存重试。",
+                      "The checkpoint could not be retained, so play paused. This board is still here; use Resume or Save to retry.",
+                    ),
+                  );
+                  paint();
+                }
+              }
+              return (
+                !disposed &&
+                !checkpointFailure &&
+                queuedCheckpoint === null &&
+                JSON.stringify(checkpoint) === lastRetained
+              );
             })
-            .catch(() => {
-              if (!disposed)
-                reportError(
-                  tr(
-                    "无法保留进度，请暂停后重试；本页棋局仍在。",
-                    "Could not retain the checkpoint. Pause and retry; this board is retained.",
-                  ),
-                );
+            .finally(() => {
+              checkpointPromise = null;
+              // A busy cycle may finish between a rejection and this finalizer.
+              retryAfterBusy();
+              if (
+                queuedCheckpoint !== null &&
+                !checkpointFailure &&
+                !current?.busy &&
+                !disposed &&
+                !recoveryBlocked
+              )
+                void retain();
             });
-          checkpointPromise = pending;
-          try {
-            await pending;
-          } finally {
-            if (checkpointPromise === pending) checkpointPromise = null;
-          }
+          return checkpointPromise;
+        }
+        function retryAfterBusy() {
+          if (
+            !checkpointFailure?.conflict ||
+            current?.busy ||
+            busyGeneration <= checkpointFailure.generation ||
+            queuedCheckpoint === retriedCheckpoint ||
+            disposed ||
+            recoveryBlocked
+          )
+            return false;
+          retriedCheckpoint = queuedCheckpoint;
+          checkpointFailure = null;
+          return true;
         }
         function unlockAudio() {
           clearTimeout(audioTimer);
@@ -636,7 +715,7 @@
           );
         }
         function draw() {
-          if (!game || !ctx) return;
+          if (!game || !ctx || disposed) return;
           const side = Math.max(210, Math.min(600, canvas.clientWidth)),
             ratio = Math.min(devicePixelRatio || 1, 2),
             pixels = Math.round(side * ratio);
@@ -678,9 +757,9 @@
             );
             ctx.fill();
           }
+          ctx.fillStyle = color("--primary");
           game.snake.forEach(([x, y], i) => {
             ctx.globalAlpha = i === 0 ? 1 : 0.72;
-            ctx.fillStyle = color("--primary");
             ctx.beginPath();
             ctx.roundRect(x * 20 + 1.5, y * 20 + 1.5, 17, 17, i === 0 ? 6 : 4);
             ctx.fill();
@@ -703,59 +782,96 @@
         }
         function paint() {
           if (!game || !current) return;
-          $("title").textContent = tr("贪吃蛇", "Snake");
-          $("score-label").textContent = tr("本局分数", "Score");
-          $("best-label").textContent = tr("已存纪录", "Saved best");
-          $("score").textContent = String(game.score);
+          document.title = tr("贪吃蛇", "Snake");
+          setText($("title"), tr("贪吃蛇", "Snake"));
+          setText($("score-label"), tr("本局分数", "Score"));
+          setText($("best-label"), tr("已存纪录", "Saved best"));
+          setText($("score"), String(game.score));
           const storage = current.grantedPermissions.includes("storage");
+          const warning = recoveryBlocked
+            ? tr(
+                "导入进度无效或版本不支持，原始检查点已保留。请先导出会话留存；明确重新开始后才会替换它。",
+                "The imported checkpoint is invalid or unsupported and has been preserved. Export the session first; it will only be replaced after you confirm a new game.",
+              )
+            : storageBlocked()
+              ? current.view.blocks.find((block) => block.kind === "markdown")
+                  ?.text || current.view.description
+              : "";
+          $("data-error").hidden = !warning;
+          setText($("data-error"), warning);
           best =
             Number(
               recordBook[
                 `${checkpoint.difficulty}-${checkpoint.wrap ? "wrap" : "wall"}-${checkpoint.obstacles ? "rocks" : "clear"}`
               ],
             ) || 0;
-          $("best").textContent = storage ? String(best) : "—";
+          setText($("best"), storage && !storageBlocked() ? String(best) : "—");
           const finished =
             game.dead || !game.food || checkpoint.moves.length >= LIMIT;
           $("overlay").hidden = running;
-          $("overlay-title").textContent = game.dead
-            ? tr("本局结束", "Game over")
-            : !game.food
-              ? tr("棋盘填满了！", "Board cleared!")
-              : checkpoint.moves.length >= LIMIT
-                ? tr("步数已达上限", "Move limit reached")
-                : checkpoint.moves.length
-                  ? tr("已暂停", "Paused")
-                  : tr("准备好了吗？", "Ready to play?");
-          $("notice").textContent = working
-            ? tr("正在保存…", "Saving…")
-            : running
-              ? tr("游戏中", "Playing")
-              : finished
+          setText(
+            $("overlay-title"),
+            recoveryBlocked
+              ? tr("进度未载入", "Checkpoint not loaded")
+              : game.dead
                 ? tr("本局结束", "Game over")
-                : checkpoint.moves.length
-                  ? tr("已暂停", "Paused")
-                  : tr("准备就绪", "Ready");
-          $("start").textContent = finished
-            ? tr("重新开始", "New game")
-            : checkpoint.moves.length
-              ? tr("继续游戏", "Resume")
-              : tr("开始游戏", "Start");
-          $("pause").textContent = running
-            ? tr("暂停 · 空格", "Pause · Space")
-            : tr("开始 / 继续", "Start / resume");
-          $("pause").disabled = working || finished;
-          $("start").disabled = working;
-          $("restart").textContent = tr("重新开始", "New game");
-          $("restart").disabled = working;
-          $("save").textContent = working
-            ? tr("正在保存…", "Saving…")
-            : tr("保存模式纪录", "Save mode best");
-          $("save").disabled = working || current.busy || !storage;
-          $("sound").textContent = checkpoint.muted
-            ? tr("声音：关", "Sound: off")
-            : tr("声音：开", "Sound: on");
-          $("sound").setAttribute("aria-pressed", String(checkpoint.muted));
+                : !game.food
+                  ? tr("棋盘填满了！", "Board cleared!")
+                  : checkpoint.moves.length >= LIMIT
+                    ? tr("步数已达上限", "Move limit reached")
+                    : checkpoint.moves.length
+                      ? tr("已暂停", "Paused")
+                      : tr("准备好了吗？", "Ready to play?"),
+          );
+          setText(
+            $("notice"),
+            working
+              ? tr("正在保存…", "Saving…")
+              : running
+                ? tr("游戏中", "Playing")
+                : finished
+                  ? tr("本局结束", "Game over")
+                  : checkpoint.moves.length
+                    ? tr("已暂停", "Paused")
+                    : tr("准备就绪", "Ready"),
+          );
+          setText(
+            $("start"),
+            finished || recoveryBlocked
+              ? tr("重新开始", "New game")
+              : checkpoint.moves.length
+                ? tr("继续游戏", "Resume")
+                : tr("开始游戏", "Start"),
+          );
+          setText(
+            $("pause"),
+            running
+              ? tr("暂停 · 空格", "Pause · Space")
+              : tr("开始 / 继续", "Start / resume"),
+          );
+          const blocked = working || current.busy;
+          $("pause").disabled = blocked || finished || recoveryBlocked;
+          $("start").disabled = blocked || !$("confirm").hidden;
+          setText($("restart"), tr("重新开始", "New game"));
+          $("restart").disabled = blocked;
+          $("confirm-restart").disabled = blocked;
+          $("cancel-restart").disabled = working;
+          $("sound").disabled = blocked || recoveryBlocked;
+          setText(
+            $("save"),
+            working
+              ? tr("正在保存…", "Saving…")
+              : tr("保存模式纪录", "Save mode best"),
+          );
+          $("save").disabled =
+            blocked || !storage || storageBlocked() || recoveryBlocked;
+          setText(
+            $("sound"),
+            checkpoint.muted
+              ? tr("声音：关", "Sound: off")
+              : tr("声音：开", "Sound: on"),
+          );
+          $("sound").setAttribute("aria-pressed", String(!checkpoint.muted));
           const storageHelp = storage
             ? tr(
                 "仅手动保存纪录，棋局保留在当前会话。",
@@ -771,52 +887,56 @@
             "aria-label",
             tr("游戏帮助", "Game help"),
           );
-          $("help").textContent =
+          setText(
+            $("help"),
             tr(
               "方向键 / WASD / 滑动控制，空格暂停；每颗食物 10 分。离开窗口后暂停，返回需手动继续。",
               "Use arrows, WASD or swipe; Space pauses. Each food is worth 10 points. Leaving pauses the game; resume manually.",
             ) +
-            " " +
-            storageHelp;
+              " " +
+              storageHelp,
+          );
           $("pad").setAttribute(
             "aria-label",
             tr("方向控制", "Direction controls"),
           );
-          $("settings-title").textContent = tr(
-            "下一局设置",
-            "Next-game settings",
-          );
+          setText($("settings-title"), tr("下一局设置", "Next-game settings"));
           const settingsHelp = tr(
             "设置在重新开始后生效。不同模式的纪录分别保存。",
             "Settings apply on restart. Each mode has a separate record.",
           );
           $("settings-title").title = settingsHelp;
           $("settings-title").setAttribute("aria-description", settingsHelp);
-          $("speed-label").textContent = tr("速度", "Speed");
-          Array.from($("speed").options).forEach(
-            (option, i) =>
-              (option.textContent = [
+          setText($("speed-label"), tr("速度", "Speed"));
+          Array.from($("speed").options).forEach((option, i) =>
+            setText(
+              option,
+              [
                 tr("悠闲 · 160 ms", "Relaxed · 160 ms"),
                 tr("标准 · 110 ms", "Normal · 110 ms"),
                 tr("疾速 · 85 ms", "Fast · 85 ms"),
-              ][i]),
+              ][i],
+            ),
           );
-          $("wrap-label").textContent = tr("穿墙模式", "Wrap edges");
-          $("rocks-label").textContent = tr("固定障碍", "Fixed obstacles");
-          $("seed-label").textContent = tr("开局种子", "Seed");
+          setText($("wrap-label"), tr("穿墙模式", "Wrap edges"));
+          setText($("rocks-label"), tr("固定障碍", "Fixed obstacles"));
+          setText($("seed-label"), tr("开局种子", "Seed"));
           const seedHelp = tr(
             "输入 1–4294967295 的整数；同一种子和设置可重现棋局。",
             "Enter an integer from 1 to 4294967295. The same seed and settings reproduce a board.",
           );
           $("seed").title = seedHelp;
           $("seed").setAttribute("aria-description", seedHelp);
-          $("random").textContent = tr("换一个种子", "Random seed");
-          $("confirm-text").textContent = tr(
-            "重新开始将替换本局进度，是否继续？",
-            "A new game replaces this board. Continue?",
+          setText($("random"), tr("换一个种子", "Random seed"));
+          setText(
+            $("confirm-text"),
+            tr(
+              "重新开始将替换本局进度，是否继续？",
+              "A new game replaces this board. Continue?",
+            ),
           );
-          $("cancel-restart").textContent = tr("保留本局", "Keep this game");
-          $("confirm-restart").textContent = tr("确定重开", "Start new game");
+          setText($("cancel-restart"), tr("保留本局", "Keep this game"));
+          setText($("confirm-restart"), tr("确定重开", "Start new game"));
           canvas.setAttribute(
             "aria-label",
             tr(
@@ -911,11 +1031,17 @@
             !$("confirm").hidden
           )
             return;
-          if (game.dead || !game.food || checkpoint.moves.length >= LIMIT) {
+          if (
+            recoveryBlocked ||
+            game.dead ||
+            !game.food ||
+            checkpoint.moves.length >= LIMIT
+          ) {
             askRestart();
             return;
           }
-          if (document.hidden) return;
+          if (document.hidden || !boardVisible) return;
+          void retain(true);
           unlockAudio();
           running = true;
           previous = 0;
@@ -925,7 +1051,7 @@
           canvas.focus();
         }
         function turn(d) {
-          if (!running) return;
+          if (!running || !Object.hasOwn(dirs, d)) return;
           const previousDirection = queue.at(-1) || game.direction;
           if (
             queue.length < 2 &&
@@ -935,6 +1061,7 @@
             queue.push(d);
         }
         function newGame() {
+          if (!initialized || working || current?.busy) return;
           const seed = Number($("seed").value);
           if (!Number.isInteger(seed) || seed < 1 || seed > 4294967295) {
             $("seed").setAttribute("aria-invalid", "true");
@@ -958,27 +1085,35 @@
             moves: [],
             muted: checkpoint.muted,
           };
+          recoveryBlocked = false;
+          checkpointFailure = null;
+          retriedCheckpoint = "";
           game = create(checkpoint);
           best = 0;
           $("confirm").hidden = true;
           reportError("");
           paint();
-          void retain();
+          void retain(true);
+          $("start").focus();
         }
         function askRestart() {
-          if (working) return;
+          if (!initialized || working || current?.busy) return;
           pause();
-          if (checkpoint.moves.length === 0) {
+          if (!recoveryBlocked && checkpoint.moves.length === 0) {
             newGame();
             return;
           }
           $("confirm").hidden = false;
+          paint();
           $("cancel-restart").focus();
         }
         async function save() {
           if (
             working ||
             current?.busy ||
+            !checkpoint ||
+            recoveryBlocked ||
+            storageBlocked() ||
             !current.grantedPermissions.includes("storage")
           )
             return;
@@ -987,10 +1122,12 @@
           reportError("");
           paint();
           try {
-            await retain();
+            if (!(await retain(true)) || current?.busy)
+              throw Error("Checkpoint not retained");
             const result = await starter.run("save-best", {
               checkpoint: JSON.stringify(checkpoint),
             });
+            if (disposed) return;
             note(result.description);
             recordBook = Object.fromEntries(
               result.blocks?.find((block) => block.kind === "table")?.rows ??
@@ -998,6 +1135,7 @@
             );
             await retain();
           } catch {
+            if (disposed) return;
             reportError(
               tr(
                 "保存失败或已取消；棋局保留且保持暂停，未自动重试。",
@@ -1005,22 +1143,29 @@
               ),
             );
           } finally {
-            working = false;
-            await retain(true);
-            paint();
+            if (!disposed) {
+              working = false;
+              void retain();
+              paint();
+            }
           }
         }
         function boot(snapshot) {
+          if (disposed) return;
+          const wasBusy = current?.busy;
+          if (snapshot.busy && !wasBusy) busyGeneration++;
           current = snapshot;
           if (!initialized && snapshot.view) {
             initialized = true;
             document.querySelector("main").inert = false;
             try {
-              const fallback = JSON.parse(snapshot.view.state).game,
-                restored = restore(snapshot.checkpoint ?? fallback);
+              const restored = restore(
+                snapshot.checkpoint ?? JSON.parse(snapshot.view.state).game,
+              );
               checkpoint = restored.checkpoint;
               game = restored.game;
             } catch {
+              recoveryBlocked = true;
               const restored = restore(initial());
               checkpoint = restored.checkpoint;
               game = restored.game;
@@ -1048,6 +1193,11 @@
                 "An operation is in progress. The game paused.",
               ),
             );
+          if (!snapshot.busy) {
+            const retry = retryAfterBusy();
+            if (queuedCheckpoint !== null && (!checkpointFailure || retry))
+              void retain();
+          }
           paint();
         }
         listen($("start"), "click", () => {
@@ -1059,10 +1209,13 @@
         listen($("confirm-restart"), "click", newGame);
         listen($("cancel-restart"), "click", () => {
           $("confirm").hidden = true;
-          $("pause").focus();
+          paint();
+          $("restart").focus();
         });
         listen($("save"), "click", () => void save());
         listen($("sound"), "click", () => {
+          if (!initialized || working || current?.busy || recoveryBlocked)
+            return;
           checkpoint.muted = !checkpoint.muted;
           if (checkpoint.muted) {
             if (audio) void audio.suspend().catch(() => {});
@@ -1093,6 +1246,7 @@
         );
         document.querySelectorAll("[data-direction]").forEach((button) =>
           listen(button, "click", () => {
+            if (!running) return;
             unlockAudio();
             turn(button.dataset.direction);
           }),
@@ -1100,11 +1254,21 @@
         listen(document, "keydown", (event) => {
           if (event.key === "Escape") {
             $("game-help").setAttribute("data-dismissed", "");
+            if (!$("confirm").hidden && !working) {
+              event.preventDefault();
+              $("confirm").hidden = true;
+              paint();
+              $("restart").focus();
+            }
             return;
           }
           if (
+            !initialized ||
+            event.isComposing ||
+            event.target?.isContentEditable ||
             event.target instanceof HTMLInputElement ||
-            event.target instanceof HTMLButtonElement ||
+            (event.target instanceof HTMLButtonElement &&
+              !event.target.dataset.direction) ||
             event.target instanceof HTMLSelectElement ||
             event.target instanceof HTMLTextAreaElement ||
             event.altKey ||
@@ -1125,16 +1289,21 @@
           if (d) {
             event.preventDefault();
             if (!event.repeat) turn(d);
-          } else if (event.code === "Space" && !event.repeat) {
+          } else if (
+            event.code === "Space" &&
+            !event.repeat &&
+            !(event.target instanceof HTMLButtonElement)
+          ) {
             event.preventDefault();
             running ? pause() : start();
           }
         });
         listen(canvas, "pointerdown", (event) => {
+          if (!event.isPrimary || event.button !== 0 || pointer) return;
           pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
           canvas.setPointerCapture(event.pointerId);
           canvas.focus();
-          unlockAudio();
+          if (running) unlockAudio();
         });
         listen(canvas, "pointerup", (event) => {
           if (!pointer || pointer.id !== event.pointerId) return;
@@ -1153,6 +1322,9 @@
             );
         });
         listen(canvas, "pointercancel", () => {
+          pointer = null;
+        });
+        listen(canvas, "lostpointercapture", () => {
           pointer = null;
         });
         listen(document, "visibilitychange", () => {
@@ -1179,6 +1351,17 @@
         });
         const observer = new ResizeObserver(draw);
         observer.observe(canvas);
+        const visibility = new IntersectionObserver((entries) => {
+          boardVisible = entries[entries.length - 1]?.isIntersecting ?? true;
+          if (running && !boardVisible)
+            pause(
+              tr(
+                "棋盘已离开可见区域，游戏暂停。",
+                "The board is outside the visible area. The game paused.",
+              ),
+            );
+        });
+        visibility.observe(canvas);
         listen(reduced, "change", draw);
         listen(window, "pagehide", () => {
           pause();
@@ -1186,6 +1369,7 @@
           clearTimeout(audioTimer);
           cancelAnimationFrame(frame);
           observer.disconnect();
+          visibility.disconnect();
           unsubscribe();
           for (const remove of removers) remove();
           if (audio) void audio.close().catch(() => {});

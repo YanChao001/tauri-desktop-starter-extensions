@@ -9,6 +9,8 @@ const MAX_SCORE: u32 = (SIZE as u32 * SIZE as u32 - 3) * 10;
 const DEFAULT_SEED: u32 = 20261026;
 const STORAGE_KEY: &str = "snake-records";
 type Point = (i16, i16);
+const ROCKS: [Point; 6] = [(5, 5), (15, 5), (5, 15), (15, 15), (10, 5), (10, 15)];
+const ROCK_COUNT: u32 = ROCKS.len() as u32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -96,7 +98,7 @@ impl Game {
             dead: false,
             wrap: checkpoint.wrap,
             rocks: if checkpoint.obstacles {
-                vec![(5, 5), (15, 5), (5, 15), (15, 15), (10, 5), (10, 15)]
+                ROCKS.to_vec()
             } else {
                 vec![]
             },
@@ -113,9 +115,13 @@ impl Game {
         value
     }
     fn spawn(&mut self) {
+        let mut occupied = [false; (SIZE * SIZE) as usize];
+        for &(x, y) in self.snake.iter().chain(&self.rocks) {
+            occupied[(y * SIZE + x) as usize] = true;
+        }
         let empty: Vec<_> = (0..SIZE)
             .flat_map(|y| (0..SIZE).map(move |x| (x, y)))
-            .filter(|point| !self.snake.contains(point) && !self.rocks.contains(point))
+            .filter(|&(x, y)| !occupied[(y * SIZE + x) as usize])
             .collect();
         self.food = if empty.is_empty() {
             None
@@ -189,6 +195,10 @@ fn records(raw: Option<&Value>) -> Result<Records, String> {
     };
     let result: Records = serde_json::from_value(raw.clone())
         .map_err(|_| "Invalid or future snake records / 纪录损坏或版本较新，已保留原件")?;
+    validate_records(&result)?;
+    Ok(result)
+}
+fn validate_records(result: &Records) -> Result<(), String> {
     if result.schema != 1
         || result.best.len() > 12
         || result.best.iter().any(|(key, score)| {
@@ -197,13 +207,19 @@ fn records(raw: Option<&Value>) -> Result<Records, String> {
                 || !["slow", "normal", "fast"].contains(&parts[0])
                 || !["wall", "wrap"].contains(&parts[1])
                 || !["clear", "rocks"].contains(&parts[2])
-                || *score > MAX_SCORE
+                || *score
+                    > MAX_SCORE
+                        - if parts[2] == "rocks" {
+                            ROCK_COUNT * 10
+                        } else {
+                            0
+                        }
                 || !score.is_multiple_of(10)
         })
     {
         return Err("Invalid or future snake records / 纪录损坏或版本较新，已保留原件".into());
     }
-    Ok(result)
+    Ok(())
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -211,6 +227,7 @@ struct Pending {
     revision: i32,
     mode: String,
     best: u32,
+    expected: Records,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -261,7 +278,11 @@ pub fn process(request: Value) -> Result<Value, String> {
     {
         return Err("Invalid snake state".into());
     }
-    let action = request["action"].as_str().unwrap_or("");
+    let action = match &request["action"] {
+        Value::Null => "",
+        Value::String(action) => action,
+        _ => return Err("Invalid snake action / 无效的贪吃蛇操作".into()),
+    };
     if state.pending.is_some() != (action == "host-result") {
         return Err("Unexpected or missing storage receipt".into());
     }
@@ -279,7 +300,12 @@ pub fn process(request: Value) -> Result<Value, String> {
         .as_array()
         .is_some_and(|list| list.iter().any(|value| value == "storage"));
     let snapshot = &request["host"]["storage"];
-    let (revision, mut stored) = if granted {
+    // A damaged optional record must not prevent offline play or checkpoint validation.
+    // Keep it read-only and leave the original bytes to the host instead of replacing it.
+    let storage = || -> Result<(i32, Records), String> {
+        if !granted {
+            return Ok((0, Records::default()));
+        }
         let revision = snapshot["revision"]
             .as_i64()
             .filter(|revision| (0..i32::MAX as i64).contains(revision))
@@ -287,9 +313,19 @@ pub fn process(request: Value) -> Result<Value, String> {
         let values = snapshot["values"]
             .as_object()
             .ok_or("Invalid storage values")?;
-        (revision, records(values.get(STORAGE_KEY))?)
-    } else {
-        (0, Records::default())
+        Ok((revision, records(values.get(STORAGE_KEY))?))
+    };
+    let (revision, mut stored, storage_error) = match storage() {
+        Ok((revision, stored)) => (revision, stored, None),
+        Err(_) => (
+            0,
+            Records::default(),
+            Some(tr(
+                zh,
+                "已保留原始纪录，但其版本、内容或存储快照不受支持；保存已禁用，仍可离线游玩和导出会话。",
+                "Original records were retained, but their version, contents or storage snapshot are unsupported. Saving is disabled; offline play and session export remain available.",
+            )),
+        ),
     };
     let mode = state.game.mode();
     let mut effects = vec![];
@@ -297,6 +333,9 @@ pub fn process(request: Value) -> Result<Value, String> {
         "" => {}
         "validate" => state.notice = "checked".into(),
         "save-best" if !granted => state.notice = "no-storage".into(),
+        "save-best" if storage_error.is_some() => {
+            return Err(storage_error.unwrap().into());
+        }
         "save-best" => {
             let best = stored.best.get(&mode).copied().unwrap_or(0).max(game.score);
             stored.best.insert(mode.clone(), best);
@@ -304,17 +343,20 @@ pub fn process(request: Value) -> Result<Value, String> {
                 revision,
                 mode: mode.clone(),
                 best,
+                expected: stored.clone(),
             });
             effects.push(json!({"kind":"storage","id":"save-best","expectedRevision":revision,"changes":{STORAGE_KEY:stored}}));
         }
         "host-result" => {
             let pending = state.pending.take().ok_or("Missing pending result")?;
+            validate_records(&pending.expected)?;
             if pending.revision < 0
                 || pending.revision == i32::MAX
                 || pending.mode != mode
                 || pending.best < game.score
                 || pending.best > MAX_SCORE
                 || !pending.best.is_multiple_of(10)
+                || pending.expected.best.get(&mode) != Some(&pending.best)
             {
                 return Err("Invalid pending snake record".into());
             }
@@ -326,14 +368,23 @@ pub fn process(request: Value) -> Result<Value, String> {
             }
             state.notice = if results[0]["error"].is_null() {
                 let value = &results[0]["value"];
-                let saved = records(value["values"].as_object().and_then(|v| v.get(STORAGE_KEY)))?;
+                let values = value["values"]
+                    .as_object()
+                    .ok_or("Invalid snake success receipt")?;
+                let saved = records(values.get(STORAGE_KEY))?;
                 if value["revision"].as_i64() != Some(i64::from(pending.revision) + 1)
-                    || saved.best.get(&mode).copied().unwrap_or(0) < pending.best
+                    || saved != pending.expected
                 {
                     return Err("Invalid snake success receipt".into());
                 }
+                // The receipt describes the confirmed write. The injected snapshot can
+                // still precede it, so do not show a stale best score after saving.
+                stored = saved;
                 "saved"
             } else {
+                if !results[0]["value"].is_null() {
+                    return Err("Invalid snake failure receipt".into());
+                }
                 match results[0]["error"]["code"].as_str() {
                     Some("CONFLICT") => "conflict",
                     Some("INPUT_TOO_LONG") => "omitted",
@@ -345,7 +396,7 @@ pub fn process(request: Value) -> Result<Value, String> {
         }
         _ => return Err("Unknown snake action / 未知的贪吃蛇操作".into()),
     }
-    let description = match state.notice.as_str() {
+    let description = storage_error.unwrap_or(match state.notice.as_str() {
         "checked" => tr(
             zh,
             "进度已由 Wasm 重放核验。",
@@ -381,26 +432,33 @@ pub fn process(request: Value) -> Result<Value, String> {
             "方向键 / WASD / 滑动控制；空格暂停。离开后自动暂停，返回时手动继续。",
             "Use arrows / WASD / swipe; Space pauses. Leaving pauses the game; resume manually when you return.",
         ),
-    };
+    });
     let best = stored.best.get(&mode).copied().unwrap_or(0);
     let record_rows: Vec<_> = stored
         .best
         .iter()
         .map(|(mode, best)| vec![mode.clone(), best.to_string()])
         .collect();
+    let mut blocks = vec![
+        json!({"kind":"metrics","items":[
+            {"label":tr(zh,"分数","Score"),"value":game.score.to_string()},
+            {"label":tr(zh,"模式纪录","Mode best"),"value":best.to_string()},
+            {"label":tr(zh,"步数","Ticks"),"value":state.game.moves.len().to_string()}
+        ]}),
+        json!({"kind":"table","columns":["mode","best"],"rows":record_rows}),
+    ];
+    if let Some(error) = storage_error {
+        blocks.push(json!({"kind":"markdown","text":error}));
+    }
     Ok(json!({
         "version":2,"display":tr(zh,"贪吃蛇","Snake"),"description":description,
         "state":serde_json::to_string(&state).map_err(|_| "Could not encode snake state")?,
         "fields":[{"id":"checkpoint","label":tr(zh,"棋局进度","Game checkpoint"),"value":serde_json::to_string(&state.game).map_err(|_| "Could not encode checkpoint")?,"kind":"textarea","maxBytes":120000}],
         "groups":[{"columns":2,"actions":[
             {"id":"validate","label":tr(zh,"核验进度","Validate checkpoint"),"disabled":false,"primary":false},
-            {"id":"save-best","label":tr(zh,"保存纪录","Save best score"),"disabled":!granted,"primary":true}
+            {"id":"save-best","label":tr(zh,"保存纪录","Save best score"),"disabled":!granted || storage_error.is_some(),"primary":true}
         ]}],
-        "blocks":[{"kind":"metrics","items":[
-            {"label":tr(zh,"分数","Score"),"value":game.score.to_string()},
-            {"label":tr(zh,"模式纪录","Mode best"),"value":best.to_string()},
-            {"label":tr(zh,"步数","Ticks"),"value":state.game.moves.len().to_string()}
-        ]},{"kind":"table","columns":["mode","best"],"rows":record_rows}],"effects":effects,"artifacts":[],"errors":{}
+        "blocks":blocks,"effects":effects,"artifacts":[],"errors":{}
     }))
 }
 
@@ -457,6 +515,30 @@ mod tests {
         assert!(game.dead);
     }
     #[test]
+    fn full_boards_finish_without_spawning_on_occupied_cells() {
+        for obstacles in [false, true] {
+            let checkpoint = Checkpoint {
+                obstacles,
+                ..Checkpoint::default()
+            };
+            let mut game = Game::new(&checkpoint);
+            game.snake = vec![(0, 0)];
+            game.snake.extend(
+                (0..SIZE)
+                    .flat_map(|y| (0..SIZE).map(move |x| (x, y)))
+                    .filter(|point| {
+                        ![(0, 0), (1, 0)].contains(point) && !game.rocks.contains(point)
+                    }),
+            );
+            game.spawn();
+            assert_eq!(game.food, Some((1, 0)));
+            game.step(Direction::Right).unwrap();
+            assert_eq!(game.food, None);
+            assert!(!game.dead);
+            assert!(game.step(Direction::Down).is_err());
+        }
+    }
+    #[test]
     fn invalid_imports_and_unknown_actions_are_rejected() {
         let checkpoint = Checkpoint::default();
         let mut value = serde_json::to_value(&checkpoint).unwrap();
@@ -472,6 +554,18 @@ mod tests {
         invalid.moves = vec![Direction::Right; MAX_MOVES + 1];
         assert!(replay(&invalid).is_err());
         assert!(process(request(Some("unknown"), "", &checkpoint)).is_err());
+        let mut invalid_action = request(None, "", &checkpoint);
+        invalid_action["action"] = json!(false);
+        assert!(process(invalid_action).is_err());
+    }
+    #[test]
+    fn bounded_wrap_history_can_reach_the_last_tick() {
+        let checkpoint = Checkpoint {
+            wrap: true,
+            moves: vec![Direction::Right; MAX_MOVES],
+            ..Checkpoint::default()
+        };
+        assert!(!replay(&checkpoint).unwrap().dead);
     }
     #[test]
     fn storage_is_optional_and_future_records_are_preserved() {
@@ -482,6 +576,40 @@ mod tests {
         invalid["host"] = json!({"permissions":["storage"],"storage":{"revision":1,"values":{STORAGE_KEY:{"schema":2,"best":{}}}}});
         assert!(process(invalid).is_err());
         assert!(records(Some(&json!({"schema":1,"best":{"other":10}}))).is_err());
+        assert!(
+            records(Some(
+                &json!({"schema":1,"best":{"normal-wall-rocks":MAX_SCORE}})
+            ))
+            .is_err()
+        );
+        assert!(
+            records(Some(
+                &json!({"schema":1,"best":{"normal-wall-rocks":MAX_SCORE - ROCK_COUNT * 10}})
+            ))
+            .is_ok()
+        );
+    }
+    #[test]
+    fn unreadable_optional_storage_does_not_block_offline_play() {
+        let checkpoint = Checkpoint::default();
+        for storage in [
+            json!({"revision":1,"values":{STORAGE_KEY:{"schema":2,"best":{}}}}),
+            json!({"revision":-1,"values":{}}),
+            json!({"revision":0,"values":null}),
+        ] {
+            for action in [None, Some("validate")] {
+                let mut input = request(action, "", &checkpoint);
+                input["host"] = json!({"permissions":["storage"],"storage":storage});
+                let result = process(input).unwrap();
+                assert_eq!(result["groups"][0]["actions"][1]["disabled"], true);
+                assert!(result["effects"].as_array().unwrap().is_empty());
+                assert_eq!(result["blocks"][2]["kind"], "markdown");
+                assert!(result["description"].as_str().unwrap().contains("retained"));
+                let retained: State =
+                    serde_json::from_str(result["state"].as_str().unwrap()).unwrap();
+                assert_eq!(retained.game, checkpoint);
+            }
+        }
     }
     #[test]
     fn saving_checks_revision_receipts_and_keeps_other_modes() {
@@ -503,6 +631,16 @@ mod tests {
                 .unwrap()
                 .contains("was saved")
         );
+        // This receipt has no host snapshot. Its confirmed records still populate the view.
+        let result = process(receipt.clone()).unwrap();
+        assert_eq!(
+            result["blocks"][1]["rows"],
+            json!([["fast-wrap-rocks", "50"], ["normal-wall-clear", "0"]])
+        );
+        let mut missing_mode = receipt.clone();
+        missing_mode["results"][0]["value"]["values"][STORAGE_KEY]["best"] =
+            json!({"normal-wall-clear":0});
+        assert!(process(missing_mode).is_err());
         receipt["results"][0]["value"]["revision"] = json!(9);
         assert!(process(receipt.clone()).is_err());
         receipt["results"][0] = json!({"id":"save-best","value":null,"error":{"code":"CONFLICT","message":"changed","retryable":false}});
@@ -511,5 +649,26 @@ mod tests {
         let retained: State = serde_json::from_str(failed["state"].as_str().unwrap()).unwrap();
         assert_eq!(retained.game, checkpoint);
         assert!(retained.pending.is_none());
+    }
+    #[test]
+    fn storage_receipts_must_match_the_pending_operation() {
+        let checkpoint = Checkpoint::default();
+        let mut input = request(Some("save-best"), "", &checkpoint);
+        input["host"] = json!({"permissions":["storage"],"storage":{"revision":7,"values":{}}});
+        let output = process(input).unwrap();
+        let state = output["state"].as_str().unwrap();
+        assert!(process(request(None, state, &checkpoint)).is_err());
+        assert!(process(request(Some("host-result"), "", &checkpoint)).is_err());
+        for results in [
+            json!([]),
+            json!([{"id":"other","value":null,"error":{"code":"CONFLICT"}}]),
+            json!([{"id":"save-best","value":{},"error":{"code":"CONFLICT"}}]),
+            json!([{"id":"save-best","value":null,"error":{}}]),
+            json!([{"id":"save-best","value":{"revision":8,"values":{}},"error":null}]),
+        ] {
+            let mut receipt = request(Some("host-result"), state, &checkpoint);
+            receipt["results"] = results;
+            assert!(process(receipt).is_err());
+        }
     }
 }
