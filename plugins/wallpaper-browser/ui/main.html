@@ -100,6 +100,52 @@
       .search select {
         max-width: 100%;
       }
+      #search {
+        min-width: 6.5rem;
+      }
+      .source-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .source-row .help {
+        position: static;
+      }
+      .help {
+        position: relative;
+        display: inline-flex;
+      }
+      button.help-trigger {
+        width: 1.6rem;
+        min-height: 1.6rem;
+        padding: 0;
+        border-radius: 50%;
+        color: var(--muted-foreground);
+      }
+      .help-text {
+        display: none;
+        position: absolute;
+        z-index: 10;
+        top: 100%;
+        left: 0;
+        width: min(22rem, calc(100vw - 3rem));
+        max-height: 60vh;
+        overflow: auto;
+        padding: 0.65rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius, 0.625rem);
+        background: var(--popover, var(--card));
+        color: var(--popover-foreground, var(--foreground));
+        font-size: 0.8rem;
+        line-height: 1.5;
+        white-space: normal;
+        box-shadow: 0 4px 12px #0002;
+      }
+      .help:not([data-dismissed]):hover .help-text,
+      .help:not([data-dismissed]):focus-within .help-text {
+        display: block;
+      }
       .presets {
         display: flex;
         flex-wrap: wrap;
@@ -122,8 +168,17 @@
       .result {
         text-align: left;
         width: 100%;
+        min-width: 0;
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-content: stretch;
+        justify-items: start;
         gap: 4px;
+        white-space: normal;
+        height: 5rem;
+        grid-template-rows: 2.5em 1.25rem;
+        align-content: center;
+        line-height: 1.25;
       }
       .result[aria-pressed="true"] {
         border-color: var(--primary);
@@ -131,6 +186,23 @@
       }
       .result strong {
         overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+      .result .muted {
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      #result-summary,
+      #local-summary {
+        height: 1.5em;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
       .preview {
         padding: 16px;
@@ -161,13 +233,30 @@
       }
       .preview h2 {
         overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        height: 2.5em;
+        line-height: 1.25;
       }
       .metadata {
         display: grid;
         gap: 5px;
-        margin: 12px 0;
+        margin-top: 8px;
+        height: 8rem;
+        align-content: start;
+        overflow: auto;
         font-size: 13px;
         overflow-wrap: anywhere;
+      }
+      .image-details {
+        margin-top: 8px;
+        font-size: 0.8rem;
+      }
+      .image-details summary {
+        cursor: pointer;
+        color: var(--muted-foreground);
       }
       .actions {
         display: flex;
@@ -199,6 +288,12 @@
         font-size: 15px;
         overflow-wrap: anywhere;
         margin: 8px 0;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        height: 2.5em;
+        line-height: 1.25;
       }
       .card.active {
         border-color: var(--primary);
@@ -206,20 +301,22 @@
       .card .actions {
         gap: 5px;
       }
-      #notice,
-      #error,
-      #permission {
-        padding: 12px 14px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        margin-bottom: 14px;
+      .card-status {
+        height: 1.5em;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
-      #error {
-        color: var(--destructive);
-        border-color: var(--destructive);
-      }
-      #permission {
-        background: var(--muted);
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
       [hidden] {
         display: none !important;
@@ -269,13 +366,10 @@
       <header>
         <div>
           <h1 id="title">壁纸库</h1>
-          <p class="muted" id="subtitle"></p>
         </div>
         <button id="settings" type="button" data-variant="outline"></button>
       </header>
-      <p id="permission" hidden></p>
-      <p id="error" role="alert" hidden></p>
-      <p id="notice" role="status" hidden></p>
+      <p id="permission" class="sr-only" role="status" hidden></p>
       <div class="tabs" role="tablist" aria-label="Wallpaper collections">
         <button
           id="remote-tab"
@@ -296,13 +390,27 @@
         ></button>
       </div>
       <section id="remote-panel" role="tabpanel" aria-labelledby="remote-tab">
-        <p class="muted" id="source-note"></p>
+        <div class="source-row">
+          <span class="muted" id="source-name"></span>
+          <span class="help">
+            <button
+              id="source-help-button"
+              class="help-trigger"
+              type="button"
+              aria-describedby="source-note"
+              data-variant="outline"
+            >
+              ?
+            </button>
+            <span id="source-note" class="help-text" role="tooltip"></span>
+          </span>
+        </div>
         <form id="search-form" class="search">
           <input
             id="query"
             maxlength="100"
             value="landscape"
-            aria-label="Search Wikimedia Commons"
+            aria-label="搜索必应图片"
           />
           <label class="inline-field"
             ><span id="network-label" class="muted"></span>
@@ -386,12 +494,63 @@
           const element = document.createElement(tag);
           element.textContent = value;
           if (className) element.className = className;
+          if (["h2", "strong"].includes(tag)) element.title = value;
           return element;
         }
+        function dimensions(item) {
+          return item.width > 0 && item.height > 0
+            ? `${item.width} × ${item.height}`
+            : tr("尺寸未知", "Dimensions unavailable");
+        }
         function message(value, error = false) {
-          const element = $(error ? "error" : "notice");
-          element.textContent = value;
-          element.hidden = !value;
+          if (!value) return;
+          void starter
+            .notify(value, { tone: error ? "error" : "info" })
+            .catch(() => {});
+        }
+        function failure(error, searching = false) {
+          switch (error?.code) {
+            case "SETTINGS_CONFLICT":
+              return tr(
+                "设置已在其他窗口改变，请刷新图库后重试。",
+                "Settings changed in another window. Refresh the gallery and retry.",
+              );
+            case "EXTENSION_UNAVAILABLE":
+              return tr(
+                "扩展已停用或权限已改变，请重新打开并检查授权。",
+                "The extension was disabled or its permissions changed. Reopen it and review its permissions.",
+              );
+            case "NOT_FOUND":
+              return tr(
+                "图片已不可用，请重新搜索或刷新图库。",
+                "This image is no longer available. Search again or refresh the gallery.",
+              );
+            case "EXTENSION_TIMEOUT":
+              return searching
+                ? tr(
+                    "搜索超时，请检查网络连接后重试。",
+                    "Image search timed out. Check your connection and retry.",
+                  )
+                : tr(
+                    "操作超时，请稍后重试。",
+                    "The operation timed out. Try again shortly.",
+                  );
+            case "EXTENSION_BUSY":
+              return tr(
+                "壁纸服务正忙，请稍后重试。",
+                "The wallpaper service is busy. Try again shortly.",
+              );
+            default:
+              return searching
+                ? tr(
+                    "搜索失败，请检查网络连接后重试。",
+                    "Image search failed. Check your connection and retry.",
+                  )
+                : tr(
+                    "操作失败，请重试。",
+                    "The operation failed. Please retry.",
+                  );
+          }
         }
         function button(label, action, primary = false, actionName = "") {
           const element = text("button", label);
@@ -429,11 +588,11 @@
           const active = document.activeElement;
           const returnFocus = active?.id
             ? () => $(active.id)
-            : active?.dataset.pageId
+            : active?.dataset.resultId
               ? () =>
                   Array.from(document.querySelectorAll(".result")).find(
                     (element) =>
-                      element.dataset.pageId === active.dataset.pageId,
+                      element.dataset.resultId === active.dataset.resultId,
                   )
               : active?.dataset.action
                 ? () =>
@@ -445,21 +604,11 @@
                     )
                 : () => null;
           busy = true;
-          message("");
-          message("", true);
           render();
           try {
             await action();
           } catch (error) {
-            message(
-              error?.code === "SETTINGS_CONFLICT"
-                ? tr(
-                    "设置已在其他窗口改变，请刷新图库后重试。",
-                    "Settings changed in another window. Refresh the gallery and retry.",
-                  )
-                : String(error?.message || error),
-              true,
-            );
+            message(failure(error), true);
           } finally {
             busy = false;
             render();
@@ -486,25 +635,29 @@
         async function search() {
           const query = $("query").value.trim();
           if (!query) return;
-          const response = await request("search", { query });
+          let response;
+          try {
+            response = await request("search", { query });
+          } catch (error) {
+            message(failure(error, true), true);
+            return;
+          }
           entries = response.items;
           selected = null;
           preview = null;
-          message(
-            entries.length
-              ? tr(
-                  "选择图片预览并核对来源，之后再下载或导入。",
-                  "Select an image to preview and review its source before downloading or importing.",
-                )
-              : tr(
-                  "没有找到明确标为公共领域 / CC0 的图片，试试其他关键词。",
-                  "No explicitly Public domain / CC0 images found. Try another keyword.",
-                ),
-          );
+          if (!entries.length)
+            message(
+              tr(
+                "没有找到图片，试试其他关键词。",
+                "No images found. Try another keyword.",
+              ),
+            );
           await checkpointNavigation();
         }
         async function select(item) {
-          const response = await request("preview", { pageId: item.pageId });
+          const response = await request("preview", {
+            resultId: item.resultId,
+          });
           selected = response.image;
           preview = response.dataUrl;
         }
@@ -521,6 +674,7 @@
                   "这不会删除原始图片文件；如果当前正在使用它，应用背景会恢复为纯色。",
                   "The original image file remains. If active, the application returns to a plain background.",
                 );
+          $("dialog-description").title = $("dialog-description").textContent;
           $("rename-label").hidden = kind !== "rename";
           $("rename-value").value = item.name;
           $("rename-caption").textContent = tr("图片名称", "Image name");
@@ -550,25 +704,31 @@
         function render() {
           document.documentElement.lang = snapshot?.locale || "zh-CN";
           $("title").textContent = tr("壁纸库", "Wallpaper Library");
-          $("subtitle").textContent = tr(
-            "开放许可图片 · 本机收藏 · 应用背景",
-            "Openly licensed images · Local collection · App background",
-          );
-          $("settings").textContent = tr(
-            "宿主图库设置",
-            "Host gallery settings",
-          );
+          $("settings").textContent = tr("图库设置", "Gallery settings");
           $("remote-tab").textContent = tr("发现壁纸", "Discover");
           $("local-tab").textContent = tr("本机图库", "Local gallery");
-          $("source-note").textContent = tr(
-            "来源：Wikimedia Commons。仅显示明确标为公共领域 / CC0 的图片；每次下载都会重新核对许可。搜索关键词会发送至该服务。",
-            "Source: Wikimedia Commons. Only explicitly Public domain / CC0 images are shown; licenses are rechecked before download. Search keywords are sent to this service.",
+          $("source-name").textContent = tr("必应图片", "Bing Images");
+          $("source-help-button").setAttribute(
+            "aria-label",
+            tr("搜索来源与使用说明", "Image source and usage help"),
           );
+          $("source-note").textContent = tr(
+            "搜索关键词会发送至必应，结果来自第三方网站；使用前请核对来源与使用许可。图库图片会缩放压缩，原图下载上限为 16 MiB / 1600 万像素。网络连接可跟随系统代理或直接连接；本插件只管理应用背景，不改变操作系统壁纸。",
+            "Search keywords are sent to Bing and results come from third-party websites. Review each source and its usage rights. Gallery images are resized and compressed; originals are limited to 16 MiB / 16 million pixels. Connect through the system proxy or directly. This plugin manages the application background, not the operating system wallpaper.",
+          );
+          $("query").setAttribute(
+            "aria-label",
+            tr("搜索必应图片", "Search Bing Images"),
+          );
+          $("query").placeholder = tr("搜索图片", "Search images");
           $("permission").hidden = allowed();
           $("permission").textContent = tr(
             "请在扩展权限中授予“壁纸管理”，以使用搜索、下载和本机图库。该权限不会改变操作系统壁纸。",
             "Grant wallpaper management in extension permissions to search, download and manage the gallery. It does not change the operating system wallpaper.",
           );
+          if (!allowed())
+            $("source-note").textContent =
+              $("permission").textContent + " " + $("source-note").textContent;
           $("search").textContent = busy
             ? tr("处理中…", "Working…")
             : tr("搜索", "Search");
@@ -618,23 +778,23 @@
               }),
             );
           $("result-summary").textContent = tr(
-            `${entries.length} 张符合许可的结果`,
-            `${entries.length} licensed results`,
+            `${entries.length} 张图片`,
+            `${entries.length} images`,
           );
           $("results").replaceChildren();
           for (const item of entries) {
             const card = button("", () => select(item));
             card.className = "result";
-            card.dataset.pageId = String(item.pageId);
+            card.dataset.resultId = item.resultId;
             card.setAttribute(
               "aria-pressed",
-              String(selected?.pageId === item.pageId),
+              String(selected?.resultId === item.resultId),
             );
             card.append(
               text("strong", item.title),
               text(
                 "span",
-                `${item.width} × ${item.height} · ${item.license}`,
+                [dimensions(item), item.license].filter(Boolean).join(" · "),
                 "muted",
               ),
             );
@@ -661,16 +821,35 @@
             $("preview").append(image, text("h2", selected.title));
             const meta = document.createElement("div");
             meta.className = "metadata";
+            if (selected.author)
+              meta.append(
+                text("p", tr("作者：", "Creator: ") + selected.author),
+              );
             meta.append(
-              text("p", tr("作者：", "Creator: ") + selected.author),
-              text("p", tr("许可：", "License: ") + selected.license),
               text(
                 "p",
-                `${selected.width} × ${selected.height} · ${(selected.bytes / 1048576).toFixed(1)} MiB`,
+                selected.license
+                  ? tr("许可：", "License: ") + selected.license
+                  : tr(
+                      "未提供许可信息，请在来源页面核对使用许可。",
+                      "License information is unavailable. Review usage rights on the source page.",
+                    ),
               ),
+            );
+            const details = [dimensions(selected)];
+            if (selected.bytes > 0)
+              details.push(`${(selected.bytes / 1048576).toFixed(1)} MiB`);
+            meta.append(
+              text("p", details.join(" · ")),
               text("p", selected.sourceUrl, "muted"),
             );
-            $("preview").append(meta);
+            const detailsPanel = document.createElement("details");
+            detailsPanel.className = "image-details";
+            detailsPanel.append(
+              text("summary", tr("图片信息", "Image details")),
+              meta,
+            );
+            $("preview").append(detailsPanel);
             const actions = document.createElement("div");
             actions.className = "actions";
             actions.append(
@@ -678,7 +857,7 @@
                 tr("加入本机图库", "Add to gallery"),
                 async () => {
                   const response = await request("import-remote", {
-                    pageId: selected.pageId,
+                    resultId: selected.resultId,
                   });
                   library = response.library;
                   message(
@@ -695,7 +874,7 @@
                 tr("下载原图…", "Save original…"),
                 async () => {
                   const response = await request("download-original", {
-                    pageId: selected.pageId,
+                    resultId: selected.resultId,
                   });
                   message(
                     response.cancelled
@@ -711,26 +890,16 @@
               ),
               button(
                 tr("查看来源与许可", "View source & license"),
-                () => request("open-source", { pageId: selected.pageId }),
+                () => request("open-source", { resultId: selected.resultId }),
                 false,
                 "open-source",
               ),
             );
-            $("preview").append(
-              actions,
-              text(
-                "p",
-                tr(
-                  "图库版本会缩放压缩。原图下载上限 16 MiB / 1600 万像素。来源按钮在浏览器打开文件页，以便核验作者与许可。",
-                  "Gallery versions are resized and compressed. Originals are limited to 16 MiB / 16 million pixels. The source button opens the file page in your browser to verify its creator and license.",
-                ),
-                "muted",
-              ),
-            );
+            $("preview").append(actions);
           }
           $("local-summary").textContent = tr(
-            `${library.items.length} / ${library.limit} 张 · ${busy ? "处理中" : "修改立即保存"}`,
-            `${library.items.length} / ${library.limit} images · ${busy ? "Working" : "Changes save immediately"}`,
+            `${library.items.length} / ${library.limit} 张`,
+            `${library.items.length} / ${library.limit} images`,
           );
           $("gallery").replaceChildren();
           for (const item of library.items) {
@@ -751,14 +920,13 @@
                   ),
               text("h2", item.name),
             );
-            if (item.active)
-              card.append(
-                text(
-                  "p",
-                  tr("当前应用背景", "Current app background"),
-                  "muted",
-                ),
-              );
+            card.append(
+              text(
+                "p",
+                item.active ? tr("当前应用背景", "Current app background") : "",
+                "muted card-status",
+              ),
+            );
             const actions = document.createElement("div");
             actions.className = "actions";
             actions.append(
@@ -805,14 +973,7 @@
           }
           if (!library.items.length)
             $("gallery").append(
-              text(
-                "p",
-                tr(
-                  "图库还是空的。可以导入自己的图片，或在“发现壁纸”中添加。",
-                  "Your gallery is empty. Import an image or add one from Discover.",
-                ),
-                "muted",
-              ),
+              text("p", tr("暂无图片", "No images yet"), "muted"),
             );
         }
         $("search-form").onsubmit = (event) => {
@@ -844,7 +1005,7 @@
             tab = name;
             render();
             void checkpointNavigation().catch((error) =>
-              message(String(error?.message || error), true),
+              message(failure(error), true),
             );
             if (name === "local") void work(refresh);
           };
@@ -866,9 +1027,33 @@
             }
           };
         }
+        const sourceHelp = $("source-help-button").closest(".help");
+        for (const name of ["pointerenter", "focusin"])
+          sourceHelp.addEventListener(
+            name,
+            () => delete sourceHelp.dataset.dismissed,
+          );
+        for (const name of ["pointerleave", "focusout"])
+          sourceHelp.addEventListener(name, () => {
+            if (!sourceHelp.contains(document.activeElement))
+              delete sourceHelp.dataset.dismissed;
+          });
+        document.addEventListener("keydown", (event) => {
+          if (
+            event.key === "Escape" &&
+            (sourceHelp.matches(":hover") ||
+              sourceHelp.contains(document.activeElement))
+          ) {
+            sourceHelp.dataset.dismissed = "true";
+            event.preventDefault();
+          }
+        });
         starter.onChange((next) => {
+          const wasAllowed = allowed();
           snapshot = next;
           render();
+          if (wasAllowed && !allowed())
+            message($("permission").textContent, true);
         });
         void starter.ready
           .then(async (next) => {
@@ -886,8 +1071,9 @@
               tab = saved.tab;
             render();
             if (allowed()) await work(refresh);
+            else message($("permission").textContent, true);
           })
-          .catch((error) => message(String(error?.message || error), true));
+          .catch((error) => message(failure(error), true));
       })();
     </script>
   </body>

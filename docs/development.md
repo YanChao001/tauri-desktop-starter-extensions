@@ -151,6 +151,8 @@ JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或
 
 宿主在作者代码之前注入 SDK，HTML 不需要导入脚本。SDK 提供与宿主一致的主题 token、字体、语言、减少动效和基础控件样式；默认样式可以被作者 CSS 覆写，不必复制宿主组件或引入框架。独立窗口可选择主题和语言，包括跟随宿主语言；消费 snapshot 更新，避免只在初次加载时固定文案或画布颜色。
 
+说明密度、Tooltip / placeholder、操作反馈和动态长文布局遵循 [宿主说明与布局规范](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/conventions/ui-guidelines.md#说明与布局稳定)；操作提示使用 SDK `notify`，其参数和限制见 [SDK](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/sdk/README.md)。
+
 普通单选 select 由 SDK 渐进增强，仍读写原节点的值并使用原事件处理；需要原生交互时声明 `data-starter-select="native"`。支持范围、表单语义和覆写统一见 [SDK 默认外观](https://github.com/YanChao001/tauri-desktop-starter/blob/feature/workflows-and-extensions/sdk/README.md#默认外观与动效)，不要另写原型补丁或复制宿主控件实现。
 
 首屏骨架由宿主真实加载状态控制，SDK 在首个视图、主题与 DOM 呈现就绪后通知展示；作者不手工发送内部握手或人为添加启动延迟。自己的异步业务仍需真实加载 / 失败状态，后续忙碌保持正文可见。宿主工具入口位于左侧当前扩展导航项或独立窗口标题栏，正文只组织业务内容。
@@ -172,7 +174,7 @@ UI 与 Wasm 是不同上下文。界面不会获得宿主 DOM、可用 Tauri IPC
 `starter.services.request("lan", request)` 和 `starter.services.request("wallpaper", request)` 只接受宿主定义的操作。宿主附加安装身份、哈希、代次和原生窗口，重新检查当前启用与授权；插件不能传入另一个 ID、任意命令或路径。完整字段以配套宿主 SDK 和 Rust 服务为准。
 
 - **LAN** 使用 `messaging:lan`，信使将其作为必需权限。用户明确开启监听或输入数字私有 / 回环 IP 连接；不会自动发现公网设备、扫描网络或在导入会话时重连。连接属于原生窗口，导航后保持；界面仅在可见时读取状态，不能在 iframe 清理时误停整个服务。实际停止、最后服务窗口关闭、撤权、替换和退出由宿主回收。
-- **壁纸** 使用 `wallpapers:manage`，壁纸库将其作为核心浏览与管理的必需权限，覆盖现有图库与固定 Commons 来源。界面传文件标识或条目 ID，不传本机路径、原图 URL 或任意来源。搜索 / 预览 / 下载分别处理加载、失败和取消，原图系统另存与重绘压缩图加入图库是两种操作。
+- **壁纸** 使用 `wallpapers:manage`，壁纸库将其作为核心浏览与管理的必需权限，覆盖现有图库、必应搜索及结果中的第三方 HTTPS 图片来源，不按许可筛选。界面传图库内容 ID 或宿主生成且未过期的 `resultId`，不传本机路径、原图 URL 或任意来源；旧 `pageId` 只用于 Commons 兼容操作。搜索 / 预览 / 下载分别处理加载、失败和取消，结果过期需重新搜索；原图系统另存与重绘压缩图加入图库是两种操作。
 
 服务是受控宿主能力，不是可插拔通用 IPC。新增方法或权限先完成宿主实现及边界测试，再更新插件；独立 CI 必须能获取对应宿主提交。具体用户操作见 [信使说明](../plugins/lan-chat/README.md) 和 [壁纸说明](../plugins/wallpaper-browser/README.md)，信任与许可见 [安全规范](./security.md#原生服务与外部来源)。
 

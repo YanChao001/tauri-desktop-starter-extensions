@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>科学计算器</title>
     <style>
+      :root {
+        --calculator-curve-1: #2563eb;
+        --calculator-curve-2: #c2410c;
+        --calculator-curve-3: #0f766e;
+      }
+      :root.dark {
+        --calculator-curve-1: #60a5fa;
+        --calculator-curve-2: #fb923c;
+        --calculator-curve-3: #2dd4bf;
+      }
       * {
         box-sizing: border-box;
       }
@@ -42,7 +52,15 @@
         flex-wrap: wrap;
       }
       header {
+        position: relative;
         margin-bottom: 1rem;
+      }
+      .analysis-actions {
+        position: relative;
+      }
+      .analysis-actions > .help,
+      #storage-help {
+        position: static;
       }
       .workspace {
         display: grid;
@@ -97,8 +115,10 @@
       }
       .result {
         display: block;
-        min-height: 3.2rem;
-        overflow-wrap: anywhere;
+        height: 3.2rem;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         font:
           2rem/1.5 ui-monospace,
           monospace;
@@ -123,9 +143,12 @@
       }
       .memory output {
         margin-left: auto;
+        min-width: 0;
         font-size: 0.8rem;
         font-family: ui-monospace, monospace;
-        overflow-wrap: anywhere;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
       #history {
         max-height: 20rem;
@@ -145,15 +168,23 @@
         padding: 0.65rem 0.2rem;
         text-align: left;
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: 1.2rem 1.4rem;
+        height: 4rem;
+        justify-content: stretch;
         gap: 0.2rem;
         background: transparent;
       }
       #history strong {
         font-family: ui-monospace, monospace;
-        overflow-wrap: anywhere;
+      }
+      #history strong,
+      #history span {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
       #history span {
-        overflow-wrap: anywhere;
         font-size: 0.8rem;
       }
       .graph-panel {
@@ -163,6 +194,9 @@
         display: grid;
         grid-template-columns: minmax(0, 1fr) 240px;
         gap: 1rem;
+      }
+      .graph-layout > * {
+        min-width: 0;
       }
       .canvas-wrap {
         position: relative;
@@ -184,7 +218,11 @@
         font:
           0.8rem/1.5 ui-monospace,
           monospace;
-        min-height: 1.5rem;
+        height: 1.5rem;
+        line-height: 1.5rem;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
       .ranges {
         display: grid;
@@ -199,14 +237,17 @@
         padding-top: 0.75rem;
       }
       .legend {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        height: 1.5rem;
+        gap: 0.8rem;
         font-size: 0.8rem;
         margin-top: 0.5rem;
       }
       .legend span {
-        overflow-wrap: anywhere;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
       .dot {
         display: inline-block;
@@ -215,14 +256,10 @@
         border-radius: 50%;
         margin-right: 0.4rem;
       }
-      #error {
-        color: var(--destructive);
-        overflow-wrap: anywhere;
-        white-space: pre-line;
-        min-height: 1.5em;
+      [aria-invalid="true"] {
+        border-color: var(--destructive);
       }
       .footer {
-        margin-top: 1rem;
         font-size: 0.875rem;
       }
       .confirmation {
@@ -246,14 +283,97 @@
         border: 0;
       }
       .graph-tools {
-        justify-content: flex-start;
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
         margin-bottom: 0.5rem;
       }
+      .graph-tools > button {
+        width: 2rem;
+        padding: 0;
+      }
+      .graph-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-auto-rows: minmax(2rem, auto);
+        align-items: stretch;
+        gap: 0.65rem;
+        max-width: 100%;
+      }
+      .graph-actions > button {
+        min-width: 0;
+        min-height: 2rem;
+        padding: 0.25rem 0.625rem;
+        line-height: 1.25rem;
+        white-space: normal;
+      }
       #graph-status {
-        min-height: 1.4em;
+        height: 1.4em;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
       #artifacts {
         justify-content: flex-start;
+      }
+      #artifacts:not(:empty) {
+        margin-top: 1rem;
+      }
+      .help {
+        position: relative;
+        display: inline-flex;
+        flex: none;
+      }
+      .help[hidden] {
+        display: none;
+      }
+      .help::before {
+        content: "";
+        position: absolute;
+        inset: auto 0 100%;
+        height: 0.5rem;
+      }
+      button.help-trigger {
+        width: 1.6rem;
+        min-height: 1.6rem;
+        padding: 0;
+        border-radius: 50%;
+        color: var(--muted-foreground);
+      }
+      .help-text {
+        display: none;
+        position: absolute;
+        z-index: 10;
+        right: 0;
+        bottom: calc(100% + 0.5rem);
+        width: min(21rem, calc(100vw - 3rem));
+        padding: 0.65rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius, 0.625rem);
+        background: var(--popover, var(--card));
+        color: var(--popover-foreground, var(--foreground));
+        font-size: 0.8rem;
+        line-height: 1.5;
+        white-space: normal;
+        text-align: left;
+        box-shadow: 0 4px 12px #0002;
+      }
+      .help:hover .help-text,
+      .help:focus-within .help-text {
+        display: block;
+      }
+      .help[data-dismissed="true"] .help-text {
+        display: none;
+      }
+      .help.align-start .help-text {
+        left: 0;
+        right: auto;
+      }
+      .help.below .help-text {
+        top: calc(100% + 0.5rem);
+        bottom: auto;
+      }
+      .help.below::before {
+        inset: 100% 0 auto;
       }
       #artifacts > button {
         display: block;
@@ -294,6 +414,9 @@
         }
       }
       @media (max-width: 430px) {
+        .graph-actions {
+          width: 100%;
+        }
         .graph-controls {
           grid-template-columns: 1fr;
         }
@@ -311,13 +434,25 @@
       <header>
         <div>
           <h1 data-i18n="title">科学计算器</h1>
-          <p class="muted" data-i18n="subtitle">
-            精确表达式 · 函数曲线 · 数值探索
-          </p>
         </div>
-        <div class="row">
+        <div class="row header-actions">
           <button data-action="save" data-i18n="save">保存工作区</button
           ><button id="load" data-i18n="load">载入</button>
+          <span id="storage-help" class="help below" hidden>
+            <button
+              class="help-trigger"
+              data-help-label="storageHelp"
+              aria-describedby="storage-hint"
+            >
+              ?
+            </button>
+            <span
+              id="storage-hint"
+              class="help-text"
+              role="tooltip"
+              data-i18n="noStorage"
+            ></span>
+          </span>
         </div>
       </header>
       <section
@@ -377,9 +512,22 @@
           </div>
           <div id="keypad" class="keypad"></div>
           <div class="row">
-            <small id="syntax-hint" data-i18n="syntax"
-              >Enter 计算 · 乘法请写 * · 上次答案 ans</small
-            ><button class="primary" data-action="calculate" data-i18n="equals">
+            <span class="help align-start">
+              <button
+                class="help-trigger"
+                data-help-label="syntaxHelp"
+                aria-describedby="syntax-hint"
+              >
+                ?
+              </button>
+              <span
+                id="syntax-hint"
+                class="help-text"
+                role="tooltip"
+                data-i18n="syntax"
+              ></span>
+            </span>
+            <button class="primary" data-action="calculate" data-i18n="equals">
               计算 =
             </button>
           </div>
@@ -393,7 +541,7 @@
           </div>
           <ol id="history"></ol>
           <p id="history-empty" class="muted" data-i18n="emptyHistory">
-            计算结果将保留在这里，点击表达式再次使用。
+            暂无记录
           </p>
           <button data-action="export" data-i18n="export">导出计算记录</button>
           <details>
@@ -414,7 +562,7 @@
       <section class="panel graph-panel" aria-labelledby="graph-heading">
         <div class="row">
           <h2 id="graph-heading" data-i18n="graph">函数曲线</h2>
-          <div class="row">
+          <div class="graph-actions">
             <button id="fit" data-i18n="fit">适配 Y 轴</button
             ><button data-action="reset-plot" data-i18n="reset">重置坐标</button
             ><button class="primary" data-action="plot" data-i18n="plot">
@@ -425,14 +573,28 @@
         <div class="graph-layout">
           <div>
             <div class="row graph-tools">
-              <button id="zoom-in" data-i18n="zoomIn">放大 +</button
-              ><button id="zoom-out" data-i18n="zoomOut">缩小 −</button
+              <button id="zoom-in">+</button><button id="zoom-out">−</button
               ><small
                 id="graph-status"
                 class="muted"
                 role="status"
                 aria-live="polite"
               ></small>
+              <span class="help">
+                <button
+                  class="help-trigger"
+                  data-help-label="graphHelpLabel"
+                  aria-describedby="graph-help"
+                >
+                  ?
+                </button>
+                <span
+                  id="graph-help"
+                  class="help-text"
+                  role="tooltip"
+                  data-i18n="graphHelp"
+                ></span>
+              </span>
             </div>
             <div class="canvas-wrap">
               <canvas
@@ -450,10 +612,6 @@
               aria-live="off"
             ></div>
             <div id="legend" class="legend"></div>
-            <small id="graph-help" class="muted" data-i18n="graphHelp"
-              >拖动平移，滚轮缩放。聚焦图像后方向键平移，+ / −
-              缩放。采样仅为近似。</small
-            >
           </div>
           <div class="graph-controls stack">
             <label
@@ -493,23 +651,33 @@
                 <label>a<input id="a" inputmode="decimal" /></label
                 ><label>b<input id="b" inputmode="decimal" /></label>
               </div>
-              <div class="row">
+              <div class="row analysis-actions">
                 <button data-action="root" data-i18n="root">区间求根</button
                 ><button data-action="integrate" data-i18n="integrate">
                   定积分
                 </button>
+                <span class="help">
+                  <button
+                    class="help-trigger"
+                    data-help-label="analysisHelp"
+                    aria-describedby="analysis-hint"
+                  >
+                    ?
+                  </button>
+                  <span
+                    id="analysis-hint"
+                    class="help-text"
+                    role="tooltip"
+                    data-i18n="analysisHint"
+                  ></span>
+                </span>
               </div>
-              <small class="muted" data-i18n="analysisHint"
-                >求根返回区间内一个可夹住的根。积分为数值近似，不保证检测所有奇点。</small
-              >
             </div>
           </div>
         </div>
       </section>
       <div class="footer">
-        <p id="description" class="muted"></p>
-        <p id="storage-hint" class="muted"></p>
-        <p id="error" role="alert"></p>
+        <p id="error" class="sr-only" role="alert"></p>
         <div id="artifacts" class="row"></div>
       </div>
     </main>
@@ -531,10 +699,6 @@
         ];
         const words = {
           title: ["科学计算器", "Scientific calculator"],
-          subtitle: [
-            "科学表达式 · 函数曲线 · 数值探索",
-            "Scientific expressions · Function graphs · Numerical exploration",
-          ],
           save: ["保存工作区", "Save workspace"],
           load: ["载入", "Load"],
           calculate: ["计算", "Calculate"],
@@ -547,10 +711,7 @@
           equals: ["计算 =", "Calculate ="],
           history: ["历史记录", "History"],
           clearHistory: ["清空", "Clear"],
-          emptyHistory: [
-            "计算结果将保留在这里，点击表达式再次使用。",
-            "Results appear here. Select an expression to reuse it.",
-          ],
+          emptyHistory: ["暂无记录", "No history yet"],
           export: ["导出计算记录", "Export history"],
           reference: ["函数速查", "Function reference"],
           constants: [
@@ -565,10 +726,19 @@
             "拖动平移，滚轮缩放。聚焦图像后方向键平移，+ / − 缩放。采样仅为近似。",
             "Drag to pan; scroll to zoom. Focus the graph to pan with arrows or zoom with + / −. Samples are approximate.",
           ],
-          functions: [
-            "函数（每行一条，最多 3 条）",
-            "Functions (one per line, up to 3)",
+          functions: ["函数", "Functions"],
+          functionsHint: [
+            "每行一条函数，最多 3 条。",
+            "One function per line, up to 3.",
           ],
+          expressionPlaceholder: [
+            "例如 sin(pi / 6)^2 + cos(pi / 6)^2",
+            "e.g. sin(pi / 6)^2 + cos(pi / 6)^2",
+          ],
+          syntaxHelp: ["表达式帮助", "Expression help"],
+          storageHelp: ["保存权限说明", "Storage permission help"],
+          graphHelpLabel: ["曲线操作帮助", "Graph controls help"],
+          analysisHelp: ["数值分析说明", "Numerical analysis help"],
           selectedCurve: ["数值分析曲线", "Analysis curve"],
           root: ["区间求根", "Find root"],
           integrate: ["定积分", "Integrate"],
@@ -646,6 +816,7 @@
           syncedRevision = 0,
           syncing = null,
           localError = "",
+          lastValidationError = "",
           previewing = false;
         const DRAFT_INTERVAL = 250;
         let lastDraftStarted = -Infinity;
@@ -677,13 +848,16 @@
             ? Number(value.toPrecision(digits)).toString()
             : "—";
         function report(error) {
+          if (error && error !== localError)
+            void starter.notify(error, { tone: "error" }).catch(() => {});
           localError = error;
-          $("error").textContent = [
-            localError,
-            ...Object.values(current?.view?.errors ?? {}),
-          ]
+          const validation = Object.values(current?.view?.errors ?? {})
             .filter(Boolean)
             .join("\n");
+          $("error").textContent = validation;
+          if (validation && validation !== lastValidationError)
+            void starter.notify(validation, { tone: "error" }).catch(() => {});
+          lastValidationError = validation;
         }
         async function persistDraft() {
           clearTimeout(draftTimer);
@@ -931,8 +1105,21 @@
           document.querySelectorAll("[data-i18n]").forEach((node) => {
             node.textContent = tr(node.dataset.i18n);
           });
+          document.querySelectorAll("[data-help-label]").forEach((node) => {
+            node.setAttribute("aria-label", tr(node.dataset.helpLabel));
+          });
+          $("expression").placeholder = tr("expressionPlaceholder");
+          $("functions").placeholder = "sin(x)\ncos(x)\nx^2 / 10";
+          $("functions").setAttribute("aria-description", tr("functionsHint"));
           $("angle").setAttribute("aria-label", tr("angle"));
           $("graph").setAttribute("aria-label", tr("graphLabel"));
+          for (const [id, key] of [
+            ["zoom-in", "zoomIn"],
+            ["zoom-out", "zoomOut"],
+          ]) {
+            $(id).setAttribute("aria-label", tr(key));
+            $(id).title = tr(key);
+          }
           for (const [action, key] of [
             ["memory-store", "memoryStore"],
             ["memory-add", "memoryAdd"],
@@ -972,19 +1159,25 @@
               "aria-invalid",
               String(!!current.view.errors?.[id]),
             );
+            if (current.view.errors?.[id]) {
+              input.setAttribute("aria-errormessage", "error");
+              input.title = current.view.errors[id];
+            } else {
+              input.removeAttribute("aria-errormessage");
+              input.title = id === "functions" ? tr("functionsHint") : "";
+            }
           }
           hydrated = true;
           force = false;
           $("result").textContent = state.result;
+          $("result").title = state.result;
           $("memory").textContent = "M = " + fmt(state.memory);
-          $("description").textContent = current.view.description;
-          $("storage-hint").textContent = current.grantedPermissions.includes(
-            "storage",
-          )
-            ? ""
-            : tr("noStorage");
+          $("memory").title = $("memory").textContent;
+          $("storage-help").hidden =
+            current.grantedPermissions.includes("storage");
           report(localError);
           document.querySelectorAll("button").forEach((button) => {
+            if (button.classList.contains("help-trigger")) return;
             const id =
               button.dataset.action ?? (button.id === "load" ? "load" : null);
             const unavailable =
@@ -1005,6 +1198,7 @@
               expression.textContent =
                 entry.expression + " · " + entry.angle.toUpperCase();
               value.textContent = fmt(entry.value);
+              node.title = `${expression.textContent} = ${value.textContent}`;
               node.append(expression, value);
               if (numerical) node.className = "history-entry";
               else {
@@ -1038,12 +1232,14 @@
                   `f${index + 1}(x) = ${series.expression}`,
                 ),
               );
+              item.title = `f${index + 1}(x) = ${series.expression}`;
               return item;
             }),
           );
           $("graph-summary").textContent =
             `${tr("approximation")}. ${(chartData?.series ?? []).map((series, index) => `f${index + 1}(x) = ${series.expression}`).join("; ")}. X: ${$("xmin").value} … ${$("xmax").value}; Y: ${$("ymin").value} … ${$("ymax").value}`;
-          $("graph-status").textContent = previewing
+          $("graph-status").textContent = previewing ? tr("resampling") : "";
+          $("graph-status").title = previewing
             ? tr("samplePreview")
             : tr("approximation");
           $("artifacts").replaceChildren(
@@ -1094,6 +1290,9 @@
               return;
             const wasDirty = current.dirty || localDraft;
             const next = await starter.run(id, values());
+            const notice = JSON.parse(next.state).notice;
+            if (notice && !["root", "integrate"].includes(id))
+              void starter.notify(notice, { tone: "info" }).catch(() => {});
             // A private-storage save is not a session export. Retain unsaved-session
             // state conservatively, including failed CAS receipts and history clears.
             const dirty =
@@ -1168,12 +1367,9 @@
           }
         };
         function color(index) {
-          const styles = getComputedStyle(document.documentElement);
-          return [
-            styles.getPropertyValue("--primary").trim() || "#2563eb",
-            styles.getPropertyValue("--chart-2").trim() || "#d97706",
-            styles.getPropertyValue("--chart-3").trim() || "#16a085",
-          ][index % 3];
+          return getComputedStyle(document.documentElement)
+            .getPropertyValue(`--calculator-curve-${(index % 3) + 1}`)
+            .trim();
         }
         const canvas = $("graph"),
           context = canvas.getContext("2d");
@@ -1508,10 +1704,29 @@
             button.dataset.variant = "outline";
         });
         document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            for (const help of document.querySelectorAll(".help"))
+              if (
+                help.matches(":hover") ||
+                help.contains(document.activeElement)
+              ) {
+                help.dataset.dismissed = "true";
+                event.preventDefault();
+              }
+          }
           if (event.key === "Escape" && !$("load-confirm").hidden) {
             event.preventDefault();
             $("load-cancel").click();
           }
+        });
+        document.querySelectorAll(".help").forEach((help) => {
+          for (const name of ["pointerenter", "focusin"])
+            help.addEventListener(name, () => delete help.dataset.dismissed);
+          for (const name of ["pointerleave", "focusout"])
+            help.addEventListener(name, () => {
+              if (!help.contains(document.activeElement))
+                delete help.dataset.dismissed;
+            });
         });
         starter.onChange((snapshot) => {
           if (disposed) return;

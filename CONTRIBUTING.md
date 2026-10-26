@@ -18,7 +18,7 @@ fixture 应声明手写的关键预期，可以使用 `expectJsonSubset` 断言 
 
 界面可以使用宿主声明式控件，或清单引用的本地单文件 HTML / CSS / JavaScript。SDK 提供可覆写默认样式与主题 / 语言，作者仍需检查按钮、键盘、画布标签、窄屏和错误提示。当前市场保持独立 Cargo 构建，不增加 React / Vite 构建依赖。会话输入、导入状态和存储内容均需在业务边界验证，不能信任预计算的得分、统计或派生结果。
 
-LAN 与壁纸使用宿主固定服务，分别要求 `messaging:lan` / `wallpapers:manage`；新操作须有配套宿主实现。LAN 是显式私有 IP 的明文聊天，原生连接跨导航保留；壁纸只信固定 Commons 的明确 Public domain / CC0，原图另存与压缩后加入现有应用图库分开验收。服务替身不等于真实多机、公网下载或 WebView 已通过，详见 [测试规范](./docs/testing.md#固定原生服务验收)。
+LAN 与壁纸使用宿主固定服务，分别要求 `messaging:lan` / `wallpapers:manage`；新操作须有配套宿主实现。LAN 是显式私有 IP 的明文聊天，原生连接跨导航保留；壁纸的搜索来源、结果标识与许可边界见 [壁纸库说明](./plugins/wallpaper-browser/README.md)，原图另存与压缩后加入现有应用图库分开验收。服务替身不等于真实多机、公网下载或 WebView 已通过，详见 [测试规范](./docs/testing.md#固定原生服务验收)。
 
 ## 本地检查与证据
 

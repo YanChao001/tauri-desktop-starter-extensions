@@ -17,7 +17,7 @@ pub fn process(source: &str) -> Result<String, String> {
     let english = request.get("locale").and_then(Value::as_str) == Some("en");
     Ok(json!({
         "version":2,"state":"{}","display":if english { "Wallpaper Library" } else { "壁纸库" },
-        "description":if english { "Browse Public domain / CC0 Commons images and manage the host application gallery." } else { "浏览 Commons 公共领域 / CC0 图片，管理宿主应用图库。" },
+        "description":if english { "Search Bing images and manage the application gallery. Image licenses are not filtered." } else { "搜索必应图片，管理应用图库；不按图片许可筛选。" },
         "fields":[],"groups":[],"tabs":[],"blocks":[],"errors":{},"effects":[],"artifacts":[]
     }).to_string())
 }
