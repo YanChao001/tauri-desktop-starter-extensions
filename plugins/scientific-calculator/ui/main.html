@@ -645,6 +645,10 @@
         let draftEpoch = 0,
           disposed = false,
           draftDeferred = false;
+        let conflictRetriedRevision = -1;
+        let hostSnapshotSerial = 0,
+          completedBusySerial = 0,
+          awaitIdleSnapshot = false;
         let lastCheckpoint;
         const ownedCheckpoints = new Set();
         function rememberCheckpoint(value) {
@@ -660,7 +664,7 @@
           current?.view?.groups.flatMap((group) => group.actions) ?? [];
         const values = () =>
           Object.fromEntries(ids.map((id) => [id, $(id).value]));
-        const busy = () => working || current?.busy;
+        const busy = () => working || current?.busy || awaitIdleSnapshot;
         const fmt = (value, digits = 12) =>
           Number.isFinite(value)
             ? Number(value.toPrecision(digits)).toString()
@@ -680,14 +684,15 @@
           while (syncing) await syncing;
           if (disposed || !localDraft || syncedRevision === draftRevision)
             return;
-          if (current?.busy) {
+          if (current?.busy || awaitIdleSnapshot) {
             draftDeferred = true;
             return;
           }
           draftDeferred = false;
           const revision = draftRevision,
             submitted = values(),
-            epoch = draftEpoch;
+            epoch = draftEpoch,
+            snapshotAtStart = hostSnapshotSerial;
           const checkpointValue = { schema: 1, fields: submitted };
           rememberCheckpoint(checkpointValue);
           lastDraftStarted = performance.now();
@@ -700,6 +705,23 @@
           syncing = pending;
           try {
             await pending;
+          } catch (error) {
+            if (
+              error?.code !== "CONFLICT" ||
+              disposed ||
+              epoch !== draftEpoch ||
+              conflictRetriedRevision === draftRevision
+            )
+              throw error;
+            // A host operation may become busy before its snapshot reaches this
+            // frame. A stale idle snapshot cannot authorize the retry. A late
+            // error receipt may already follow a complete busy/idle cycle.
+            conflictRetriedRevision = draftRevision;
+            awaitIdleSnapshot = !(
+              completedBusySerial > snapshotAtStart && !current?.busy
+            );
+            draftDeferred = true;
+            render();
           } finally {
             if (syncing === pending) syncing = null;
           }
@@ -1057,6 +1079,11 @@
           render();
           try {
             await persistDraft();
+            if (
+              awaitIdleSnapshot ||
+              (localDraft && syncedRevision !== draftRevision)
+            )
+              return;
             const wasDirty = current.dirty || localDraft;
             const next = await starter.run(id, values());
             // A private-storage save is not a session export. Retain unsaved-session
@@ -1457,6 +1484,8 @@
             disposed = true;
             draftEpoch++;
             draftDeferred = false;
+            conflictRetriedRevision = -1;
+            awaitIdleSnapshot = false;
             clearTimeout(draftTimer);
             draftTimer = undefined;
             clearTimeout(zoomTimer);
@@ -1478,6 +1507,10 @@
         });
         starter.onChange((snapshot) => {
           if (disposed) return;
+          hostSnapshotSerial++;
+          if (current?.busy && !snapshot.busy)
+            completedBusySerial = hostSnapshotSerial;
+          if (awaitIdleSnapshot && !snapshot.busy) awaitIdleSnapshot = false;
           const checkpointKey = JSON.stringify(snapshot.checkpoint ?? null);
           // Host session imports can replace a live document. Local input owns its
           // draft until that explicit checkpoint replacement or a completed action.
@@ -1491,6 +1524,8 @@
             draftTimer = undefined;
             draftEpoch++;
             draftDeferred = false;
+            conflictRetriedRevision = -1;
+            awaitIdleSnapshot = false;
             localDraft = false;
             hydrated = false;
           }
