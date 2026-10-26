@@ -37,5 +37,80 @@
         }
       ]
     }
+  },
+  {
+    "command": "chat",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "{}",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "version": 2,
+      "display": "LAN Messenger",
+      "effects": [],
+      "artifacts": []
+    }
+  },
+  {
+    "command": "chat",
+    "input": {
+      "version": 2,
+      "action": "export",
+      "state": "{}",
+      "fields": {
+        "draft": "Unsent draft",
+        "export": "<script>literal & safe</script> 🌍\r\n\t"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "display": "LAN Messenger",
+      "artifacts": [
+        {
+          "name": "lan-chat.txt",
+          "mediaType": "text/plain",
+          "encoding": "utf8",
+          "content": "<script>literal & safe</script> 🌍\r\n\t"
+        }
+      ]
+    }
+  },
+  {
+    "command": "chat",
+    "input": {
+      "version": 2,
+      "action": "export",
+      "state": "{}",
+      "fields": {
+        "export": "Unsafe\u001bterminal control"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "chat",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "{\"version\":3}",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "chat",
+    "input": {
+      "version": 2,
+      "action": "send",
+      "state": "{}",
+      "fields": {},
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
   }
 ]
