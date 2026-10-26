@@ -153,6 +153,8 @@ JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或
 
 `starter.onChange` 接收当前 view、fields、checkpoint、忙碌、语言和主题；`starter.run` 请求本命令动作，`starter.setFields` 只更新字段，`starter.checkpoint` 报告草稿及是否未保存，`starter.saveArtifact` 请求保存已生成产物。异步失败保留输入并显示可理解的反馈，保存取消返回 false，不能标成已保存。完整类型与示例见 [宿主界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/feature/workflows-and-extensions/sdk)，不要复制一套 DTO。
 
+隔离界面的 sandbox 不含 `allow-forms`；浏览器可能在触发 `onsubmit` 前就阻止表单提交。操作按钮显式使用 `type="button"`，通过点击处理调用业务函数，不依赖 `onsubmit`、`requestSubmit()` 或按钮默认的 submit 行为。需要回车操作时，在对应输入框中按产品语义处理键盘事件、阻止默认提交，再调用同一业务函数；多行输入保留换行或使用明确的组合键。不要为修复按钮无响应而放宽宿主 sandbox。
+
 高频游戏的帧和逻辑步放在界面内，必要时合并检查点，不逐帧调用 Wasm 或原生服务。普通临时游玩可以报告 `dirty: false`；真实未保存编辑用 `dirty: true`。离开暂停、返回手动恢复，并清理 RAF、音频、轮询与监听。检查点导入仍是未知数据，必须重验 schema、范围与可达性。
 
 本仓库 build 自动读取被引用的 `ui/<id>.html`，检查目录与文件不是链接、UTF-8 和额度，固定同一快照传给原生工具并打包。只修改 HTML 也必须提高插件版本；完整 JSON 包和 UI 文档摘要都会改变。界面重载恢复本窗口字段与检查点，不重新初始化 Wasm；未上报的局部状态无法保留。不同示例见各插件的 `ui/main.html`。

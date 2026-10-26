@@ -326,7 +326,7 @@
               <option value="direct">直接连接</option>
             </select>
           </label>
-          <button id="search" type="submit" class="primary"></button>
+          <button id="search" type="button" class="primary"></button>
         </form>
         <div class="presets" id="presets"></div>
         <div class="layout">
@@ -813,7 +813,13 @@
         }
         $("search-form").onsubmit = (event) => {
           event.preventDefault();
-          void work(search);
+        };
+        $("search").onclick = () => void work(search);
+        $("query").onkeydown = (event) => {
+          if (event.key === "Enter" && !event.isComposing) {
+            event.preventDefault();
+            if (!event.repeat) void work(search);
+          }
         };
         $("refresh").onclick = () => void work(refresh);
         $("settings").onclick = () => void work(() => request("open-settings"));

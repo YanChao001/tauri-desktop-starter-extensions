@@ -434,13 +434,13 @@
             ><textarea
               id="draft"
               maxlength="8192"
-              placeholder="写点什么吧…  Ctrl / ⌘ + Enter 发送"
+              placeholder="写点什么吧…  Enter 发送，Shift + Enter 换行"
               aria-label="消息内容"
             ></textarea>
             <div class="composer-footer">
               <span id="draft-count" class="muted"
                 >0 / 8192 字节 · 明文传输</span
-              ><button id="send" type="submit" disabled>发送消息</button>
+              ><button id="send" type="button" disabled>发送消息</button>
             </div>
           </form>
         </section>
@@ -920,16 +920,22 @@
             "清空所有本机聊天消息？联系人与对方设备上的消息将保留。",
             { action: "clearHistory" },
           );
-        $("composer").onsubmit = async (event) => {
-          event.preventDefault();
+        async function sendMessage() {
           const peer = selectedPeer();
           const content = $("draft").value;
-          if (!peer || $("send").disabled) return;
+          if (ui.pending || !peer || $("send").disabled) return;
           if (await call({ action: "send", peerId: peer.id, text: content })) {
             if ($("draft").value === content) $("draft").value = "";
             checkpoint();
             render();
           }
+        }
+        // Sandboxed documents deliberately have no allow-forms capability. Route
+        // clicks and keyboard activation directly through the same guarded action.
+        $("send").onclick = () => void sendMessage();
+        $("composer").onsubmit = (event) => {
+          event.preventDefault();
+          void sendMessage();
         };
         $("draft").oninput = () => {
           checkpoint();
@@ -940,13 +946,9 @@
           checkpoint();
         };
         $("draft").onkeydown = (event) => {
-          if (
-            event.key === "Enter" &&
-            (event.ctrlKey || event.metaKey) &&
-            !event.isComposing
-          ) {
+          if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
             event.preventDefault();
-            if (!$("send").disabled) $("composer").requestSubmit();
+            void sendMessage();
           }
         };
         $("search").oninput = renderContacts;
