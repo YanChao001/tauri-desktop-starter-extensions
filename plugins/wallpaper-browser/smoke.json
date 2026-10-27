@@ -43,11 +43,12 @@
     "command": "browse",
     "input": {
       "version": 2,
-      "action": "search",
+      "action": "load",
       "state": "",
       "fields": {
-        "query": "landscape",
-        "networkMode": "direct"
+        "provider": "wallhaven",
+        "query": "",
+        "category": "all"
       },
       "locale": "en",
       "host": {
@@ -57,20 +58,20 @@
       "results": []
     },
     "expectJsonSubset": {
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"wallhaven\",\"query\":\"\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
       "effects": [
         {
           "kind": "http",
-          "id": "bing-search",
+          "id": "wallpaper-wallhaven-1-0",
           "request": {
-            "url": "https://cn.bing.com/images/search?q=landscape&first=1&count=12&adlt=strict&mkt=zh-CN&cc=CN&setlang=zh-Hans",
+            "url": "https://wallhaven.cc/api/v1/search?categories=111&purity=100&sorting=random&atleast=1920x1080",
             "method": "GET",
             "headers": {
-              "Accept": "text/html",
-              "User-Agent": "TauriDesktopStarterWallpaper/1.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+              "Accept": "application/json",
+              "User-Agent": "TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
             },
             "body": null,
-            "credential": null,
-            "networkMode": "direct"
+            "credential": null
           }
         }
       ]
@@ -80,8 +81,30 @@
     "command": "browse",
     "input": {
       "version": 2,
+      "action": "load",
+      "state": "",
+      "fields": {
+        "provider": "upx8",
+        "query": "",
+        "category": "all"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}"
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"query\":\"landscape\",\"networkMode\":\"direct\",\"items\":[],\"pending\":{\"query\":\"landscape\",\"networkMode\":\"direct\"},\"error\":\"\"}",
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"wallhaven\",\"query\":\"\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
       "fields": {},
       "locale": "en",
       "host": {
@@ -90,12 +113,12 @@
       },
       "results": [
         {
-          "id": "bing-search",
+          "id": "wallpaper-wallhaven-1-0",
           "value": {
-            "url": "https://cn.bing.com/images/search?q=landscape&first=1&count=12&adlt=strict&mkt=zh-CN&cc=CN&setlang=zh-Hans",
+            "url": "https://wallhaven.cc/api/v1/search?categories=111&purity=100&sorting=random&atleast=1920x1080",
             "status": 200,
             "headers": {},
-            "body": "<input id='sb_form_q' value='landscape'><a class='iusc' href='/images/search?q=landscape&amp;expw=1920&amp;exph=1080' m='{\"murl\":\"https://images.wikipedia.org/one.jpg\",\"purl\":\"https://www.wikipedia.org/one\",\"turl\":\"https://ts2.mm.bing.net/th?id=OIP.test\",\"t\":\"Fixture landscape\"}'>image</a>"
+            "body": "{\"data\":[{\"id\":\"abc0\",\"url\":\"https://wallhaven.cc/w/abc0\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc0.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc0.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc1\",\"url\":\"https://wallhaven.cc/w/abc1\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc1.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc1.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc2\",\"url\":\"https://wallhaven.cc/w/abc2\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc2.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc2.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc3\",\"url\":\"https://wallhaven.cc/w/abc3\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc3.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc3.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc4\",\"url\":\"https://wallhaven.cc/w/abc4\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc4.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc4.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc5\",\"url\":\"https://wallhaven.cc/w/abc5\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc5.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc5.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc6\",\"url\":\"https://wallhaven.cc/w/abc6\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc6.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc6.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc7\",\"url\":\"https://wallhaven.cc/w/abc7\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc7.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc7.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc8\",\"url\":\"https://wallhaven.cc/w/abc8\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc8.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc8.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc9\",\"url\":\"https://wallhaven.cc/w/abc9\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc9.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc9.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc10\",\"url\":\"https://wallhaven.cc/w/abc10\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc10.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc10.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc11\",\"url\":\"https://wallhaven.cc/w/abc11\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc11.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc11.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc12\",\"url\":\"https://wallhaven.cc/w/abc12\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc12.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc12.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc13\",\"url\":\"https://wallhaven.cc/w/abc13\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc13.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc13.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc14\",\"url\":\"https://wallhaven.cc/w/abc14\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc14.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc14.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc15\",\"url\":\"https://wallhaven.cc/w/abc15\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc15.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc15.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc16\",\"url\":\"https://wallhaven.cc/w/abc16\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc16.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc16.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc17\",\"url\":\"https://wallhaven.cc/w/abc17\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc17.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc17.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc18\",\"url\":\"https://wallhaven.cc/w/abc18\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc18.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc18.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc19\",\"url\":\"https://wallhaven.cc/w/abc19\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc19.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc19.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc20\",\"url\":\"https://wallhaven.cc/w/abc20\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc20.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc20.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc21\",\"url\":\"https://wallhaven.cc/w/abc21\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc21.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc21.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc22\",\"url\":\"https://wallhaven.cc/w/abc22\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc22.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc22.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080},{\"id\":\"abc23\",\"url\":\"https://wallhaven.cc/w/abc23\",\"path\":\"https://w.wallhaven.cc/full/ab/wallhaven-abc23.jpg\",\"thumbs\":{\"large\":\"https://th.wallhaven.cc/lg/ab/abc23.jpg\"},\"purity\":\"sfw\",\"category\":\"general\",\"dimension_x\":1920,\"dimension_y\":1080}]}"
           },
           "error": null
         }
@@ -109,11 +132,12 @@
           "items": [
             {
               "label": "Images",
-              "value": "1"
+              "value": "24"
             }
           ]
         }
-      ]
+      ],
+      "errors": {}
     }
   },
   {
@@ -121,7 +145,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"query\":\"landscape\",\"networkMode\":\"direct\",\"items\":[],\"pending\":{\"query\":\"landscape\",\"networkMode\":\"direct\"},\"error\":\"\"}",
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"wallhaven\",\"query\":\"\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
       "fields": {},
       "locale": "en",
       "host": {
@@ -130,11 +154,43 @@
       },
       "results": [
         {
-          "id": "bing-search",
+          "id": "wallpaper-wallhaven-1-0",
+          "value": {
+            "url": "https://wallhaven.cc/api/v1/search?categories=111&purity=100&sorting=random&atleast=1920x1080",
+            "status": 429,
+            "headers": {},
+            "body": ""
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "errors": {
+        "provider": "The source is rate limited. Refresh later or choose another source."
+      }
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"wallhaven\",\"query\":\"\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": [],
+        "storage": null
+      },
+      "results": [
+        {
+          "id": "wallpaper-wallhaven-1-0",
           "value": null,
           "error": {
             "code": "EXTENSION_TIMEOUT",
-            "message": "fixture timeout",
+            "message": "Fixture timeout",
             "retryable": true
           }
         }
@@ -143,7 +199,7 @@
     "expectJsonSubset": {
       "effects": [],
       "errors": {
-        "query": "Image search failed. Check your connection or try another keyword."
+        "provider": "Wallpaper loading failed. Check your connection or choose another source."
       }
     }
   },
@@ -151,10 +207,12 @@
     "command": "browse",
     "input": {
       "version": 2,
-      "action": "search",
+      "action": "load",
       "state": "",
       "fields": {
-        "query": "landscape"
+        "provider": "upx8",
+        "query": "",
+        "category": "all"
       },
       "locale": "en",
       "host": {
@@ -166,31 +224,7 @@
     "expectJsonSubset": {
       "effects": [],
       "errors": {
-        "query": "Grant HTTPS network access to search images. The local gallery remains available."
-      }
-    }
-  },
-  {
-    "command": "browse",
-    "input": {
-      "version": 2,
-      "action": "search",
-      "state": "",
-      "fields": {
-        "query": "landscape",
-        "networkMode": "system"
-      },
-      "locale": "en",
-      "host": {
-        "permissions": ["network:https"],
-        "storage": null
-      },
-      "results": []
-    },
-    "expectJsonSubset": {
-      "effects": [],
-      "errors": {
-        "query": "System proxy access needs its own grant. Grant it or choose a direct connection."
+        "provider": "Grant HTTPS network access to load wallpapers. The local gallery remains available."
       }
     }
   },
@@ -199,7 +233,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"query\":\"landscape\",\"networkMode\":\"direct\",\"items\":[],\"pending\":{\"query\":\"landscape\",\"networkMode\":\"direct\"},\"error\":\"\"}",
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"wallhaven\",\"query\":\"\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
       "fields": {},
       "locale": "en",
       "host": {
@@ -215,5 +249,370 @@
       ]
     },
     "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "load",
+      "state": "",
+      "fields": {
+        "provider": "bing"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": [],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "load",
+      "state": "",
+      "fields": {
+        "provider": "wallhaven",
+        "query": "  A&B + 猫  ",
+        "category": "anime"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"wallhaven\",\"query\":\"A&B + 猫\",\"category\":\"anime\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
+      "effects": [
+        {
+          "kind": "http",
+          "id": "wallpaper-wallhaven-1-0",
+          "request": {
+            "url": "https://wallhaven.cc/api/v1/search?categories=010&purity=100&sorting=relevance&atleast=1920x1080&q=A%26B+%2B+%E7%8C%AB",
+            "method": "GET",
+            "headers": {
+              "Accept": "application/json",
+              "User-Agent": "TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+            },
+            "body": null,
+            "credential": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "load",
+      "state": "",
+      "fields": {
+        "provider": "nekosbest",
+        "query": "",
+        "category": "kitsune"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"nekosbest\",\"query\":\"\",\"category\":\"kitsune\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
+      "effects": [
+        {
+          "kind": "http",
+          "id": "wallpaper-nekosbest-1-0",
+          "request": {
+            "url": "https://nekos.best/api/v2/kitsune?amount=20&_=1-0",
+            "method": "GET",
+            "headers": {
+              "Accept": "application/json",
+              "User-Agent": "TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+            },
+            "body": null,
+            "credential": null
+          }
+        },
+        {
+          "kind": "http",
+          "id": "wallpaper-nekosbest-1-1",
+          "request": {
+            "url": "https://nekos.best/api/v2/kitsune?amount=20&_=1-1",
+            "method": "GET",
+            "headers": {
+              "Accept": "application/json",
+              "User-Agent": "TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+            },
+            "body": null,
+            "credential": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "load",
+      "state": "",
+      "fields": {
+        "provider": "upx8",
+        "query": "森林",
+        "category": "anime"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"upx8\",\"query\":\"森林\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
+      "effects": [
+        {
+          "kind": "http",
+          "id": "wallpaper-upx8-1-0",
+          "request": {
+            "url": "https://wp.upx8.com/api.php?format=json&count=10&content=%E6%A3%AE%E6%9E%97&_=1-0",
+            "method": "GET",
+            "headers": {
+              "Accept": "application/json",
+              "User-Agent": "TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+            },
+            "body": null,
+            "credential": null
+          }
+        },
+        {
+          "kind": "http",
+          "id": "wallpaper-upx8-1-1",
+          "request": {
+            "url": "https://wp.upx8.com/api.php?format=json&count=10&content=%E6%A3%AE%E6%9E%97&_=1-1",
+            "method": "GET",
+            "headers": {
+              "Accept": "application/json",
+              "User-Agent": "TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+            },
+            "body": null,
+            "credential": null
+          }
+        },
+        {
+          "kind": "http",
+          "id": "wallpaper-upx8-1-2",
+          "request": {
+            "url": "https://wp.upx8.com/api.php?format=json&count=10&content=%E6%A3%AE%E6%9E%97&_=1-2",
+            "method": "GET",
+            "headers": {
+              "Accept": "application/json",
+              "User-Agent": "TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)"
+            },
+            "body": null,
+            "credential": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"commons\",\"query\":\"zzzztest\",\"category\":\"ocean\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": [
+        {
+          "id": "wallpaper-commons-1-0",
+          "value": {
+            "url": "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=ocean+zzzztest+filetype%3Abitmap&gsrnamespace=6&gsrlimit=50&gsroffset=0&prop=imageinfo&iiprop=url%7Csize%7Cmime&iiurlwidth=640&format=json&formatversion=2",
+            "status": 200,
+            "headers": {},
+            "body": "{\"batchcomplete\":true}"
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Images",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "errors": {}
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "load",
+      "state": "",
+      "fields": {
+        "provider": "wallhaven",
+        "query": "bad\nquery",
+        "category": "all"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "load",
+      "state": "",
+      "fields": {
+        "provider": "commons",
+        "query": "",
+        "category": "kitsune"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": null,
+      "state": "{\"schema\":2,\"provider\":\"upx8\",\"sequence\":0,\"items\":[],\"pending\":null,\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": [],
+        "storage": null
+      },
+      "results": []
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": [],
+        "storage": null
+      },
+      "results": [
+        {
+          "id": "wallpaper-upx8-1-0",
+          "value": {
+            "url": "https://wp.upx8.com/api.php?format=json&count=10&category=nature&_=1-0",
+            "status": 200,
+            "headers": {},
+            "body": "{\"code\":200,\"data\":[{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-0.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-1.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-2.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-3.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-4.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-5.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-6.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-7.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-8.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-9.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"}]}"
+          },
+          "error": null
+        },
+        {
+          "id": "wallpaper-upx8-1-1",
+          "value": {
+            "url": "https://wp.upx8.com/api.php?format=json&count=10&category=anime&_=1-1",
+            "status": 200,
+            "headers": {},
+            "body": "{\"code\":200,\"data\":[{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-0.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-1.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-2.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-3.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-4.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-5.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-6.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-7.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-8.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-9.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"}]}"
+          },
+          "error": null
+        },
+        {
+          "id": "wallpaper-upx8-1-2",
+          "value": {
+            "url": "https://wp.upx8.com/api.php?format=json&count=10&category=city&_=1-2",
+            "status": 200,
+            "headers": {},
+            "body": "{\"code\":200,\"data\":[{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-0.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-1.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-2.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-3.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-4.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-5.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-6.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-7.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-8.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"},{\"url\":\"https://cdn-hsyq-static.shanhutech.cn/bizhi/staticwp/permission-audit-9.jpg\",\"width\":0,\"height\":0,\"title\":\"Fixture\",\"source\":\"birdpaper\"}]}"
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":null,\"error\":\"NETWORK_PERMISSION\"}",
+      "effects": [],
+      "errors": {
+        "provider": "Grant HTTPS network access to load wallpapers. The local gallery remains available."
+      }
+    }
+  },
+  {
+    "command": "browse",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"provider\":\"upx8\",\"query\":\"\",\"category\":\"all\",\"page\":0,\"sequence\":1,\"items\":[],\"pending\":{\"provider\":\"commons\",\"query\":\"Example.jpg\",\"category\":\"all\",\"page\":1,\"sequence\":1,\"round\":0,\"items\":[]},\"error\":\"\"}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["network:https"],
+        "storage": null
+      },
+      "results": [
+        {
+          "id": "wallpaper-commons-1-0",
+          "value": {
+            "url": "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=Example.jpg+filetype%3Abitmap&gsrnamespace=6&gsrlimit=50&gsroffset=0&prop=imageinfo&iiprop=url%7Csize%7Cmime&iiurlwidth=640&format=json&formatversion=2",
+            "status": 200,
+            "headers": {},
+            "body": "{\"query\":{\"pages\":[{\"title\":\"File:Example.jpg\",\"imageinfo\":[{\"descriptionurl\":\"https://commons.wikimedia.org/wiki/File:Example.jpg\",\"url\":\"https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg?utm_content=original\",\"thumburl\":\"https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg?utm_content=thumbnail_unscaled\",\"width\":172,\"height\":178,\"mime\":\"image/jpeg\"}]}]}}"
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "effects": [],
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Images",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
   }
 ]

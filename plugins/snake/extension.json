@@ -1,12 +1,12 @@
 {
   "formatVersion": 3,
   "apiVersion": 2,
-  "minHostVersion": "0.1.5",
+  "minHostVersion": "0.1.7",
   "id": "market.snake",
-  "version": "1.0.2",
+  "version": "3.0.2",
   "name": "贪吃蛇",
   "author": "Tauri Desktop Starter",
-  "description": "带合成音效的贪吃蛇：方向键、WASD、触控与滑动，三档速度、障碍与穿墙模式。可选私有存储保存经 Wasm 重放核验的分模式纪录。",
+  "description": "移植 littensy/slither 的离线竞技贪吃蛇：360°自由转向、冲刺与成长、AI对手、皮肤、小地图及原版音效，支持检查点恢复和经Wasm重放核验的纪录。",
   "icon": "gamepad",
   "commands": [
     {
@@ -15,9 +15,14 @@
       "function": "play",
       "inputFormat": "json",
       "resultFormat": "view",
+      "executionBudget": "compute",
       "ui": {
         "sidebar": true,
         "window": true,
+        "windowSize": {
+          "width": 1180,
+          "height": 820
+        },
         "document": "main"
       },
       "permissions": []

@@ -1,0 +1,2435 @@
+{
+  "source": "https://github.com/microsoft/calculator",
+  "commit": "79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128",
+  "license": "MIT; Copyright (c) Microsoft Corporation. All rights reserved.",
+  "categories": [
+    {
+      "id": "volume",
+      "label": {
+        "en": "Volume",
+        "zh": "体积"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 75,
+        "zhSI": 79
+      },
+      "defaultTo": {
+        "enUS": 79,
+        "zhSI": 75
+      },
+      "units": [
+        {
+          "id": 75,
+          "label": {
+            "en": "Milliliters",
+            "zh": "毫升"
+          },
+          "abbr": {
+            "en": "mL",
+            "zh": "毫升"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 64,
+          "label": {
+            "en": "Cubic centimeters",
+            "zh": "立方厘米"
+          },
+          "abbr": {
+            "en": "cm³",
+            "zh": "立方厘米"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 74,
+          "label": {
+            "en": "Liters",
+            "zh": "升"
+          },
+          "abbr": {
+            "en": "L",
+            "zh": "升"
+          },
+          "factor": "1000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 67,
+          "label": {
+            "en": "Cubic meters",
+            "zh": "立方米"
+          },
+          "abbr": {
+            "en": "m³",
+            "zh": "立方米"
+          },
+          "factor": "1000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 79,
+          "label": {
+            "en": "Teaspoons (US)",
+            "zh": "茶匙（美制）"
+          },
+          "abbr": {
+            "en": "tsp. (US)",
+            "zh": "茶匙（美制）"
+          },
+          "factor": "4.92892159375",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 78,
+          "label": {
+            "en": "Tablespoons (US)",
+            "zh": "汤匙（美制）"
+          },
+          "abbr": {
+            "en": "tbsp. (US)",
+            "zh": "汤匙（美制）"
+          },
+          "factor": "14.78676478125",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 71,
+          "label": {
+            "en": "Fluid ounces (US)",
+            "zh": "液盎司（美制）"
+          },
+          "abbr": {
+            "en": "fl oz (US)",
+            "zh": "液盎司（美制）"
+          },
+          "factor": "29.5735295625",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 69,
+          "label": {
+            "en": "Cups (US)",
+            "zh": "杯（美制）"
+          },
+          "abbr": {
+            "en": "cup (US)",
+            "zh": "杯（美制）"
+          },
+          "factor": "236.588237",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 77,
+          "label": {
+            "en": "Pints (US)",
+            "zh": "品脱（美制）"
+          },
+          "abbr": {
+            "en": "pt (US)",
+            "zh": "品脱（美制）"
+          },
+          "factor": "473.176473",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 81,
+          "label": {
+            "en": "Quarts (US)",
+            "zh": "夸脱（美制）"
+          },
+          "abbr": {
+            "en": "qt (US)",
+            "zh": "夸脱（美制）"
+          },
+          "factor": "946.352946",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 73,
+          "label": {
+            "en": "Gallons (US)",
+            "zh": "加仑（美制）"
+          },
+          "abbr": {
+            "en": "gal (US)",
+            "zh": "加仑(美制)"
+          },
+          "factor": "3785.411784",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 66,
+          "label": {
+            "en": "Cubic inches",
+            "zh": "立方英寸"
+          },
+          "abbr": {
+            "en": "in³",
+            "zh": "立方英寸"
+          },
+          "factor": "16.387064",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 65,
+          "label": {
+            "en": "Cubic feet",
+            "zh": "立方英尺"
+          },
+          "abbr": {
+            "en": "ft³",
+            "zh": "立方英尺"
+          },
+          "factor": "28316.846592",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 68,
+          "label": {
+            "en": "Cubic yards",
+            "zh": "立方码"
+          },
+          "abbr": {
+            "en": "yd³",
+            "zh": "立方码"
+          },
+          "factor": "764554.857984",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 115,
+          "label": {
+            "en": "Teaspoons (UK)",
+            "zh": "茶匙（英制）"
+          },
+          "abbr": {
+            "en": "tsp. (UK)",
+            "zh": "茶匙（英制）"
+          },
+          "factor": "5.91938802083333333333",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 116,
+          "label": {
+            "en": "Tablespoons (UK)",
+            "zh": "汤匙（英制）"
+          },
+          "abbr": {
+            "en": "tbsp. (UK)",
+            "zh": "汤匙（英制）"
+          },
+          "factor": "17.7581640625",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 70,
+          "label": {
+            "en": "Fluid ounces (UK)",
+            "zh": "液盎司（英制）"
+          },
+          "abbr": {
+            "en": "fl oz (UK)",
+            "zh": "液盎司（英制）"
+          },
+          "factor": "28.4130625",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 76,
+          "label": {
+            "en": "Pints (UK)",
+            "zh": "品脱（英制）"
+          },
+          "abbr": {
+            "en": "pt (UK)",
+            "zh": "品脱（英制）"
+          },
+          "factor": "568.26125",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 80,
+          "label": {
+            "en": "Quarts (UK)",
+            "zh": "夸脱（英制）"
+          },
+          "abbr": {
+            "en": "qt (UK)",
+            "zh": "夸脱（英制）"
+          },
+          "factor": "1136.5225",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 72,
+          "label": {
+            "en": "Gallons (UK)",
+            "zh": "加仑（英制）"
+          },
+          "abbr": {
+            "en": "gal (UK)",
+            "zh": "加仑（英制）"
+          },
+          "factor": "4546.09",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 124,
+          "label": {
+            "en": "coffee cups",
+            "zh": "咖啡杯"
+          },
+          "abbr": {
+            "en": "coffee cups",
+            "zh": "咖啡杯"
+          },
+          "factor": "236.5882",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 111,
+          "label": {
+            "en": "bathtubs",
+            "zh": "浴缸"
+          },
+          "abbr": {
+            "en": "bathtubs",
+            "zh": "浴缸"
+          },
+          "factor": "378541.2",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 125,
+          "label": {
+            "en": "swimming pools",
+            "zh": "游泳池"
+          },
+          "abbr": {
+            "en": "swimming pools",
+            "zh": "游泳池"
+          },
+          "factor": "3750000000",
+          "whimsical": true,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "length",
+      "label": {
+        "en": "Length",
+        "zh": "长度"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 30,
+        "zhSI": 32
+      },
+      "defaultTo": {
+        "enUS": 32,
+        "zhSI": 30
+      },
+      "units": [
+        {
+          "id": 168,
+          "label": {
+            "en": "Angstroms",
+            "zh": "埃"
+          },
+          "abbr": {
+            "en": "A",
+            "zh": "A"
+          },
+          "factor": "0.0000000001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 38,
+          "label": {
+            "en": "Nanometers",
+            "zh": "纳米"
+          },
+          "abbr": {
+            "en": "nm",
+            "zh": "纳米"
+          },
+          "factor": "0.000000001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 35,
+          "label": {
+            "en": "Microns",
+            "zh": "微米"
+          },
+          "abbr": {
+            "en": "µm",
+            "zh": "微米"
+          },
+          "factor": "0.000001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 37,
+          "label": {
+            "en": "Millimeters",
+            "zh": "毫米"
+          },
+          "abbr": {
+            "en": "mm",
+            "zh": "毫米"
+          },
+          "factor": "0.001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 30,
+          "label": {
+            "en": "Centimeters",
+            "zh": "厘米"
+          },
+          "abbr": {
+            "en": "cm",
+            "zh": "厘米"
+          },
+          "factor": "0.01",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 34,
+          "label": {
+            "en": "Meters",
+            "zh": "米"
+          },
+          "abbr": {
+            "en": "m",
+            "zh": "米"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 33,
+          "label": {
+            "en": "Kilometers",
+            "zh": "公里"
+          },
+          "abbr": {
+            "en": "km",
+            "zh": "公里"
+          },
+          "factor": "1000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 32,
+          "label": {
+            "en": "Inches",
+            "zh": "英寸"
+          },
+          "abbr": {
+            "en": "in",
+            "zh": "英寸"
+          },
+          "factor": "0.0254",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 31,
+          "label": {
+            "en": "Feet",
+            "zh": "英尺"
+          },
+          "abbr": {
+            "en": "ft",
+            "zh": "英尺"
+          },
+          "factor": "0.3048",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 40,
+          "label": {
+            "en": "Yards",
+            "zh": "码"
+          },
+          "abbr": {
+            "en": "yd",
+            "zh": "码"
+          },
+          "factor": "0.9144",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 36,
+          "label": {
+            "en": "Miles",
+            "zh": "英里"
+          },
+          "abbr": {
+            "en": "mi",
+            "zh": "英里"
+          },
+          "factor": "1609.344",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 39,
+          "label": {
+            "en": "Nautical miles",
+            "zh": "海里"
+          },
+          "abbr": {
+            "en": "nmi",
+            "zh": "海里"
+          },
+          "factor": "1852",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 105,
+          "label": {
+            "en": "paperclips",
+            "zh": "曲别针"
+          },
+          "abbr": {
+            "en": "paperclips",
+            "zh": "曲别针"
+          },
+          "factor": "0.035052",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 131,
+          "label": {
+            "en": "hands",
+            "zh": "手"
+          },
+          "abbr": {
+            "en": "hands",
+            "zh": "手"
+          },
+          "factor": "0.18669",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 107,
+          "label": {
+            "en": "jumbo jets",
+            "zh": "大型喷气式客机"
+          },
+          "abbr": {
+            "en": "jumbo jets",
+            "zh": "大型喷气式客机"
+          },
+          "factor": "76",
+          "whimsical": true,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "weight",
+      "label": {
+        "en": "Weight and mass",
+        "zh": "重量"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 88,
+        "zhSI": 92
+      },
+      "defaultTo": {
+        "enUS": 92,
+        "zhSI": 88
+      },
+      "units": [
+        {
+          "id": 82,
+          "label": {
+            "en": "Carats",
+            "zh": "克拉"
+          },
+          "abbr": {
+            "en": "CD",
+            "zh": "CD"
+          },
+          "factor": "0.0002",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 90,
+          "label": {
+            "en": "Milligrams",
+            "zh": "毫克"
+          },
+          "abbr": {
+            "en": "mg",
+            "zh": "毫克"
+          },
+          "factor": "0.000001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 83,
+          "label": {
+            "en": "Centigrams",
+            "zh": "厘克"
+          },
+          "abbr": {
+            "en": "cg",
+            "zh": "厘克"
+          },
+          "factor": "0.00001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 84,
+          "label": {
+            "en": "Decigrams",
+            "zh": "分克"
+          },
+          "abbr": {
+            "en": "dg",
+            "zh": "分克"
+          },
+          "factor": "0.0001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 86,
+          "label": {
+            "en": "Grams",
+            "zh": "克"
+          },
+          "abbr": {
+            "en": "g",
+            "zh": "克"
+          },
+          "factor": "0.001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 85,
+          "label": {
+            "en": "Dekagrams",
+            "zh": "十克"
+          },
+          "abbr": {
+            "en": "dag",
+            "zh": "十克"
+          },
+          "factor": "0.01",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 87,
+          "label": {
+            "en": "Hectograms",
+            "zh": "百克"
+          },
+          "abbr": {
+            "en": "hg",
+            "zh": "百克"
+          },
+          "factor": "0.1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 88,
+          "label": {
+            "en": "Kilograms",
+            "zh": "千克"
+          },
+          "abbr": {
+            "en": "kg",
+            "zh": "公斤"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 95,
+          "label": {
+            "en": "Metric tonnes",
+            "zh": "公吨"
+          },
+          "abbr": {
+            "en": "t",
+            "zh": "吨"
+          },
+          "factor": "1000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 91,
+          "label": {
+            "en": "Ounces",
+            "zh": "盎司"
+          },
+          "abbr": {
+            "en": "oz",
+            "zh": "盎司"
+          },
+          "factor": "0.028349523125",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 92,
+          "label": {
+            "en": "Pounds",
+            "zh": "磅"
+          },
+          "abbr": {
+            "en": "lb",
+            "zh": "磅"
+          },
+          "factor": "0.45359237",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 94,
+          "label": {
+            "en": "Stone",
+            "zh": "英石"
+          },
+          "abbr": {
+            "en": "st",
+            "zh": "英石"
+          },
+          "factor": "6.35029318",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 93,
+          "label": {
+            "en": "Short tons (US)",
+            "zh": "短吨（美制）"
+          },
+          "abbr": {
+            "en": "ton (US)",
+            "zh": "吨（美制）"
+          },
+          "factor": "907.18474",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 89,
+          "label": {
+            "en": "Long tons (UK)",
+            "zh": "长吨(英制)"
+          },
+          "abbr": {
+            "en": "ton (UK)",
+            "zh": "吨（英制）"
+          },
+          "factor": "1016.0469088",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 113,
+          "label": {
+            "en": "snowflakes",
+            "zh": "雪花"
+          },
+          "abbr": {
+            "en": "snowflakes",
+            "zh": "雪花"
+          },
+          "factor": "0.000002",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 133,
+          "label": {
+            "en": "soccer balls",
+            "zh": "足球"
+          },
+          "abbr": {
+            "en": "soccer balls",
+            "zh": "足球"
+          },
+          "factor": "0.4325",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 114,
+          "label": {
+            "en": "elephants",
+            "zh": "大象"
+          },
+          "abbr": {
+            "en": "elephants",
+            "zh": "大象"
+          },
+          "factor": "4000",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 123,
+          "label": {
+            "en": "whales",
+            "zh": "鲸鱼"
+          },
+          "abbr": {
+            "en": "whales",
+            "zh": "鲸鱼"
+          },
+          "factor": "90000",
+          "whimsical": true,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "temperature",
+      "label": {
+        "en": "Temperature",
+        "zh": "温度"
+      },
+      "supportsNegative": true,
+      "defaultFrom": {
+        "enUS": 46,
+        "zhSI": 47
+      },
+      "defaultTo": {
+        "enUS": 47,
+        "zhSI": 46
+      },
+      "units": [
+        {
+          "id": 46,
+          "label": {
+            "en": "Celsius",
+            "zh": "摄氏度"
+          },
+          "abbr": {
+            "en": "°C",
+            "zh": "°C"
+          },
+          "factor": null,
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 47,
+          "label": {
+            "en": "Fahrenheit",
+            "zh": "华氏度"
+          },
+          "abbr": {
+            "en": "°F",
+            "zh": "°F"
+          },
+          "factor": null,
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 48,
+          "label": {
+            "en": "Kelvin",
+            "zh": "开尔文"
+          },
+          "abbr": {
+            "en": "K",
+            "zh": "K"
+          },
+          "factor": null,
+          "whimsical": false,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "energy",
+      "label": {
+        "en": "Energy",
+        "zh": "能量"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 27,
+        "zhSI": 27
+      },
+      "defaultTo": {
+        "enUS": 28,
+        "zhSI": 28
+      },
+      "units": [
+        {
+          "id": 25,
+          "label": {
+            "en": "Electron volts",
+            "zh": "电子伏特"
+          },
+          "abbr": {
+            "en": "eV",
+            "zh": "电子伏特"
+          },
+          "factor": "0.0000000000000000001602176565",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 27,
+          "label": {
+            "en": "Joules",
+            "zh": "焦耳"
+          },
+          "abbr": {
+            "en": "J",
+            "zh": "焦耳"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 29,
+          "label": {
+            "en": "Kilojoules",
+            "zh": "千焦耳"
+          },
+          "abbr": {
+            "en": "kJ",
+            "zh": "千焦"
+          },
+          "factor": "1000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 24,
+          "label": {
+            "en": "Thermal calories",
+            "zh": "热卡路里"
+          },
+          "abbr": {
+            "en": "cal",
+            "zh": "卡路里"
+          },
+          "factor": "4.184",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 28,
+          "label": {
+            "en": "Food calories",
+            "zh": "食物卡路里"
+          },
+          "abbr": {
+            "en": "kcal",
+            "zh": "千卡"
+          },
+          "factor": "4184",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 26,
+          "label": {
+            "en": "Foot-pounds",
+            "zh": "英尺磅"
+          },
+          "abbr": {
+            "en": "ft•lb",
+            "zh": "磅英尺"
+          },
+          "factor": "1.3558179483314",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 23,
+          "label": {
+            "en": "British thermal units",
+            "zh": "英国热量单位"
+          },
+          "abbr": {
+            "en": "BTU",
+            "zh": "英国热量单位"
+          },
+          "factor": "1055.056",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 103,
+          "label": {
+            "en": "batteries",
+            "zh": "电池"
+          },
+          "abbr": {
+            "en": "batteries",
+            "zh": "电池"
+          },
+          "factor": "9000",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 129,
+          "label": {
+            "en": "bananas",
+            "zh": "香蕉"
+          },
+          "abbr": {
+            "en": "bananas",
+            "zh": "香蕉"
+          },
+          "factor": "439614",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 130,
+          "label": {
+            "en": "slices of cake",
+            "zh": "蛋糕片"
+          },
+          "abbr": {
+            "en": "slices of cake",
+            "zh": "切块蛋糕"
+          },
+          "factor": "1046700",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 166,
+          "label": {
+            "en": "Kilowatt-hours",
+            "zh": "千瓦时"
+          },
+          "abbr": {
+            "en": "kWh",
+            "zh": "千瓦时"
+          },
+          "factor": "3600000",
+          "whimsical": false,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "area",
+      "label": {
+        "en": "Area",
+        "zh": "面积"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 7,
+        "zhSI": 4
+      },
+      "defaultTo": {
+        "enUS": 4,
+        "zhSI": 7
+      },
+      "units": [
+        {
+          "id": 9,
+          "label": {
+            "en": "Square millimeters",
+            "zh": "平方毫米"
+          },
+          "abbr": {
+            "en": "mm²",
+            "zh": "平方毫米"
+          },
+          "factor": "0.000001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 3,
+          "label": {
+            "en": "Square centimeters",
+            "zh": "平方厘米"
+          },
+          "abbr": {
+            "en": "cm²",
+            "zh": "平方厘米"
+          },
+          "factor": "0.0001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 7,
+          "label": {
+            "en": "Square meters",
+            "zh": "平方米"
+          },
+          "abbr": {
+            "en": "m²",
+            "zh": "平方米"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 2,
+          "label": {
+            "en": "Hectares",
+            "zh": "公顷"
+          },
+          "abbr": {
+            "en": "ha",
+            "zh": "公顷"
+          },
+          "factor": "10000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 6,
+          "label": {
+            "en": "Square kilometers",
+            "zh": "平方公里"
+          },
+          "abbr": {
+            "en": "km²",
+            "zh": "平方公里"
+          },
+          "factor": "1000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 5,
+          "label": {
+            "en": "Square inches",
+            "zh": "平方英寸"
+          },
+          "abbr": {
+            "en": "in²",
+            "zh": "平方英寸"
+          },
+          "factor": "0.00064516",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 4,
+          "label": {
+            "en": "Square feet",
+            "zh": "平方英尺"
+          },
+          "abbr": {
+            "en": "ft²",
+            "zh": "平方英尺"
+          },
+          "factor": "0.09290304",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 10,
+          "label": {
+            "en": "Square yards",
+            "zh": "平方码"
+          },
+          "abbr": {
+            "en": "yd²",
+            "zh": "平方码"
+          },
+          "factor": "0.83612736",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 1,
+          "label": {
+            "en": "Acres",
+            "zh": "英亩"
+          },
+          "abbr": {
+            "en": "ac",
+            "zh": "英亩"
+          },
+          "factor": "4046.8564224",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 8,
+          "label": {
+            "en": "Square miles",
+            "zh": "平方英里"
+          },
+          "abbr": {
+            "en": "mi²",
+            "zh": "平方英里"
+          },
+          "factor": "2589988.110336",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 118,
+          "label": {
+            "en": "hands",
+            "zh": "手"
+          },
+          "abbr": {
+            "en": "hands",
+            "zh": "手"
+          },
+          "factor": "0.012516104",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 127,
+          "label": {
+            "en": "sheets of paper",
+            "zh": "纸张"
+          },
+          "abbr": {
+            "en": "sheets of paper",
+            "zh": "纸张"
+          },
+          "factor": "0.06032246",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 99,
+          "label": {
+            "en": "soccer fields",
+            "zh": "足球场"
+          },
+          "abbr": {
+            "en": "soccer fields",
+            "zh": "足球场"
+          },
+          "factor": "10869.66",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 128,
+          "label": {
+            "en": "castles",
+            "zh": "城堡"
+          },
+          "abbr": {
+            "en": "castles",
+            "zh": "城堡"
+          },
+          "factor": "100000",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 165,
+          "label": {
+            "en": "Pyeong",
+            "zh": "坪"
+          },
+          "abbr": {
+            "en": "Pyeong",
+            "zh": "坪"
+          },
+          "factor": "400/121",
+          "whimsical": false,
+          "availableWhen": "usePyeong"
+        }
+      ]
+    },
+    {
+      "id": "speed",
+      "label": {
+        "en": "Speed",
+        "zh": "速度"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 59,
+        "zhSI": 63
+      },
+      "defaultTo": {
+        "enUS": 63,
+        "zhSI": 59
+      },
+      "units": [
+        {
+          "id": 57,
+          "label": {
+            "en": "Centimeters per second",
+            "zh": "厘米/秒"
+          },
+          "abbr": {
+            "en": "cm/s",
+            "zh": "厘米/秒"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 62,
+          "label": {
+            "en": "Meters per second",
+            "zh": "米/秒"
+          },
+          "abbr": {
+            "en": "m/s",
+            "zh": "米/秒"
+          },
+          "factor": "100",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 59,
+          "label": {
+            "en": "Kilometers per hour",
+            "zh": "公里/小时"
+          },
+          "abbr": {
+            "en": "km/h",
+            "zh": "千米/小时"
+          },
+          "factor": "27.777777777777777777778",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 58,
+          "label": {
+            "en": "Feet per second",
+            "zh": "英尺/秒"
+          },
+          "abbr": {
+            "en": "ft/s",
+            "zh": "英尺/秒"
+          },
+          "factor": "30.48",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 63,
+          "label": {
+            "en": "Miles per hour",
+            "zh": "英里/小时"
+          },
+          "abbr": {
+            "en": "mph",
+            "zh": "英里/小时"
+          },
+          "factor": "44.7",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 60,
+          "label": {
+            "en": "Knots",
+            "zh": "节"
+          },
+          "abbr": {
+            "en": "kn",
+            "zh": "节"
+          },
+          "factor": "51.44",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 61,
+          "label": {
+            "en": "Mach",
+            "zh": "马赫"
+          },
+          "abbr": {
+            "en": "M",
+            "zh": "马赫"
+          },
+          "factor": "34030",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 121,
+          "label": {
+            "en": "turtles",
+            "zh": "海龟"
+          },
+          "abbr": {
+            "en": "turtles",
+            "zh": "海龟"
+          },
+          "factor": "8.94",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 126,
+          "label": {
+            "en": "horses",
+            "zh": "马"
+          },
+          "abbr": {
+            "en": "horses",
+            "zh": "马"
+          },
+          "factor": "2011.5",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 122,
+          "label": {
+            "en": "jets",
+            "zh": "喷气式飞机"
+          },
+          "abbr": {
+            "en": "jets",
+            "zh": "喷气式飞机"
+          },
+          "factor": "24585",
+          "whimsical": true,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "time",
+      "label": {
+        "en": "Time",
+        "zh": "时间"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 50,
+        "zhSI": 50
+      },
+      "defaultTo": {
+        "enUS": 53,
+        "zhSI": 53
+      },
+      "units": [
+        {
+          "id": 51,
+          "label": {
+            "en": "Microseconds",
+            "zh": "微秒"
+          },
+          "abbr": {
+            "en": "µs",
+            "zh": "微秒"
+          },
+          "factor": "0.000001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 52,
+          "label": {
+            "en": "Milliseconds",
+            "zh": "毫秒"
+          },
+          "abbr": {
+            "en": "ms",
+            "zh": "毫秒"
+          },
+          "factor": "0.001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 54,
+          "label": {
+            "en": "Seconds",
+            "zh": "秒"
+          },
+          "abbr": {
+            "en": "s",
+            "zh": "秒"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 53,
+          "label": {
+            "en": "Minutes",
+            "zh": "分钟"
+          },
+          "abbr": {
+            "en": "min",
+            "zh": "分钟"
+          },
+          "factor": "60",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 50,
+          "label": {
+            "en": "Hours",
+            "zh": "小时"
+          },
+          "abbr": {
+            "en": "hr",
+            "zh": "小时"
+          },
+          "factor": "3600",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 49,
+          "label": {
+            "en": "Days",
+            "zh": "天"
+          },
+          "abbr": {
+            "en": "d",
+            "zh": "天"
+          },
+          "factor": "86400",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 55,
+          "label": {
+            "en": "Weeks",
+            "zh": "周"
+          },
+          "abbr": {
+            "en": "wk",
+            "zh": "周"
+          },
+          "factor": "604800",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 56,
+          "label": {
+            "en": "Years",
+            "zh": "年"
+          },
+          "abbr": {
+            "en": "yr",
+            "zh": "年"
+          },
+          "factor": "31557600",
+          "whimsical": false,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "power",
+      "label": {
+        "en": "Power",
+        "zh": "功率"
+      },
+      "supportsNegative": true,
+      "defaultFrom": {
+        "enUS": 44,
+        "zhSI": 44
+      },
+      "defaultTo": {
+        "enUS": 43,
+        "zhSI": 43
+      },
+      "units": [
+        {
+          "id": 45,
+          "label": {
+            "en": "Watts",
+            "zh": "瓦特"
+          },
+          "abbr": {
+            "en": "W",
+            "zh": "瓦"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 44,
+          "label": {
+            "en": "Kilowatts",
+            "zh": "千瓦"
+          },
+          "abbr": {
+            "en": "kW",
+            "zh": "千瓦"
+          },
+          "factor": "1000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 43,
+          "label": {
+            "en": "Horsepower (US)",
+            "zh": "马力(美制)"
+          },
+          "abbr": {
+            "en": "hp (US)",
+            "zh": "马力(美制)"
+          },
+          "factor": "745.69987158227022",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 42,
+          "label": {
+            "en": "Foot-pounds/minute",
+            "zh": "英尺磅/分钟"
+          },
+          "abbr": {
+            "en": "ft•lb/min",
+            "zh": "磅英尺/分钟"
+          },
+          "factor": "0.0225969658055233",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 41,
+          "label": {
+            "en": "BTUs/minute",
+            "zh": "BTU/分钟"
+          },
+          "abbr": {
+            "en": "BTU/min",
+            "zh": "BTU/分钟"
+          },
+          "factor": "17.58426666666667",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 108,
+          "label": {
+            "en": "light bulbs",
+            "zh": "灯炮"
+          },
+          "abbr": {
+            "en": "light bulbs",
+            "zh": "灯炮"
+          },
+          "factor": "60",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 109,
+          "label": {
+            "en": "horses",
+            "zh": "马"
+          },
+          "abbr": {
+            "en": "horses",
+            "zh": "马"
+          },
+          "factor": "745.7",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 132,
+          "label": {
+            "en": "train engines",
+            "zh": "火车引擎"
+          },
+          "abbr": {
+            "en": "train engines",
+            "zh": "火车引擎"
+          },
+          "factor": "2982799.486329081",
+          "whimsical": true,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "label": {
+        "en": "Data",
+        "zh": "数据"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 14,
+        "zhSI": 14
+      },
+      "defaultTo": {
+        "enUS": 18,
+        "zhSI": 18
+      },
+      "units": [
+        {
+          "id": 11,
+          "label": {
+            "en": "Bits",
+            "zh": "位"
+          },
+          "abbr": {
+            "en": "b",
+            "zh": "b"
+          },
+          "factor": "0.000000125",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 167,
+          "label": {
+            "en": "Nibble",
+            "zh": "半字节"
+          },
+          "abbr": {
+            "en": "nybl",
+            "zh": "nybl"
+          },
+          "factor": "0.0000005",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 12,
+          "label": {
+            "en": "Bytes",
+            "zh": "B"
+          },
+          "abbr": {
+            "en": "B",
+            "zh": "B"
+          },
+          "factor": "0.000001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 15,
+          "label": {
+            "en": "Kilobits",
+            "zh": "Kb"
+          },
+          "abbr": {
+            "en": "Kb",
+            "zh": "Kb"
+          },
+          "factor": "0.000125",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 149,
+          "label": {
+            "en": "Kibibits",
+            "zh": "Kib"
+          },
+          "abbr": {
+            "en": "Ki",
+            "zh": "Ki"
+          },
+          "factor": "0.000128",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 16,
+          "label": {
+            "en": "Kilobytes",
+            "zh": "KB"
+          },
+          "abbr": {
+            "en": "KB",
+            "zh": "KB"
+          },
+          "factor": "0.001",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 150,
+          "label": {
+            "en": "Kibibytes",
+            "zh": "KiB"
+          },
+          "abbr": {
+            "en": "KiB",
+            "zh": "KiB"
+          },
+          "factor": "0.001024",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 17,
+          "label": {
+            "en": "Megabits",
+            "zh": "Mb"
+          },
+          "abbr": {
+            "en": "Mb",
+            "zh": "Mb"
+          },
+          "factor": "0.125",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 151,
+          "label": {
+            "en": "Mebibits",
+            "zh": "Mib"
+          },
+          "abbr": {
+            "en": "Mi",
+            "zh": "Mi"
+          },
+          "factor": "0.131072",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 18,
+          "label": {
+            "en": "Megabytes",
+            "zh": "MB"
+          },
+          "abbr": {
+            "en": "MB",
+            "zh": "MB"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 152,
+          "label": {
+            "en": "Mebibytes",
+            "zh": "MiB"
+          },
+          "abbr": {
+            "en": "MiB",
+            "zh": "MiB"
+          },
+          "factor": "1.048576",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 13,
+          "label": {
+            "en": "Gigabits",
+            "zh": "Gb"
+          },
+          "abbr": {
+            "en": "Gb",
+            "zh": "Gb"
+          },
+          "factor": "125",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 147,
+          "label": {
+            "en": "Gibibits",
+            "zh": "Gib"
+          },
+          "abbr": {
+            "en": "Gi",
+            "zh": "Gi"
+          },
+          "factor": "134.217728",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 100,
+          "label": {
+            "en": "floppy disks",
+            "zh": "软盘"
+          },
+          "abbr": {
+            "en": "floppy disks",
+            "zh": "软盘"
+          },
+          "factor": "1.474560",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 14,
+          "label": {
+            "en": "Gigabytes",
+            "zh": "GB"
+          },
+          "abbr": {
+            "en": "GB",
+            "zh": "GB"
+          },
+          "factor": "1000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 101,
+          "label": {
+            "en": "CDs",
+            "zh": "CD"
+          },
+          "abbr": {
+            "en": "CDs",
+            "zh": "CD"
+          },
+          "factor": "700",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 148,
+          "label": {
+            "en": "Gibibytes",
+            "zh": "GiB"
+          },
+          "abbr": {
+            "en": "GiB",
+            "zh": "GiB"
+          },
+          "factor": "1073.741824",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 102,
+          "label": {
+            "en": "DVDs",
+            "zh": "DVD"
+          },
+          "abbr": {
+            "en": "DVDs",
+            "zh": "DVD"
+          },
+          "factor": "4700",
+          "whimsical": true,
+          "availableWhen": "always"
+        },
+        {
+          "id": 21,
+          "label": {
+            "en": "Terabits",
+            "zh": "Tb"
+          },
+          "abbr": {
+            "en": "Tb",
+            "zh": "Tb"
+          },
+          "factor": "125000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 155,
+          "label": {
+            "en": "Tebibits",
+            "zh": "Tib"
+          },
+          "abbr": {
+            "en": "Ti",
+            "zh": "Ti"
+          },
+          "factor": "137438.953472",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 22,
+          "label": {
+            "en": "Terabytes",
+            "zh": "TB"
+          },
+          "abbr": {
+            "en": "TB",
+            "zh": "TB"
+          },
+          "factor": "1000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 156,
+          "label": {
+            "en": "Tebibytes",
+            "zh": "TiB"
+          },
+          "abbr": {
+            "en": "TiB",
+            "zh": "TiB"
+          },
+          "factor": "1099511.627776",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 19,
+          "label": {
+            "en": "Petabits",
+            "zh": "Pb"
+          },
+          "abbr": {
+            "en": "Pb",
+            "zh": "Pb"
+          },
+          "factor": "125000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 153,
+          "label": {
+            "en": "Pebibits",
+            "zh": "Pib"
+          },
+          "abbr": {
+            "en": "Pi",
+            "zh": "Pi"
+          },
+          "factor": "140737488.355328",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 20,
+          "label": {
+            "en": "Petabytes",
+            "zh": "PB"
+          },
+          "abbr": {
+            "en": "PB",
+            "zh": "PB"
+          },
+          "factor": "1000000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 154,
+          "label": {
+            "en": "Pebibytes",
+            "zh": "PiB"
+          },
+          "abbr": {
+            "en": "PiB",
+            "zh": "PiB"
+          },
+          "factor": "1125899906.842624",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 143,
+          "label": {
+            "en": "Exabits",
+            "zh": "Eb"
+          },
+          "abbr": {
+            "en": "E",
+            "zh": "E"
+          },
+          "factor": "125000000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 145,
+          "label": {
+            "en": "Exbibits",
+            "zh": "Eib"
+          },
+          "abbr": {
+            "en": "Ei",
+            "zh": "Ei"
+          },
+          "factor": "144115188075.855872",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 144,
+          "label": {
+            "en": "Exabytes",
+            "zh": "EB"
+          },
+          "abbr": {
+            "en": "EB",
+            "zh": "EB"
+          },
+          "factor": "1000000000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 146,
+          "label": {
+            "en": "Exbibytes",
+            "zh": "EiB"
+          },
+          "abbr": {
+            "en": "EiB",
+            "zh": "EiB"
+          },
+          "factor": "1152921504606.846976",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 163,
+          "label": {
+            "en": "Zetabits",
+            "zh": "Zb"
+          },
+          "abbr": {
+            "en": "Z",
+            "zh": "Z"
+          },
+          "factor": "125000000000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 161,
+          "label": {
+            "en": "Zebibits",
+            "zh": "Zib"
+          },
+          "abbr": {
+            "en": "Zi",
+            "zh": "Zi"
+          },
+          "factor": "147573952589676.412928",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 164,
+          "label": {
+            "en": "Zetabytes",
+            "zh": "ZB"
+          },
+          "abbr": {
+            "en": "ZB",
+            "zh": "ZB"
+          },
+          "factor": "1000000000000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 162,
+          "label": {
+            "en": "Zebibytes",
+            "zh": "ZiB"
+          },
+          "abbr": {
+            "en": "ZiB",
+            "zh": "ZiB"
+          },
+          "factor": "1180591620717411.303424",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 159,
+          "label": {
+            "en": "Yottabits",
+            "zh": "Yottabits"
+          },
+          "abbr": {
+            "en": "Y",
+            "zh": "Y"
+          },
+          "factor": "125000000000000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 157,
+          "label": {
+            "en": "Yobibits",
+            "zh": "Yib"
+          },
+          "abbr": {
+            "en": "Yi",
+            "zh": "Yi"
+          },
+          "factor": "151115727451828646.838272",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 160,
+          "label": {
+            "en": "Yottabytes",
+            "zh": "Yottabytes"
+          },
+          "abbr": {
+            "en": "YB",
+            "zh": "YB"
+          },
+          "factor": "1000000000000000000",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 158,
+          "label": {
+            "en": "Yobibytes",
+            "zh": "YiB"
+          },
+          "abbr": {
+            "en": "YiB",
+            "zh": "YiB"
+          },
+          "factor": "1208925819614629174.706176",
+          "whimsical": false,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "pressure",
+      "label": {
+        "en": "Pressure",
+        "zh": "压强"
+      },
+      "supportsNegative": false,
+      "defaultFrom": {
+        "enUS": 137,
+        "zhSI": 137
+      },
+      "defaultTo": {
+        "enUS": 138,
+        "zhSI": 138
+      },
+      "units": [
+        {
+          "id": 137,
+          "label": {
+            "en": "Atmospheres",
+            "zh": "大气压"
+          },
+          "abbr": {
+            "en": "atm",
+            "zh": "大气压"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 138,
+          "label": {
+            "en": "Bars",
+            "zh": "巴"
+          },
+          "abbr": {
+            "en": "ba",
+            "zh": "巴"
+          },
+          "factor": "0.9869232667160128",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 139,
+          "label": {
+            "en": "Kilopascals",
+            "zh": "千帕"
+          },
+          "abbr": {
+            "en": "kPa",
+            "zh": "千帕"
+          },
+          "factor": "0.0098692326671601",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 140,
+          "label": {
+            "en": "Millimeters of mercury ",
+            "zh": "毫米汞柱 "
+          },
+          "abbr": {
+            "en": "mmHg",
+            "zh": "毫米汞柱"
+          },
+          "factor": "0.0013155687145324",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 141,
+          "label": {
+            "en": "Pascals",
+            "zh": "帕"
+          },
+          "abbr": {
+            "en": "Pa",
+            "zh": "Pa"
+          },
+          "factor": "9.869232667160128e-6",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 142,
+          "label": {
+            "en": "Pounds per square inch",
+            "zh": "磅每平方英寸"
+          },
+          "abbr": {
+            "en": "psi",
+            "zh": "磅每平方英寸"
+          },
+          "factor": "0.068045961016531",
+          "whimsical": false,
+          "availableWhen": "always"
+        }
+      ]
+    },
+    {
+      "id": "angle",
+      "label": {
+        "en": "Angle",
+        "zh": "角度"
+      },
+      "supportsNegative": true,
+      "defaultFrom": {
+        "enUS": 134,
+        "zhSI": 134
+      },
+      "defaultTo": {
+        "enUS": 135,
+        "zhSI": 135
+      },
+      "units": [
+        {
+          "id": 134,
+          "label": {
+            "en": "Degrees",
+            "zh": "度"
+          },
+          "abbr": {
+            "en": "deg",
+            "zh": "度"
+          },
+          "factor": "1",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 135,
+          "label": {
+            "en": "Radians",
+            "zh": "弧度"
+          },
+          "abbr": {
+            "en": "rad",
+            "zh": "弧度"
+          },
+          "factor": "57.29577951308233",
+          "whimsical": false,
+          "availableWhen": "always"
+        },
+        {
+          "id": 136,
+          "label": {
+            "en": "Gradians",
+            "zh": "百分度"
+          },
+          "abbr": {
+            "en": "grad",
+            "zh": "梯度"
+          },
+          "factor": "0.9",
+          "whimsical": false,
+          "availableWhen": "always"
+        }
+      ]
+    }
+  ]
+}

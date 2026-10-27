@@ -36,6 +36,7 @@ const capabilities = new Set([
   "storage",
   "messaging:lan",
   "wallpapers:manage",
+  "window:control",
 ]);
 function publicHost(host) {
   const address = host.replace(/^\[|\]$/g, "");
@@ -182,6 +183,12 @@ export function validateManifest(manifest) {
     throw new Error(
       "Image resources, external links and system proxies require minHostVersion 0.1.6 or newer",
     );
+  if (
+    declared.includes("window:control") &&
+    hostMajor === 0 &&
+    (hostMinor < 1 || (hostMinor === 1 && hostPatch < 7))
+  )
+    throw new Error("Window control requires minHostVersion 0.1.7 or newer");
   const ids = new Set();
   for (const command of manifest.commands) {
     if (
@@ -191,6 +198,7 @@ export function validateManifest(manifest) {
         "function",
         "inputFormat",
         "resultFormat",
+        "executionBudget",
         "permissions",
         "ui",
       ]) ||
@@ -202,6 +210,8 @@ export function validateManifest(manifest) {
       !/^[A-Za-z0-9_.-]+$/.test(command.function) ||
       !["text", "json"].includes(command.inputFormat) ||
       !["text", "json", "markdown", "view"].includes(command.resultFormat) ||
+      ("executionBudget" in command &&
+        !["standard", "compute"].includes(command.executionBudget)) ||
       !Array.isArray(command.permissions) ||
       !unique(command.permissions ?? []) ||
       (command.permissions ?? []).some(
@@ -210,7 +220,12 @@ export function validateManifest(manifest) {
       (command.resultFormat === "view" && command.inputFormat !== "json") ||
       (command.ui != null && command.resultFormat !== "view") ||
       (command.ui != null &&
-        (!knownFields(command.ui, ["sidebar", "window", "document"]) ||
+        (!knownFields(command.ui, [
+          "sidebar",
+          "window",
+          "document",
+          "windowSize",
+        ]) ||
           typeof command.ui.sidebar !== "boolean" ||
           typeof command.ui.window !== "boolean" ||
           (command.ui.document != null &&
@@ -228,6 +243,29 @@ export function validateManifest(manifest) {
         ))
     )
       throw new Error("Invalid command contribution or permissions");
+    if (
+      command.executionBudget === "compute" &&
+      hostMajor === 0 &&
+      (hostMinor < 1 || (hostMinor === 1 && hostPatch < 7))
+    )
+      throw new Error(
+        "Compute execution budget requires minHostVersion 0.1.7 or newer",
+      );
+    const size = command.ui?.windowSize;
+    if (
+      size != null &&
+      (!command.ui.window ||
+        !knownFields(size, ["width", "height"]) ||
+        !Number.isInteger(size.width) ||
+        !Number.isInteger(size.height) ||
+        size.width < 360 ||
+        size.width > 1920 ||
+        size.height < 480 ||
+        size.height > 1440 ||
+        (hostMajor === 0 &&
+          (hostMinor < 1 || (hostMinor === 1 && hostPatch < 7))))
+    )
+      throw new Error("Invalid UI window size or minimum host version");
     ids.add(command.id);
   }
   if (

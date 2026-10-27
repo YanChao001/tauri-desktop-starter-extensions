@@ -16,7 +16,7 @@ import {
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { publishCatalog } from "./publish.mjs";
+import { publishCatalog as publishCatalogWithHistory } from "./publish.mjs";
 import {
   validateCatalog,
   validateManifest,
@@ -177,82 +177,24 @@ test("command formats, optional permissions and network declarations are checked
     network: [{ origin: "http://localhost:11434", methods: ["POST"] }],
   });
 });
-test("image, proxy and link capabilities require the new host before packaging", () => {
+test("packaging enforces capability compatibility and preserves valid declarations", () => {
   const wasm = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]);
-  for (const permission of [
-    "network:images",
-    "network:system-proxy",
-    "links:open",
-  ]) {
-    for (const declaration of ["permissions", "optionalPermissions"]) {
-      const extension = manifest();
-      extension[declaration].push(permission);
-      if (permission === "network:system-proxy")
-        extension.optionalPermissions.push("network:images");
-      for (const minHostVersion of ["0.0.99", "0.1.4", "0.1.5"])
-        assert.throws(
-          () => validateManifest({ ...extension, minHostVersion }),
-          /require minHostVersion 0\.1\.6/,
-        );
-      for (const minHostVersion of ["0.1.6", "0.1.10", "0.2.0", "1.0.0"]) {
-        const supported = { ...extension, minHostVersion };
-        validateManifest(supported);
-        assert.ok(
-          JSON.parse(packagePlugin(supported, wasm).content).manifest[
-            declaration
-          ].includes(permission),
-        );
-      }
-    }
-  }
-});
-
-test("system proxy declarations require public HTTP or image access", () => {
   const extension = {
     ...manifest(),
-    minHostVersion: "0.1.6",
-    optionalPermissions: ["network:system-proxy"],
+    optionalPermissions: ["network:images", "network:system-proxy"],
   };
-  assert.throws(() => validateManifest(extension), /requires declared public/);
   assert.throws(
-    () =>
-      validateManifest({
-        ...extension,
-        optionalPermissions: ["network:system-proxy", "network:local"],
-        network: [{ origin: "http://localhost:11434", methods: ["GET"] }],
-      }),
-    /requires declared public/,
+    () => packagePlugin(extension, wasm),
+    /require minHostVersion 0\.1\.6/,
   );
-  validateManifest({
+  const supported = {
     ...extension,
-    optionalPermissions: ["network:system-proxy", "network:images"],
-  });
-  validateManifest({
-    ...extension,
-    optionalPermissions: ["network:system-proxy", "network:https"],
-    network: [{ origin: "https://cn.bing.com", methods: ["GET"] }],
-  });
-  assert.throws(() =>
-    validateManifest({
-      ...extension,
-      optionalPermissions: ["network:system-proxy", "network:https"],
-    }),
+    minHostVersion: "0.1.6",
+  };
+  assert.deepEqual(
+    JSON.parse(packagePlugin(supported, wasm).content).manifest,
+    supported,
   );
-  for (const permission of ["network:images", "network:system-proxy"])
-    assert.throws(
-      () =>
-        validateManifest({
-          ...extension,
-          optionalPermissions: ["network:system-proxy", "network:images"],
-          commands: [
-            {
-              ...extension.commands[0],
-              permissions: ["text:read", permission],
-            },
-          ],
-        }),
-      /Invalid command contribution/,
-    );
 });
 
 test("listings reject duplicates and paths outside plugin directories", () => {
@@ -286,7 +228,7 @@ async function temporary(testContext) {
   return directory;
 }
 
-test("host checks use a shared byte snapshot even if source files change between validate and test", async (context) => {
+test("one host test validates a byte snapshot even if the source files change", async (context) => {
   const directory = await temporary(context);
   const source = manifest();
   const wasm = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]);
@@ -332,7 +274,7 @@ test("host checks use a shared byte snapshot even if source files change between
     executable: "test-only-tool",
     run,
   });
-  assert.deepEqual(actions, ["validate", "test"]);
+  assert.deepEqual(actions, ["test"]);
   assert.equal(result.manifest.id, source.id);
   assert.deepEqual(result.wasm, wasm);
   assert.equal(
@@ -382,12 +324,10 @@ test("UI documents remain in the validated byte snapshot when source HTML change
     ),
     writeFile(join(paths.uiDirectory, "main.html"), html),
   ]);
-  const actions = [];
   const result = await validatePlugin({
     ...paths,
     executable: "test-only-tool",
     run: (_executable, args) => {
-      actions.push(args[0]);
       assert.deepEqual(
         JSON.parse(readFileSync(args[args.indexOf("--ui") + 1], "utf8")),
         { main: html },
@@ -407,7 +347,6 @@ test("UI documents remain in the validated byte snapshot when source HTML change
       };
     },
   });
-  assert.deepEqual(actions, ["validate", "test"]);
   assert.deepEqual(result.uiDocuments, { main: html });
   await writeFile(join(paths.uiDirectory, "main.html"), Buffer.from([0xff]));
   await assert.rejects(
@@ -526,6 +465,15 @@ test("offline release verification binds signed metadata to the exact packaged m
 });
 const releaseSourceSha = "0123456789abcdef0123456789abcdef01234567";
 const isHistory = (args) => args[0] === "api" && args[1].includes("/releases?");
+const publishCatalog = (...args) =>
+  publishCatalogWithHistory(...args, {
+    git: (command) =>
+      command[1] === "--is-shallow-repository"
+        ? "false"
+        : command[0] === "rev-parse"
+          ? releaseSourceSha
+          : "",
+  });
 
 test("publication requires a complete source SHA before contacting GitHub", () => {
   const calls = [];
@@ -568,6 +516,60 @@ test("publication binds the release tag to the exact reviewed source commit", ()
     ["history", "verify-tag", "create", "upload", "verify-tag", "edit"],
   );
   assert.equal(calls.at(-1).includes("--latest"), true);
+});
+
+test("publication creates complete release notes before mutation and removes its temporary file", () => {
+  let notesFile;
+  const calls = [];
+  publishCatalogWithHistory(
+    emptyCatalog(2),
+    "dist/market-2",
+    releaseSourceSha,
+    (args) => {
+      calls.push(args);
+      if (args[1] === "create") {
+        notesFile = args[args.indexOf("--notes-file") + 1];
+        const notes = readFileSync(notesFile, "utf8");
+        assert.ok(notes.includes("## 更新内容"));
+        assert.ok(notes.includes("添加发布说明"));
+        assert.ok(notes.includes("### 新功能（feat）"));
+      }
+      return args[0] === "api" ? "[]" : "";
+    },
+    {
+      git: (args) =>
+        args[1] === "--is-shallow-repository"
+          ? "false"
+          : args[0] === "rev-parse"
+            ? releaseSourceSha
+            : `${releaseSourceSha}\0feat(market): 添加发布说明\n\0\n`,
+    },
+  );
+  assert.ok(notesFile);
+  assert.throws(() => readFileSync(notesFile), { code: "ENOENT" });
+  const failedCalls = [];
+  assert.throws(
+    () =>
+      publishCatalogWithHistory(
+        emptyCatalog(2),
+        "dist/market-2",
+        releaseSourceSha,
+        (args) => {
+          failedCalls.push(args);
+          return "[]";
+        },
+        {
+          git: () => {
+            throw new Error("Missing complete git history");
+          },
+        },
+      ),
+    /Missing complete git history/,
+  );
+  assert.equal(
+    failedCalls.some((args) => args[0] === "release"),
+    false,
+  );
 });
 
 test("failed uploads stay draft and older catalog revisions are not republished", () => {

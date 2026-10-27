@@ -52,9 +52,16 @@ export async function resolveHostTool(environment = process.env) {
   return executable;
 }
 
-function runTool(executable, action, paths, run) {
-  const args = [action, "--manifest", paths.manifest, "--wasm", paths.wasm];
-  if (action === "test") args.push("--fixture", paths.fixture);
+function runTool(executable, paths, run) {
+  const args = [
+    "test",
+    "--manifest",
+    paths.manifest,
+    "--wasm",
+    paths.wasm,
+    "--fixture",
+    paths.fixture,
+  ];
   if (paths.ui) args.push("--ui", paths.ui);
   const result = run(executable, args, {
     cwd: root,
@@ -67,7 +74,7 @@ function runTool(executable, action, paths, run) {
   if (result.error) throw result.error;
   if (result.status !== 0)
     throw new Error(
-      result.stderr?.trim() || result.stdout?.trim() || `Host ${action} failed`,
+      result.stderr?.trim() || result.stdout?.trim() || "Host test failed",
     );
   const report = JSON.parse(result.stdout);
   if (report.validated !== true)
@@ -154,14 +161,9 @@ export async function validatePlugin({
       writeFile(paths.fixture, fixtureBytes),
       paths.ui && writeFile(paths.ui, JSON.stringify(uiDocuments)),
     ]);
-    const validated = runTool(executable, "validate", paths, run);
-    const tested = runTool(executable, "test", paths, run);
-    if (
-      validated.id !== manifest.id ||
-      validated.version !== manifest.version ||
-      tested.id !== manifest.id ||
-      tested.version !== manifest.version
-    )
+    // test includes the authoritative manifest, UI and static Wasm checks.
+    const tested = runTool(executable, paths, run);
+    if (tested.id !== manifest.id || tested.version !== manifest.version)
       throw new Error("Host tool returned a different extension identity");
     const reports = Array.isArray(tested.smoke) ? tested.smoke : [tested.smoke];
     if (

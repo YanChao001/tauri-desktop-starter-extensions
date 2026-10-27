@@ -1,29 +1,36 @@
 {
   "formatVersion": 3,
   "apiVersion": 2,
-  "minHostVersion": "0.1.5",
+  "minHostVersion": "0.1.7",
   "id": "market.scientific-calculator",
-  "version": "1.0.3",
-  "name": "科学计算器",
+  "version": "1.2.2",
+  "name": "计算器",
   "author": "Tauri Desktop Starter",
-  "description": "科学表达式、三角函数、记忆与历史、多函数曲线、求根和数值积分。Scientific expressions, memory, history, function graphs, roots and numerical integration.",
+  "description": "Windows 风格的五种计算模式和全部十三类转换器，精确十进制、多条记忆与历史；十二类单位离线换算，货币汇率按需联网更新并保留本机缓存。",
   "icon": "calculator",
   "commands": [
     {
       "id": "workspace",
-      "title": "科学计算器 / Scientific calculator",
+      "title": "计算器 / Calculator",
       "function": "workspace",
       "inputFormat": "json",
       "resultFormat": "view",
       "ui": {
         "sidebar": true,
         "window": true,
+        "windowSize": { "width": 420, "height": 720 },
         "document": "main"
       },
       "permissions": []
     }
   ],
   "permissions": [],
-  "optionalPermissions": ["storage"],
-  "network": []
+  "optionalPermissions": [
+    "storage",
+    "window:control",
+    "network:https",
+    "network:system-proxy",
+    "links:open"
+  ],
+  "network": [{ "origin": "https://open.er-api.com", "methods": ["GET"] }]
 }

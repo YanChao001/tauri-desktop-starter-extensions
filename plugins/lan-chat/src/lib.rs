@@ -1,4 +1,4 @@
-//! The UI uses the native LAN broker; Wasm validates local drafts and creates explicit exports.
+//! 界面通过原生 LAN 服务通信；Wasm 校验本地草稿并生成明确的纯文本会话导出。
 #![cfg(any(target_arch = "wasm32", test))]
 #[cfg(target_arch = "wasm32")]
 use extism_pdk::*;
@@ -75,15 +75,15 @@ fn render(input: &str) -> Result<Value, String> {
         return Err("Unsupported chat action".into());
     }
     Ok(json!({
-        "version":2,"state":"{}","display":if en {"LAN Messenger"} else {"局域网信使"},
-        "description":if en {"Real TCP chat with trusted LAN devices. Messages are not encrypted."} else {"与可信局域网设备真实聊天。消息采用明文传输，请勿发送敏感内容。"},
+        "version":2,"state":"{}","display":if en {"LAN Chat"} else {"内网通信"},
+        "description":if en {"Exchange messages, images and files with trusted LAN devices. Traffic is not encrypted."} else {"与可信内网设备收发消息、图片和文件。通信采用明文传输。"},
         "fields":[
             {"id":"nickname","label":if en {"Nickname"} else {"昵称"},"value":name,"kind":"text","maxBytes":120},
             {"id":"draft","label":if en {"Draft"} else {"消息草稿"},"value":draft,"kind":"textarea","maxBytes":8192},
             {"id":"export","label":if en {"Conversation export"} else {"待导出的会话"},"value":exported,"kind":"textarea","maxBytes":262144}
         ],
         "groups":[{"columns":1,"actions":[{"id":"export","label":if en {"Prepare export"} else {"生成会话导出"},"disabled":false,"primary":false}]}],
-        "blocks":[{"kind":"markdown","text":if en {"Open this extension's custom interface to start a listener, connect by IP and exchange real messages. This view does not simulate peers or delivery."} else {"请在本扩展的自定义界面中开启监听、输入对方 IP 连接并收发真实消息。此视图不会模拟联系人或消息送达。"}}],
+        "blocks":[{"kind":"markdown","text":if en {"Open the custom chat interface to exchange messages, images and files. Connection settings and a real local loopback test are available in its menu. Exports retain attachment labels as plain text."} else {"在自定义聊天界面中收发消息、图片和文件，连接设置与真实本地回环测试收在菜单中。会话导出以纯文本保留附件说明。"}}],
         "effects":[],"artifacts":artifacts,"errors":{}
     }))
 }
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn bootstrap_requires_no_fake_peers_or_messages() {
         let view = render(&input(None, json!({}))).unwrap();
-        assert_eq!(view["display"], "局域网信使");
+        assert_eq!(view["display"], "内网通信");
         assert_eq!(view["effects"], json!([]));
         assert_eq!(view["artifacts"], json!([]));
     }
@@ -123,6 +123,15 @@ mod tests {
         .unwrap();
         assert_eq!(view["artifacts"][0]["content"], "[12:00] 阿周：你好 🌍\n");
         assert_eq!(view["fields"][1]["value"], "未发送内容");
+    }
+    #[test]
+    fn export_preserves_attachment_labels_without_embedding_file_data() {
+        let text =
+            "[12:00] 阿周：[图片] 假日.png (2048 B)\n[12:01] 阿林：[文件] 计划.txt (512 B)\n";
+        let view = render(&input(Some("export"), json!({"export":text}))).unwrap();
+        assert_eq!(view["artifacts"][0]["content"], text);
+        assert_eq!(view["artifacts"][0]["mediaType"], "text/plain");
+        assert_eq!(view["artifacts"][0]["encoding"], "utf8");
     }
     #[test]
     fn invalid_actions_names_and_oversized_exports_are_rejected() {
