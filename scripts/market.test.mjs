@@ -467,7 +467,12 @@ const releaseSourceSha = "0123456789abcdef0123456789abcdef01234567";
 const isHistory = (args) => args[0] === "api" && args[1].includes("/releases?");
 const publishCatalog = (...args) =>
   publishCatalogWithHistory(...args, {
-    git: (command) => command[0] === "rev-parse" ? releaseSourceSha : "",
+    git: (command) =>
+      command[1] === "--is-shallow-repository"
+        ? "false"
+        : command[0] === "rev-parse"
+          ? releaseSourceSha
+          : "",
   });
 
 test("publication requires a complete source SHA before contacting GitHub", () => {
@@ -511,6 +516,60 @@ test("publication binds the release tag to the exact reviewed source commit", ()
     ["history", "verify-tag", "create", "upload", "verify-tag", "edit"],
   );
   assert.equal(calls.at(-1).includes("--latest"), true);
+});
+
+test("publication creates complete release notes before mutation and removes its temporary file", () => {
+  let notesFile;
+  const calls = [];
+  publishCatalogWithHistory(
+    emptyCatalog(2),
+    "dist/market-2",
+    releaseSourceSha,
+    (args) => {
+      calls.push(args);
+      if (args[1] === "create") {
+        notesFile = args[args.indexOf("--notes-file") + 1];
+        const notes = readFileSync(notesFile, "utf8");
+        assert.ok(notes.includes("## 更新内容"));
+        assert.ok(notes.includes("添加发布说明"));
+        assert.ok(notes.includes("### 新功能（feat）"));
+      }
+      return args[0] === "api" ? "[]" : "";
+    },
+    {
+      git: (args) =>
+        args[1] === "--is-shallow-repository"
+          ? "false"
+          : args[0] === "rev-parse"
+            ? releaseSourceSha
+            : `${releaseSourceSha}\0feat(market): 添加发布说明\n\0\n`,
+    },
+  );
+  assert.ok(notesFile);
+  assert.throws(() => readFileSync(notesFile), { code: "ENOENT" });
+  const failedCalls = [];
+  assert.throws(
+    () =>
+      publishCatalogWithHistory(
+        emptyCatalog(2),
+        "dist/market-2",
+        releaseSourceSha,
+        (args) => {
+          failedCalls.push(args);
+          return "[]";
+        },
+        {
+          git: () => {
+            throw new Error("Missing complete git history");
+          },
+        },
+      ),
+    /Missing complete git history/,
+  );
+  assert.equal(
+    failedCalls.some((args) => args[0] === "release"),
+    false,
+  );
 });
 
 test("failed uploads stay draft and older catalog revisions are not republished", () => {

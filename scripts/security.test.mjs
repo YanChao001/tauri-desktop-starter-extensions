@@ -349,6 +349,12 @@ test("publication uploads the verified byte snapshot even when original files ch
   let snapshot;
   await publish(fixture.directory, {
     encodedKey: publicKey(fixture.key),
+    git: (args) =>
+      args[1] === "--is-shallow-repository"
+        ? "false"
+        : args[0] === "rev-parse"
+          ? sourceSha
+          : "",
     run: (args) => {
       if (args[0] === "api") {
         writeFileSync(

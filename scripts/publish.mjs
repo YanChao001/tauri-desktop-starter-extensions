@@ -1,4 +1,5 @@
 import { mkdtemp, realpath, rm } from "node:fs/promises";
+import { mkdtempSync, writeFileSync, rmSync, rmdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -6,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { validateCatalog, validRepository } from "./protocol.mjs";
 import { verifyRelease } from "./verify.mjs";
 import { parseJson, readBounded } from "./files.mjs";
+import { createReleaseNotes, runGit } from "./release-notes.mjs";
 
 const runGh = (args) =>
   execFileSync("gh", args, {
@@ -63,7 +65,10 @@ function verifyTagSource(repository, tag, sourceSha, run) {
   }
 }
 
-export async function publish(directory, { run = runGh, encodedKey } = {}) {
+export async function publish(
+  directory,
+  { run = runGh, encodedKey, git = runGit } = {},
+) {
   const root = resolve(import.meta.dirname, "..");
   const parent = await realpath(tmpdir());
   const snapshot = await mkdtemp(join(parent, "starter-market-publish-"));
@@ -82,6 +87,7 @@ export async function publish(directory, { run = runGh, encodedKey } = {}) {
       snapshot,
       process.env.GITHUB_SHA ?? process.env.MARKET_SOURCE_SHA,
       run,
+      { git },
     );
   } finally {
     if (
@@ -92,7 +98,13 @@ export async function publish(directory, { run = runGh, encodedKey } = {}) {
     await rm(snapshot, { recursive: true });
   }
 }
-export function publishCatalog(catalog, directory, sourceSha, run) {
+export function publishCatalog(
+  catalog,
+  directory,
+  sourceSha,
+  run,
+  { git = runGit } = {},
+) {
   if (!validSha(sourceSha))
     throw new Error(
       "Release source must be a complete 40-character commit SHA",
@@ -150,21 +162,30 @@ export function publishCatalog(catalog, directory, sourceSha, run) {
     return join(directory, entry.asset);
   });
   verifyTagSource(repository, tag, sourceSha, run);
+  const notes = createReleaseNotes(catalog, sourceSha, releases, git);
   // Published latest is changed only after every asset has been uploaded successfully.
-  run([
-    "release",
-    "create",
-    tag,
-    "--repo",
-    repository,
-    "--target",
-    sourceSha,
-    "--draft",
-    "--title",
-    `市场目录 ${catalog.revision}`,
-    "--notes",
-    "由维护者审核并发布的签名目录与扩展包。",
-  ]);
+  const notesDirectory = mkdtempSync(join(tmpdir(), "starter-market-notes-"));
+  const notesFile = join(notesDirectory, "release-notes.md");
+  try {
+    writeFileSync(notesFile, notes, { flag: "wx", encoding: "utf8" });
+    run([
+      "release",
+      "create",
+      tag,
+      "--repo",
+      repository,
+      "--target",
+      sourceSha,
+      "--draft",
+      "--title",
+      `市场目录 ${catalog.revision}`,
+      "--notes-file",
+      notesFile,
+    ]);
+  } finally {
+    rmSync(notesFile, { force: true });
+    rmdirSync(notesDirectory);
+  }
   run([
     "release",
     "upload",
