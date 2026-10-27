@@ -11,7 +11,7 @@
       main {
         max-width: 1240px;
         margin: auto;
-        padding: 20px;
+        padding: clamp(16px, 3vw, 28px);
       }
       h1,
       h2,
@@ -19,291 +19,615 @@
         margin: 0;
       }
       h1 {
-        font-size: 28px;
-        letter-spacing: -0.035em;
+        font-size: 1.5rem;
+        letter-spacing: -0.04em;
+        line-height: 1.2;
       }
       h2 {
-        font-size: 18px;
+        font-size: 1rem;
       }
       header,
       .toolbar,
-      .gallery-controls {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-      .gallery-controls {
-        justify-content: flex-start;
-        min-width: 0;
-        max-width: 100%;
-      }
-      .gallery-actions {
+      .gallery-controls,
+      .gallery-actions,
+      .inline-field,
+      .source-row {
         display: flex;
         align-items: center;
         gap: 8px;
-        flex: none;
-        max-width: 100%;
+        min-width: 0;
+      }
+      header {
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .intro {
+        margin-top: 8px;
+        color: var(--muted-foreground);
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+      .muted {
+        color: var(--muted-foreground);
+        font-size: 0.8125rem;
+      }
+      .toolbar {
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .gallery-controls,
+      .gallery-actions {
         flex-wrap: wrap;
       }
       .gallery-actions > button,
-      .search > button {
+      header > button,
+      #search {
         flex: none;
         white-space: nowrap;
-      }
-      .inline-field {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-width: 0;
-        max-width: 100%;
       }
       .inline-field > span {
         flex: none;
         white-space: nowrap;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
       }
       .inline-field > select {
         width: auto;
         min-width: 0;
       }
-      header {
-        margin-bottom: 22px;
-      }
-      .muted {
-        color: var(--muted-foreground);
-        font-size: 13px;
-      }
-      .tabs {
-        display: flex;
-        gap: 8px;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 12px;
-        margin-bottom: 18px;
-      }
-      .tabs button[aria-selected="true"] {
-        background: var(--primary);
-        color: var(--primary-foreground);
-      }
-      .search {
+      .library-bar {
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+      }
+      .tabs {
+        display: inline-flex;
+        gap: 20px;
+        min-width: 0;
+      }
+      .tabs button {
+        position: relative;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        height: 2.75rem;
+        padding: 0 2px;
+        color: var(--muted-foreground);
+      }
+      .tabs button::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 2px;
+        background: var(--primary);
+        transform: scaleX(0);
+        transition: transform 0.2s ease;
+      }
+      .tabs button[aria-selected="true"] {
+        color: var(--foreground);
+      }
+      .tabs button[aria-selected="true"]::after {
+        transform: scaleX(1);
+      }
+      .tabs button:hover {
+        color: var(--foreground);
+      }
+      .library-bar > button {
+        flex: none;
+      }
+      .source-toolbar {
+        display: flex;
+        justify-content: flex-start;
         gap: 8px;
         flex-wrap: wrap;
-        margin: 12px 0;
+        padding: 0;
       }
-      .search input {
-        flex: 1;
-        width: auto;
-        min-width: 160px;
-      }
-      .search select {
-        max-width: 100%;
-      }
-      #search {
-        min-width: 6.5rem;
-      }
-      .source-row {
-        position: relative;
+      .filter-field {
         display: flex;
         align-items: center;
         gap: 6px;
+        min-width: 0;
       }
-      .source-row .help {
-        position: static;
+      #category {
+        width: 9rem;
       }
-      .help {
+      .query-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 18rem;
+        max-width: 32rem;
+        min-width: min(100%, 12rem);
+      }
+      .query-field {
         position: relative;
-        display: inline-flex;
+        flex: 1;
+        min-width: 0;
+      }
+      .query-field svg {
+        position: absolute;
+        left: 0.65rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0.875rem;
+        height: 0.875rem;
+        pointer-events: none;
+        color: var(--muted-foreground);
+      }
+      #query {
+        padding-left: 2rem;
+      }
+      .local-toolbar {
+        justify-content: flex-start;
+        gap: 16px;
+      }
+      .local-toolbar #local-summary {
+        flex: none;
+      }
+      .local-toolbar .gallery-controls {
+        gap: 8px;
+      }
+      .source-row {
+        position: relative;
+        flex: none;
+        gap: 6px;
+        max-width: 100%;
+        flex-wrap: nowrap;
+      }
+      #provider {
+        width: 12rem;
       }
       button.help-trigger {
-        width: 1.6rem;
-        min-height: 1.6rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        min-height: 1.5rem;
+        flex: 0 0 1.5rem;
         padding: 0;
-        border-radius: 50%;
+        border: 0;
+        background: transparent;
+        border-radius: calc(var(--radius, 0.625rem) * 0.8);
         color: var(--muted-foreground);
+      }
+      .help-trigger svg {
+        width: 0.875rem;
+        height: 0.875rem;
+        flex: none;
+      }
+      button.help-trigger:hover {
+        background: var(--starter-ghost-hover, var(--muted));
+      }
+      .help {
+        position: static;
+        display: inline-flex;
+        flex: none;
       }
       .help-text {
         display: none;
         position: absolute;
         z-index: 10;
-        top: 100%;
+        top: calc(100% + 8px);
         left: 0;
-        width: min(22rem, calc(100vw - 3rem));
-        max-height: 60vh;
+        width: min(18rem, calc(100vw - 40px));
+        max-height: 18rem;
         overflow: auto;
         padding: 0.65rem 0.8rem;
         border: 1px solid var(--border);
-        border-radius: var(--radius, 0.625rem);
+        border-radius: calc(var(--radius, 0.625rem) * 0.8);
         background: var(--popover, var(--card));
         color: var(--popover-foreground, var(--foreground));
-        font-size: 0.8rem;
-        line-height: 1.5;
+        font-size: 0.75rem;
+        line-height: 1.65;
         white-space: normal;
         box-shadow: 0 4px 12px #0002;
+      }
+      .help::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 100%;
+        width: min(18rem, calc(100vw - 40px));
+        height: 10px;
       }
       .help:not([data-dismissed]):hover .help-text,
       .help:not([data-dismissed]):focus-within .help-text {
         display: block;
       }
-      .presets {
+      .collection-heading {
         display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 16px;
-      }
-      .layout {
-        display: grid;
-        grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.15fr);
-        gap: 20px;
-        align-items: start;
-      }
-      .results {
-        display: grid;
-        gap: 8px;
-        padding: 3px;
-      }
-      .result {
-        text-align: left;
-        width: 100%;
-        min-width: 0;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        justify-content: stretch;
-        justify-items: start;
-        gap: 4px;
-        white-space: normal;
-        height: 5rem;
-        grid-template-rows: 2.5em 1.25rem;
-        align-content: center;
-        line-height: 1.25;
-      }
-      .result[aria-pressed="true"] {
-        border-color: var(--primary);
-        background: color-mix(in oklab, var(--primary) 8%, var(--card));
-      }
-      .result strong {
-        overflow-wrap: anywhere;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-      }
-      .result .muted {
-        width: 100%;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 2.75rem;
       }
       #result-summary,
       #local-summary {
-        height: 1.5em;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
       }
-      .preview {
-        padding: 16px;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        background: var(--card);
-        position: sticky;
-        top: 12px;
+      .collection-mark {
+        color: var(--muted-foreground);
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+        flex: none;
       }
-      .preview-image {
+      .results,
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 218px), 1fr));
+        gap: 16px;
+      }
+      button.result {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: start;
+        gap: 0;
+        width: 100%;
+        height: auto;
+        min-width: 0;
+        padding: 0;
+        overflow: hidden;
+        text-align: left;
+        white-space: normal;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius, 0.625rem) * 1.2);
+        background: var(--card);
+        color: var(--foreground);
+        transition:
+          transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+          border-color 0.2s,
+          box-shadow 0.24s;
+      }
+      .result:hover,
+      .result:focus-visible {
+        border-color: var(--primary);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px #0001;
+      }
+      .result[aria-pressed="true"] {
+        border-color: var(--primary);
+      }
+      .result-media {
+        display: grid;
+        place-items: center;
         width: 100%;
         aspect-ratio: 16/10;
-        object-fit: contain;
+        overflow: hidden;
+        position: relative;
         background: var(--muted);
-        border-radius: 9px;
+      }
+      .result-media img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
         display: block;
-        margin-bottom: 14px;
+        transition:
+          transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+          opacity 0.3s;
+      }
+      .result:hover img,
+      .result:focus-visible img {
+        transform: scale(1.045);
+      }
+      .result-copy {
+        display: grid;
+        gap: 4px;
+        padding: 10px 12px;
+        min-width: 0;
+      }
+      .result strong {
+        font-size: 0.875rem;
+        font-weight: 550;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.35;
+      }
+      .result-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.75rem;
+        line-height: 1.35;
+        color: var(--muted-foreground);
+      }
+      .result-meta > span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .result-meta > span:last-child {
+        flex: none;
+        white-space: nowrap;
+      }
+      .image-state {
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: 8px;
+        width: 100%;
+        height: 100%;
+        padding: 12px;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--muted-foreground);
+      }
+      .image-state svg {
+        width: 1.5rem;
+        height: 1.5rem;
+        opacity: 0.6;
+      }
+      .result-media[data-state="loading"]::after,
+      .result-media[data-state="idle"]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          110deg,
+          transparent 25%,
+          color-mix(in oklab, var(--foreground) 5%, transparent) 48%,
+          transparent 70%
+        );
+        transform: translateX(-100%);
+        animation: sweep 1.8s ease-in-out infinite;
+      }
+      .result[data-onscreen="false"] .result-media::after {
+        animation-play-state: paused;
+      }
+      .result.fresh {
+        animation: card-enter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+        animation-delay: var(--entry-delay, 0ms);
+      }
+      .empty-state {
+        grid-column: 1/-1;
+        display: grid;
+        justify-items: center;
+        gap: 12px;
+        padding: 64px 20px;
+        border: 1px dashed var(--border);
+        border-radius: calc(var(--radius, 0.625rem) * 1.2);
+        color: var(--muted-foreground);
+        text-align: center;
+        font-size: 0.875rem;
+      }
+      .empty-state svg {
+        width: 2rem;
+        height: 2rem;
+      }
+      .preview-head {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex: none;
+        padding: 8px 12px;
+      }
+      .preview-head h2 {
+        flex: 1;
+        min-width: 0;
+        margin-right: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.875rem;
+        line-height: 1.35;
+      }
+      .preview-head button {
+        flex: none;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+      }
+      .preview-head svg,
+      .preview-actions svg {
+        width: 1rem;
+        height: 1rem;
+        flex: none;
+      }
+      .preview {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
+      .preview-stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--muted);
+      }
+      .preview-image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        object-fit: contain;
+        display: block;
       }
       .placeholder {
         display: grid;
         place-items: center;
-        aspect-ratio: 16/10;
+        aspect-ratio: 16/9;
         background: var(--muted);
-        border-radius: 9px;
-        padding: 25px;
+        border-radius: var(--radius, 0.625rem);
+        padding: 24px;
         text-align: center;
         color: var(--muted-foreground);
+        font-size: 0.875rem;
       }
-      .preview h2 {
-        overflow-wrap: anywhere;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-        height: 2.5em;
-        line-height: 1.25;
+      .preview-stage > .placeholder {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: auto;
+        border-radius: 0;
+        padding-bottom: 56px;
+      }
+      #retry-preview {
+        position: absolute;
+        bottom: 12px;
+        max-width: calc(100% - 24px);
       }
       .metadata {
         display: grid;
-        gap: 5px;
-        margin-top: 8px;
-        height: 8rem;
-        align-content: start;
+        gap: 12px;
+        padding: 12px 16px 16px;
+        min-height: 0;
+        max-height: min(24rem, calc(100dvh - 112px));
         overflow: auto;
-        font-size: 13px;
         overflow-wrap: anywhere;
+        font-size: 0.8125rem;
+        line-height: 1.6;
       }
-      .image-details {
-        margin-top: 8px;
-        font-size: 0.8rem;
+      .preview-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        flex: none;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--border);
       }
-      .image-details summary {
-        cursor: pointer;
-        color: var(--muted-foreground);
+      .preview-actions > button {
+        flex: none;
+        width: auto;
+        max-width: none;
+        height: 2rem;
+        padding: 0 0.625rem;
+        white-space: nowrap;
+        border-radius: calc(var(--radius, 0.625rem) * 0.8);
+      }
+      .preview-actions .action-label {
+        white-space: nowrap;
       }
       .actions {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        margin-top: 13px;
+        margin-top: 16px;
       }
       .gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
-        gap: 14px;
-        margin-top: 16px;
+        margin-top: 20px;
       }
       .card {
         min-width: 0;
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 11px;
+        border-radius: calc(var(--radius, 0.625rem) * 1.2);
+        overflow: hidden;
         background: var(--card);
+      }
+      button.card-image {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: var(--muted);
+      }
+      button.card-image:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: -3px;
       }
       .card img {
         width: 100%;
         aspect-ratio: 16/10;
         object-fit: cover;
-        border-radius: 7px;
         background: var(--muted);
+        display: block;
+      }
+      .card-check {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: grid;
+        place-items: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        pointer-events: none;
+      }
+      .card-check svg {
+        width: 0.875rem;
+        height: 0.875rem;
+        stroke-width: 2;
+      }
+      .card-heading {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 8px;
+        min-width: 0;
       }
       .card h2 {
-        font-size: 15px;
-        overflow-wrap: anywhere;
-        margin: 8px 0;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
+        flex: 1;
+        min-width: 0;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin: 0;
         overflow: hidden;
-        height: 2.5em;
-        line-height: 1.25;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        line-height: 1.5;
       }
       .card.active {
         border-color: var(--primary);
       }
-      .card .actions {
-        gap: 5px;
+      .card-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        min-height: 1.75rem;
+        padding: 0;
+        border: 0;
+        border-radius: calc(var(--radius, 0.625rem) * 0.8);
+        background: transparent;
+        color: var(--foreground);
+        flex: none;
       }
-      .card-status {
-        height: 1.5em;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+      .card-icon-button svg {
+        width: 0.875rem;
+        height: 0.875rem;
+      }
+      .card-icon-button:hover,
+      .card-icon-button:focus-visible {
+        background: var(--accent);
+        color: var(--accent-foreground);
+      }
+      .card-icon-button[data-action="remove"] {
+        color: var(--destructive);
+        background: color-mix(in oklab, var(--destructive) 8%, transparent);
+      }
+      .card-icon-button[data-action="remove"]:hover,
+      .card-icon-button[data-action="remove"]:focus-visible {
+        background: color-mix(in oklab, var(--destructive) 16%, transparent);
+      }
+      #permission {
+        margin-bottom: 12px;
+        line-height: 1.6;
       }
       .sr-only {
         position: absolute;
@@ -320,41 +644,138 @@
         display: none !important;
       }
       dialog {
-        max-width: min(430px, calc(100vw - 32px));
+        width: min(430px, calc(100vw - 32px));
+        max-width: calc(100vw - 32px);
+        max-height: calc(100dvh - 32px);
+        overflow: auto;
         border: 1px solid var(--border);
-        border-radius: 14px;
+        border-radius: calc(var(--radius, 0.625rem) * 1.2);
         padding: 22px;
         background: var(--card);
         color: var(--foreground);
       }
       dialog::backdrop {
-        background: color-mix(in oklab, var(--foreground) 25%, transparent);
+        background: #0008;
+      }
+      dialog[open] {
+        animation: dialog-enter 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      #preview-dialog {
+        width: min(900px, calc(100vw - 32px));
+        height: min(80dvh, 640px);
+        padding: 0;
+        overflow: hidden;
+      }
+      #image-info-dialog {
+        width: min(440px, calc(100vw - 32px));
+        padding: 0;
+        overflow: hidden;
+      }
+      #preview-dialog[open],
+      #image-info-dialog[open] {
+        display: flex;
+        flex-direction: column;
       }
       dialog label {
         display: grid;
         gap: 8px;
         margin-top: 12px;
       }
-      @media (max-width: 680px) {
-        main {
-          padding: 12px;
+      #dialog-description {
+        margin-top: 10px;
+        line-height: 1.6;
+      }
+      @keyframes card-enter {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.98);
         }
-        .layout {
-          grid-template-columns: 1fr;
+        to {
+          opacity: 1;
+          transform: none;
         }
-        .preview {
-          position: static;
+      }
+      @keyframes dialog-enter {
+        from {
+          opacity: 0;
+          transform: translateY(10px) scale(0.98);
         }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes sweep {
+        to {
+          transform: translateX(100%);
+        }
+      }
+      html[data-gallery-visible="false"] *,
+      html[data-gallery-visible="false"] *::after {
+        animation-play-state: paused !important;
+      }
+      html[data-motion="reduced"] *,
+      html[data-motion="reduced"] *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+      html[data-motion="reduced"] .result:hover,
+      html[data-motion="reduced"] .result:focus-visible,
+      html[data-motion="reduced"] .result img {
+        transform: none;
+      }
+      @media (max-width: 520px) {
+        header {
+          align-items: start;
+        }
+        header > button {
+          padding-inline: 10px;
+        }
+        .source-toolbar {
+          align-items: stretch;
+        }
+        .query-controls {
+          flex-basis: 100%;
+          max-width: none;
+        }
+        #category {
+          width: 8rem;
+        }
+        .tabs {
+          gap: 14px;
+        }
+        .library-bar {
+          gap: 8px;
+        }
+        #provider {
+          width: 10rem;
+        }
+        .results,
         .gallery {
+          gap: 12px;
           grid-template-columns: repeat(
             auto-fill,
-            minmax(min(100%, 170px), 1fr)
+            minmax(min(100%, 160px), 1fr)
           );
+        }
+        .result-copy {
+          padding: 12px;
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        * {
-          scroll-behavior: auto;
+        *,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+          scroll-behavior: auto !important;
+        }
+        .result:hover,
+        .result:focus-visible,
+        .result:hover img,
+        .result:focus-visible img,
+        .result img {
+          transform: none;
         }
       }
     </style>
@@ -365,76 +786,171 @@
         <div>
           <h1 id="title">壁纸库</h1>
         </div>
-        <button id="settings" type="button" data-variant="outline"></button>
       </header>
       <p id="permission" class="muted" role="status" hidden></p>
-      <div class="tabs" role="tablist" aria-label="Wallpaper collections">
-        <button
-          id="remote-tab"
-          type="button"
-          role="tab"
-          aria-controls="remote-panel"
-          aria-selected="true"
-          data-variant="outline"
-        ></button>
-        <button
-          id="local-tab"
-          type="button"
-          role="tab"
-          aria-controls="local-panel"
-          aria-selected="false"
-          tabindex="-1"
-          data-variant="outline"
-        ></button>
+      <div class="library-bar">
+        <div class="tabs" role="tablist" aria-label="Wallpaper collections">
+          <button
+            id="remote-tab"
+            type="button"
+            role="tab"
+            aria-controls="remote-panel"
+            aria-selected="true"
+            data-variant="ghost"
+          ></button>
+          <button
+            id="local-tab"
+            type="button"
+            role="tab"
+            aria-controls="local-panel"
+            aria-selected="false"
+            tabindex="-1"
+            data-variant="ghost"
+          ></button>
+        </div>
+        <button id="settings" type="button" data-variant="ghost"></button>
       </div>
       <section id="remote-panel" role="tabpanel" aria-labelledby="remote-tab">
-        <div class="source-row">
-          <span class="muted" id="source-name"></span>
-          <span class="help">
-            <button
-              id="source-help-button"
-              class="help-trigger"
-              type="button"
-              aria-describedby="source-note"
-              data-variant="outline"
-            >
-              ?
-            </button>
-            <span id="source-note" class="help-text" role="tooltip"></span>
-          </span>
-        </div>
-        <form id="search-form" class="search">
-          <input
-            id="query"
-            maxlength="100"
-            value="landscape"
-            aria-label="搜索必应图片"
-          />
-          <label class="inline-field"
-            ><span id="network-label" class="muted"></span>
-            <select id="network-mode" aria-label="Wallpaper network mode">
-              <option value="system">跟随系统代理</option>
-              <option value="direct">直接连接</option>
+        <form id="search-form" class="source-toolbar" role="search">
+          <div class="source-row">
+            <label id="source-name" class="sr-only" for="provider"></label>
+            <select id="provider" aria-describedby="source-note">
+              <option value="upx8">UPX8</option>
+              <option value="wallhaven">Wallhaven</option>
+              <option value="commons">Wikimedia Commons</option>
+              <option value="nekosbest">Nekos.best</option>
             </select>
-          </label>
-          <button id="search" type="button" class="primary"></button>
-        </form>
-        <div class="presets" id="presets"></div>
-        <div class="layout">
-          <div>
-            <p id="result-summary" class="muted" aria-live="polite"></p>
-            <div id="results" class="results"></div>
+            <span class="help">
+              <button
+                id="source-help-button"
+                class="help-trigger"
+                type="button"
+                aria-describedby="source-note"
+                data-variant="ghost"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4M12 8h.01" />
+                </svg>
+              </button>
+              <span id="source-note" class="help-text" role="tooltip"></span>
+            </span>
           </div>
-          <aside id="preview" class="preview" aria-live="polite"></aside>
+          <label class="filter-field" id="category-field"
+            ><span id="category-label" class="sr-only"></span
+            ><select id="category" aria-labelledby="category-label"></select
+          ></label>
+          <div class="query-controls">
+            <label class="query-field"
+              ><span id="query-label" class="sr-only"></span
+              ><svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="m16 16 4 4" /></svg
+              ><input
+                id="query"
+                maxlength="100"
+                aria-labelledby="query-label"
+                autocomplete="off"
+            /></label>
+            <button id="search" type="button" class="primary"></button>
+          </div>
+        </form>
+        <div class="collection-heading">
+          <p id="result-summary" class="muted" aria-live="polite"></p>
+          <button
+            id="retry-failed"
+            type="button"
+            data-variant="ghost"
+            hidden
+          ></button>
         </div>
+        <div id="results" class="results"></div>
       </section>
+      <dialog id="preview-dialog" aria-labelledby="preview-title">
+        <div class="preview-head">
+          <h2 id="preview-title"></h2>
+          <button
+            id="preview-info"
+            type="button"
+            data-variant="ghost"
+            aria-haspopup="dialog"
+            aria-controls="image-info-dialog"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v6M12 7h.01" />
+            </svg>
+          </button>
+          <button id="preview-close" type="button" data-variant="ghost">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M6 18 18 6" />
+            </svg>
+          </button>
+        </div>
+        <div id="preview" class="preview"></div>
+      </dialog>
+      <dialog id="image-info-dialog" aria-labelledby="image-info-title">
+        <div class="preview-head">
+          <h2 id="image-info-title"></h2>
+          <button id="image-info-close" type="button" data-variant="ghost">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M6 18 18 6" />
+            </svg>
+          </button>
+        </div>
+        <div id="image-info-body" class="metadata"></div>
+      </dialog>
       <section
         id="local-panel"
         role="tabpanel"
         aria-labelledby="local-tab"
         hidden
       >
-        <div class="toolbar">
+        <div class="toolbar local-toolbar">
           <p id="local-summary" class="muted"></p>
           <div class="gallery-controls">
             <label class="inline-field"
@@ -487,15 +1003,145 @@
           entries = [],
           selected = null,
           preview = null,
+          entriesProvider = "",
           entriesQuery = "",
+          entriesCategory = "",
+          filterOptionsKey = "",
+          batchErrorNotified = "",
           initialized = false,
           accessEpoch = 0,
           refreshPending = false,
           libraryLoaded = false,
           dialogKind = null,
           dialogItem = null,
-          lastResultsState = "";
-        let library = { revision: 0, items: [], limit: 24 };
+          lastResultsState = "",
+          cardsKey = "",
+          loadingCollection = false,
+          activeLoadEpoch = null,
+          ignoredResultsState = "",
+          initializePending = true,
+          collectionAttempted = false;
+        const providers = {
+          upx8: "UPX8",
+          wallhaven: "Wallhaven",
+          commons: "Wikimedia Commons",
+          nekosbest: "Nekos.best",
+        };
+        const categories = {
+          upx8: [
+            ["all", "全部分类", "All categories"],
+            ["nature", "自然风景", "Nature"],
+            ["anime", "动漫", "Anime"],
+            ["game", "游戏", "Games"],
+            ["animal", "动物", "Animals"],
+            ["city", "城市", "Cities"],
+            ["abstract", "抽象", "Abstract"],
+            ["space", "星空", "Space"],
+            ["car", "汽车", "Cars"],
+            ["girl", "人物", "People"],
+            ["sport", "运动", "Sports"],
+          ],
+          wallhaven: [
+            ["all", "全部分类", "All categories"],
+            ["general", "综合", "General"],
+            ["anime", "动漫", "Anime"],
+            ["people", "人物", "People"],
+          ],
+          commons: [
+            ["all", "推荐风景", "Featured landscapes"],
+            ["landscape", "风景", "Landscape"],
+            ["mountain", "山川", "Mountains"],
+            ["ocean", "海洋", "Ocean"],
+            ["forest", "森林", "Forest"],
+            ["city", "城市", "Cities"],
+            ["space", "星空", "Space"],
+          ],
+          nekosbest: [
+            ["neko", "猫娘", "Neko"],
+            ["kitsune", "狐娘", "Kitsune"],
+            ["waifu", "动漫女生", "Waifu"],
+            ["husbando", "动漫男生", "Husbando"],
+          ],
+        };
+        const categoryDefault = (provider) =>
+          provider === "nekosbest" ? "neko" : "all";
+        const categoryName = (provider, category) => {
+          const option = categories[provider]?.find(
+            (item) => item[0] === category,
+          );
+          return option ? tr(option[1], option[2]) : "";
+        };
+        const validQuery = (value) =>
+          typeof value === "string" &&
+          Array.from(value).length <= 100 &&
+          !/[\u0000-\u001f\u007f-\u009f]/.test(value);
+        function configureFilters(reset = false) {
+          const provider = $("provider").value;
+          if (!Object.hasOwn(providers, provider)) return;
+          const key = provider + ":" + snapshot?.locale;
+          if (reset) $("query").value = "";
+          if (filterOptionsKey !== key || reset) {
+            const previous = reset
+              ? categoryDefault(provider)
+              : $("category").value;
+            filterOptionsKey = key;
+            $("category").replaceChildren();
+            for (const [value, zh, en] of categories[provider]) {
+              const option = text("option", tr(zh, en));
+              option.value = value;
+              $("category").append(option);
+            }
+            $("category").value = categories[provider].some(
+              (item) => item[0] === previous,
+            )
+              ? previous
+              : categoryDefault(provider);
+          }
+          $("category-label").textContent =
+            provider === "commons"
+              ? tr("图片主题", "Image theme")
+              : tr("图片分类", "Image category");
+          $("query-label").textContent =
+            provider === "nekosbest"
+              ? tr("搜索作者或作品信息", "Search creator or artwork details")
+              : tr("搜索壁纸", "Search wallpapers");
+          $("query").placeholder =
+            provider === "nekosbest"
+              ? tr("搜索作者或作品信息", "Search creator or artwork details")
+              : tr("搜索关键词…", "Search wallpapers…");
+          if (provider === "upx8" && $("query").value.trim())
+            $("category").value = "all";
+          $("category").disabled =
+            busy ||
+            snapshot?.busy ||
+            !granted("network:https") ||
+            (provider === "upx8" && Boolean($("query").value.trim()));
+          $("query").disabled = !granted("network:https");
+          $("search").textContent = loadingCollection
+            ? tr("载入中…", "Loading…")
+            : $("query").value.trim()
+              ? tr("搜索", "Search")
+              : tr("换一批", "Refresh");
+        }
+        function requestedFilters() {
+          const provider = $("provider").value;
+          const query = $("query").value.trim();
+          return {
+            provider,
+            query,
+            category:
+              provider === "upx8" && query ? "all" : $("category").value,
+          };
+        }
+        let thumbnails = new Map(),
+          imageInFlight = 0,
+          collectionEpoch = 0;
+        const releases = new Set();
+        const visible = () =>
+          snapshot?.active !== false && document.visibilityState !== "hidden";
+        const canLoadImages = () =>
+          visible() && tab === "remote" && granted("network:images");
+        let library = { revision: 0, items: [], limit: 0 };
         const tr = (zh, en) => (snapshot?.locale === "en" ? en : zh);
         const allowed = () =>
           snapshot?.grantedPermissions?.includes("wallpapers:manage") &&
@@ -522,10 +1168,16 @@
         }
         function failure(error, searching = false) {
           switch (error?.code) {
+            case "EXTENSION_NETWORK_BLOCKED":
+            case "EXTENSION_IMAGE_REDIRECT":
+            case "EXTENSION_IMAGE_SOURCE_REJECTED":
+            case "EXTENSION_IMAGE_INVALID":
+            case "EXTENSION_IMAGE_TOO_LARGE":
+              return imageFailure(error.code, true);
             case "INVALID_ARGUMENT":
               return tr(
-                "图片、名称或搜索参数不可用，请检查输入并重试。",
-                "The image, name or search parameters are unavailable. Review your input and retry.",
+                "图片、名称或图源不可用，请重试。",
+                "The image, name or source is unavailable. Please retry.",
               );
             case "SETTINGS_CONFLICT":
               return tr(
@@ -539,14 +1191,14 @@
               );
             case "NOT_FOUND":
               return tr(
-                "图片已不可用，请重新搜索或刷新图库。",
-                "This image is no longer available. Search again or refresh the gallery.",
+                "图片已不可用，请换一批或刷新图库。",
+                "This image is no longer available. Refresh the collection or local gallery.",
               );
             case "EXTENSION_TIMEOUT":
               return searching
                 ? tr(
-                    "搜索超时，请检查网络连接后重试。",
-                    "Image search timed out. Check your connection and retry.",
+                    "图源请求超时，请检查网络连接后重试。",
+                    "Source request timed out. Check your connection and retry.",
                   )
                 : tr(
                     "操作超时，请稍后重试。",
@@ -560,8 +1212,8 @@
             default:
               return searching
                 ? tr(
-                    "搜索失败，请检查网络连接后重试。",
-                    "Image search failed. Check your connection and retry.",
+                    "图源暂不可用，请重试或切换其他图源。",
+                    "This source is unavailable. Retry or choose another source.",
                   )
                 : tr(
                     "操作失败，请重试。",
@@ -589,7 +1241,7 @@
           }
           if (primary) element.className = "primary";
           else element.dataset.variant = "outline";
-          element.disabled = busy || !granted(capability);
+          element.disabled = busy || snapshot?.busy || !granted(capability);
           element.onclick = () => void work(action);
           return element;
         }
@@ -617,9 +1269,10 @@
         function isImage(value) {
           return (
             isObject(value) &&
+            typeof value.resultId === "string" &&
             /^[a-f0-9]{16}$/.test(value.resultId) &&
             typeof value.title === "string" &&
-            Array.from(value.title).length <= 120 &&
+            validText(value.title, 120) &&
             ["originalUrl", "previewUrl", "sourceUrl"].every(
               (key) =>
                 typeof value[key] === "string" &&
@@ -640,7 +1293,8 @@
             Number.isInteger(value.revision) &&
             value.revision >= 0 &&
             value.revision <= 2147483647 &&
-            value.limit === 24 &&
+            Number.isSafeInteger(value.limit) &&
+            value.limit > 0 &&
             Array.isArray(value.items) &&
             value.items.length <= value.limit &&
             new Set(value.items.map((item) => item?.id)).size ===
@@ -687,12 +1341,6 @@
             throw { code: "EXTENSION_RUN_FAILED" };
           return response;
         }
-        function networkMode() {
-          return $("network-mode").value === "system" &&
-            granted("network:system-proxy")
-            ? "system"
-            : "direct";
-        }
         async function withImage(url, action) {
           if (!granted("network:images"))
             throw { code: "EXTENSION_UNAVAILABLE" };
@@ -700,7 +1348,6 @@
           const resource = await starter.services.request("resources", {
             action: "fetch-image",
             url,
-            networkMode: networkMode(),
           });
           const resourceId =
             isObject(resource) && typeof resource.resourceId === "string"
@@ -731,15 +1378,17 @@
               throw { code: "EXTENSION_RUN_FAILED" };
             return await action(resource);
           } finally {
-            if (resourceId)
-              await starter.services
-                .request("resources", { action: "release", resourceId })
-                .catch(() => {});
+            if (resourceId) await releaseImage(resourceId);
           }
         }
         function readResults(next) {
           const source = next?.view?.state;
           if (typeof source !== "string" || source.length > 240000) return;
+          if (activeLoadEpoch !== null && activeLoadEpoch !== accessEpoch) {
+            ignoredResultsState = source;
+            return;
+          }
+          if (source === ignoredResultsState) return;
           let state;
           try {
             state = JSON.parse(source);
@@ -748,30 +1397,50 @@
           }
           if (
             !isObject(state) ||
-            state.schema !== 1 ||
+            state.schema !== 3 ||
             !Array.isArray(state.items) ||
-            state.items.length > 12 ||
+            state.items.length > 24 ||
             !state.items.every(isImage) ||
             new Set(state.items.map((item) => item.resultId)).size !==
               state.items.length ||
-            typeof state.query !== "string" ||
-            !validText(state.query, 100)
+            !Object.hasOwn(providers, state.provider) ||
+            !validQuery(state.query) ||
+            !categories[state.provider].some(
+              (item) => item[0] === state.category,
+            )
           )
             return;
-          const key = JSON.stringify([state.query, state.items]);
+          const key = JSON.stringify([
+            state.provider,
+            state.query,
+            state.category,
+            state.items,
+          ]);
           if (key === lastResultsState) return;
           lastResultsState = key;
           entries = state.items;
-          entriesQuery =
-            state.items.length || state.error === ""
-              ? state.query
-              : entriesQuery;
-          if (
-            selected &&
-            !entries.some((item) => item.resultId === selected.resultId)
-          ) {
-            selected = null;
-            preview = null;
+          entriesProvider = state.provider;
+          entriesQuery = state.query;
+          entriesCategory = state.category;
+          const previous = thumbnails;
+          thumbnails = new Map(
+            entries.map((item) => [
+              item.resultId,
+              previous.get(item.resultId)?.url === item.previewUrl
+                ? previous.get(item.resultId)
+                : { url: item.previewUrl, status: "idle", dataUrl: null },
+            ]),
+          );
+          collectionEpoch++;
+          cardsKey = "";
+          if (selected) {
+            selected =
+              entries.find((item) => item.resultId === selected.resultId) ||
+              null;
+            if (!selected) {
+              preview = null;
+              closePreview();
+            }
           }
         }
         function focusTarget() {
@@ -799,14 +1468,15 @@
                   : null;
         }
         function restoreFocus(find) {
-          if (document.activeElement !== document.body) return;
+          const active = document.activeElement;
+          if (active !== document.body && active?.getClientRects().length)
+            return;
           const target = find();
           if (target && !target.disabled && target.getClientRects().length)
             target.focus({ preventScroll: true });
         }
-        async function work(action) {
-          if (busy || !allowed()) return;
-          const returnFocus = focusTarget();
+        async function work(action, returnFocus = focusTarget()) {
+          if (busy || snapshot?.busy || !allowed() || !visible()) return;
           busy = true;
           render();
           try {
@@ -821,6 +1491,36 @@
               refreshPending = false;
               if (tab === "local" && allowed()) void work(refresh);
             }
+            initializeContent();
+          }
+        }
+        function initializeContent() {
+          if (
+            !initialized ||
+            !visible() ||
+            !allowed() ||
+            busy ||
+            snapshot?.busy
+          )
+            return;
+          if (initializePending) {
+            initializePending = false;
+            void work(async () => {
+              await refresh();
+              if (
+                tab === "remote" &&
+                !entries.length &&
+                granted("network:https")
+              )
+                await loadCollection();
+            });
+          } else if (
+            tab === "remote" &&
+            !entries.length &&
+            !collectionAttempted &&
+            granted("network:https")
+          ) {
+            void work(loadCollection);
           }
         }
         async function refresh() {
@@ -833,9 +1533,10 @@
           lastCheckpoint = "";
         function checkpointNavigation(immediate = false) {
           pendingCheckpoint = JSON.stringify({
+            provider: $("provider").value,
             query: $("query").value,
+            category: $("category").value,
             tab,
-            networkMode: $("network-mode").value,
             fit: $("fit").value,
           });
           clearTimeout(checkpointTimer);
@@ -843,14 +1544,20 @@
           else checkpointTimer = setTimeout(() => void flushCheckpoint(), 250);
         }
         async function flushCheckpoint() {
-          if (checkpointRunning) return;
+          if (checkpointRunning || snapshot?.busy || !visible()) return;
           checkpointRunning = true;
           try {
             while (pendingCheckpoint !== null) {
+              if (snapshot?.busy || !visible()) break;
               const value = pendingCheckpoint;
               pendingCheckpoint = null;
               if (value === lastCheckpoint) continue;
-              await starter.checkpoint(JSON.parse(value), false);
+              try {
+                await starter.checkpoint(JSON.parse(value), false);
+              } catch (error) {
+                pendingCheckpoint ??= value;
+                throw error;
+              }
               lastCheckpoint = value;
             }
           } catch {
@@ -865,72 +1572,412 @@
             checkpointRunning = false;
           }
         }
-        async function search() {
-          const query = $("query").value.trim();
-          if (!granted("network:https")) {
+        async function loadCollection() {
+          const filters = requestedFilters();
+          if (
+            !Object.hasOwn(providers, filters.provider) ||
+            !granted("network:https")
+          )
+            return;
+          if (!validQuery(filters.query)) {
             message(
               tr(
-                "请授予 HTTPS 网络权限以搜索图片；本机图库仍可使用。",
-                "Grant HTTPS network access to search images. The local gallery remains available.",
+                "关键词最多 100 个字符，且不能包含控制字符。",
+                "Use up to 100 characters without control characters.",
               ),
               true,
             );
             return;
           }
-          if (!validText(query, 100)) {
-            message(
-              tr(
-                "搜索关键词需为 1–100 个字符，且不含控制字符。",
-                "Enter 1–100 search characters without control characters.",
-              ),
-              true,
-            );
-            return;
-          }
+          if (snapshot?.busy || !visible()) return;
+          collectionAttempted = true;
+          const epoch = accessEpoch;
+          activeLoadEpoch = epoch;
           checkpointNavigation(true);
+          loadingCollection = true;
+          render();
           try {
-            const epoch = accessEpoch;
-            const view = await starter.run("search", {
-              query,
-              networkMode: networkMode(),
-            });
-            if (epoch !== accessEpoch || !granted("network:https"))
+            const view = await starter.run("load", filters);
+            if (epoch !== accessEpoch || !granted("network:https")) {
+              if (
+                typeof view?.state === "string" &&
+                view.state.length <= 240000
+              )
+                ignoredResultsState = view.state;
               throw { code: "EXTENSION_UNAVAILABLE" };
-            readResults({ view });
-            if (view?.errors?.query) {
-              message(view.errors.query, true);
-              return;
             }
-            if (!entries.length)
+            ignoredResultsState = "";
+            readResults({ view });
+            if (view?.errors?.provider) message(view.errors.provider, true);
+            else if (!entries.length)
               message(
                 tr(
-                  "没有找到图片，试试其他关键词。",
-                  "No images found. Try another keyword.",
+                  "图源暂未返回图片，请换一批或切换图源。",
+                  "No images returned. Refresh or choose another source.",
                 ),
               );
           } catch (error) {
             message(failure(error, true), true);
+          } finally {
+            activeLoadEpoch = null;
+            loadingCollection = false;
+            render();
           }
         }
-        async function select(item) {
-          if (!granted("network:images")) {
-            selected = item;
-            preview = null;
-            return;
-          }
+        function icon(
+          pathData = "M4 4h16v16H4z M4 16l5-5 4 4 3-3 4 4 M15 8h.01",
+        ) {
+          const element = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg",
+          );
+          element.setAttribute("viewBox", "0 0 24 24");
+          element.setAttribute("fill", "none");
+          element.setAttribute("stroke", "currentColor");
+          element.setAttribute("stroke-width", "1.5");
+          element.setAttribute("stroke-linecap", "round");
+          element.setAttribute("stroke-linejoin", "round");
+          element.setAttribute("aria-hidden", "true");
+          const path = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path",
+          );
+          path.setAttribute("d", pathData);
+          element.append(path);
+          return element;
+        }
+        const cardObserver =
+          typeof IntersectionObserver === "function"
+            ? new IntersectionObserver((changes) => {
+                for (const change of changes)
+                  change.target.dataset.onscreen = String(
+                    change.isIntersecting,
+                  );
+              })
+            : null;
+        async function releaseImage(resourceId) {
           const epoch = accessEpoch;
-          await withImage(item.previewUrl, async ({ resourceId }) => {
-            const response = await starter.services.request("resources", {
-              action: "preview",
+          releases.add(resourceId);
+          if (!visible()) return;
+          releases.delete(resourceId);
+          try {
+            await starter.services.request("resources", {
+              action: "release",
               resourceId,
             });
-            if (epoch !== accessEpoch || !granted("network:images"))
-              throw { code: "EXTENSION_UNAVAILABLE" };
-            if (!isObject(response) || !isImageData(response.dataUrl))
-              throw { code: "EXTENSION_RUN_FAILED" };
-            selected = item;
-            preview = response.dataUrl;
-          });
+          } catch (error) {
+            if (
+              error?.code === "NOT_FOUND" ||
+              epoch !== accessEpoch ||
+              !granted("network:images")
+            )
+              return;
+            if (
+              error?.code === "EXTENSION_BUSY" ||
+              error?.retryable === true ||
+              !visible()
+            )
+              releases.add(resourceId);
+          }
+        }
+        function imageFailure(code, detail = false) {
+          const messages = {
+            EXTENSION_NETWORK_BLOCKED: [
+              "网络访问受限",
+              "Network blocked",
+              "图片地址未能解析到允许的公网地址。请检查宿主网络设置或代理后重试。",
+              "The image could not resolve to an allowed public address. Review host network or proxy settings and retry.",
+            ],
+            EXTENSION_IMAGE_REDIRECT: [
+              "图片地址已跳转",
+              "Image address moved",
+              "图源返回了需要跳转的图片地址，请换一批更新地址。",
+              "The source returned a redirected image address. Refresh the collection to update it.",
+            ],
+            EXTENSION_IMAGE_SOURCE_REJECTED: [
+              "图源暂不可用",
+              "Source unavailable",
+              "图片服务器拒绝了请求或暂时不可用，请稍后重试或换一批。",
+              "The image server rejected the request or is temporarily unavailable. Retry later or refresh the collection.",
+            ],
+            EXTENSION_IMAGE_INVALID: [
+              "图片格式无效",
+              "Invalid image",
+              "图源没有返回可解码的 JPEG、PNG 或 WebP 图片。",
+              "The source did not return a decodable JPEG, PNG or WebP image.",
+            ],
+            EXTENSION_IMAGE_TOO_LARGE: [
+              "图片超出大小限制",
+              "Image exceeds limits",
+              "此图片超过了 16 MiB、8192 像素边长或 1600 万像素的处理上限。",
+              "This image exceeds the 16 MiB, 8192-pixel edge or 16-million-pixel processing limit.",
+            ],
+            EXTENSION_TIMEOUT: [
+              "载入超时",
+              "Image timed out",
+              "图片下载超时，请检查网络后重试。",
+              "The image download timed out. Check your connection and retry.",
+            ],
+            EXTENSION_BUSY: [
+              "图片服务繁忙",
+              "Image service busy",
+              "图片处理服务暂时繁忙，请稍后重试。",
+              "Image processing is temporarily busy. Retry shortly.",
+            ],
+          };
+          const entry = messages[code];
+          return entry
+            ? tr(entry[detail ? 2 : 0], entry[detail ? 3 : 1])
+            : detail
+              ? tr(
+                  "图片载入失败，请检查网络后重试，或切换图源。",
+                  "The image could not load. Check your connection and retry, or choose another source.",
+                )
+              : tr("图片载入失败", "Could not load image");
+        }
+        function updateRetryControl() {
+          const failed = entries.filter(
+            (item) => thumbnails.get(item.resultId)?.status === "error",
+          );
+          $("retry-failed").hidden = !failed.length;
+          $("retry-failed").textContent = tr(
+            `重试失败图片 · ${failed.length}`,
+            `Retry failed · ${failed.length}`,
+          );
+          $("retry-failed").disabled =
+            !granted("network:images") || busy || snapshot?.busy;
+          if (
+            canLoadImages() &&
+            entries.length &&
+            failed.length === entries.length &&
+            !imageInFlight &&
+            batchErrorNotified !== String(collectionEpoch)
+          ) {
+            batchErrorNotified = String(collectionEpoch);
+            message(
+              imageFailure(thumbnails.get(failed[0].resultId)?.errorCode, true),
+              true,
+            );
+          }
+        }
+        async function loadThumbnail(item, record) {
+          record.status = "loading";
+          imageInFlight++;
+          updateThumbnail(item);
+          const epoch = accessEpoch;
+          try {
+            const dataUrl = await withImage(
+              item.previewUrl,
+              async ({ resourceId }) => {
+                if (!visible()) throw { code: "EXTENSION_UNAVAILABLE" };
+                const response = await starter.services.request("resources", {
+                  action: "preview",
+                  resourceId,
+                });
+                if (!isObject(response) || !isImageData(response.dataUrl))
+                  throw { code: "EXTENSION_RUN_FAILED" };
+                return response.dataUrl;
+              },
+            );
+            if (epoch !== accessEpoch || !granted("network:images")) return;
+            record.dataUrl = dataUrl;
+            record.status = "ready";
+          } catch (error) {
+            record.errorCode =
+              typeof error?.code === "string" ? error.code : "";
+            record.status = visible() ? "error" : "idle";
+          } finally {
+            imageInFlight--;
+            if (
+              epoch !== accessEpoch &&
+              thumbnails.get(item.resultId) === record
+            )
+              record.status = "idle";
+            if (
+              epoch === accessEpoch &&
+              thumbnails.get(item.resultId) === record
+            ) {
+              updateThumbnail(item);
+              if (
+                selected?.resultId === item.resultId &&
+                $("preview-dialog").open
+              )
+                render();
+            }
+            pumpThumbnails();
+            updateRetryControl();
+          }
+        }
+        function pumpThumbnails() {
+          if (visible())
+            for (const resourceId of [...releases])
+              void releaseImage(resourceId);
+          if (!canLoadImages()) return;
+          for (const item of entries) {
+            if (imageInFlight >= 2) break;
+            const record = thumbnails.get(item.resultId);
+            if (record?.status === "idle") void loadThumbnail(item, record);
+          }
+        }
+        function updateThumbnail(item) {
+          const card = Array.from($("results").children).find(
+            (node) => node.dataset.resultId === item.resultId,
+          );
+          const media = card?.querySelector(".result-media");
+          if (!media) return;
+          const record = thumbnails.get(item.resultId);
+          media.dataset.state = granted("network:images")
+            ? record?.status || "idle"
+            : "blocked";
+          media.replaceChildren();
+          if (record?.dataUrl && granted("network:images")) {
+            const image = document.createElement("img");
+            image.alt = item.title;
+            image.src = record.dataUrl;
+            image.decoding = "async";
+            media.append(image);
+          } else {
+            const state = text("span", "", "image-state");
+            state.append(
+              icon(),
+              text(
+                "span",
+                !granted("network:images")
+                  ? tr("远程图片未授权", "Image access not granted")
+                  : record?.status === "error"
+                    ? imageFailure(record.errorCode) +
+                      tr(" · 查看详情", " · View details")
+                    : tr("正在载入图片", "Loading image"),
+              ),
+            );
+            media.append(state);
+          }
+        }
+        function closePreview() {
+          if ($("image-info-dialog").open) $("image-info-dialog").close();
+          if ($("preview-dialog").open) $("preview-dialog").close();
+        }
+        function select(item) {
+          if ($("image-info-dialog").open) $("image-info-dialog").close();
+          $("image-info-body").scrollTop = 0;
+          selected = item;
+          preview = thumbnails.get(item.resultId)?.dataUrl || null;
+          render();
+          if (!$("preview-dialog").open) $("preview-dialog").showModal();
+          $("preview-close").focus();
+          pumpThumbnails();
+        }
+        function renderResults() {
+          const filters = [
+            providers[entriesProvider],
+            entriesCategory && !["all", "neko"].includes(entriesCategory)
+              ? categoryName(entriesProvider, entriesCategory)
+              : "",
+            entriesQuery ? `“${entriesQuery}”` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          $("result-summary").textContent = loadingCollection
+            ? tr("正在载入壁纸…", "Loading wallpapers…")
+            : entriesProvider
+              ? tr(
+                  `${entries.length} 张 · ${filters}`,
+                  `${entries.length} images · ${filters}`,
+                )
+              : tr(
+                  "选择图源，发现壁纸",
+                  "Choose a source to discover wallpapers",
+                );
+          updateRetryControl();
+          $("results").setAttribute("aria-busy", String(loadingCollection));
+          const key = JSON.stringify([
+            collectionEpoch,
+            !entries.length && loadingCollection,
+            snapshot?.locale,
+            granted("network:images"),
+            allowed(),
+          ]);
+          if (key !== cardsKey) {
+            cardsKey = key;
+            cardObserver?.disconnect();
+            $("results").replaceChildren();
+            if (!entries.length) {
+              const empty = text("div", "", "empty-state");
+              empty.append(
+                icon(),
+                text(
+                  "p",
+                  loadingCollection
+                    ? tr("正在载入图片", "Loading images")
+                    : tr(
+                        "暂无匹配图片，试试其他关键词或分类。",
+                        "No matching images. Try another query or category.",
+                      ),
+                ),
+              );
+              $("results").append(empty);
+            }
+            entries.forEach((item, index) => {
+              const card = document.createElement("button");
+              card.type = "button";
+              card.className = "result fresh";
+              card.dataset.resultId = item.resultId;
+              card.style.setProperty(
+                "--entry-delay",
+                `${Math.min(index, 7) * 28}ms`,
+              );
+              card.setAttribute(
+                "aria-label",
+                tr("预览：", "Preview: ") + item.title,
+              );
+              const media = text("span", "", "result-media"),
+                copy = text("span", "", "result-copy"),
+                meta = text("span", "", "result-meta");
+              meta.append(
+                text("span", providers[entriesProvider]),
+                text(
+                  "span",
+                  item.width && item.height
+                    ? dimensions(item)
+                    : tr("查看大图 ↗", "Preview ↗"),
+                ),
+              );
+              copy.append(text("strong", item.title), meta);
+              card.append(media, copy);
+              card.onclick = () => select(item);
+              $("results").append(card);
+              updateThumbnail(item);
+              cardObserver?.observe(card);
+            });
+          }
+          for (const card of $("results").children) {
+            if (!card.dataset.resultId) continue;
+            card.disabled = !allowed();
+            card.setAttribute(
+              "aria-pressed",
+              String(selected?.resultId === card.dataset.resultId),
+            );
+          }
+          pumpThumbnails();
+        }
+        function wallpaperButton(item, actionName, label, execute) {
+          const element = button("", execute, false, actionName);
+          element.dataset.variant = "ghost";
+          element.title = label;
+          element.setAttribute("aria-label", label + ": " + item.name);
+          element.onclick = () =>
+            void work(
+              execute,
+              () =>
+                Array.from(
+                  $("gallery").querySelectorAll("button[data-action]"),
+                ).find(
+                  (node) =>
+                    node.dataset.action === actionName &&
+                    node.closest(".card")?.dataset.wallpaperId === item.id,
+                ) || $("import"),
+            );
+          return element;
         }
         function renderDialog(kind, item) {
           $("dialog-title").textContent =
@@ -1002,11 +2049,9 @@
         }
         function render() {
           const returnFocus = focusTarget();
-          const previousDetails = $("preview").querySelector("details");
-          const detailsOpen =
-            previousDetails?.open &&
-            previousDetails.dataset.resultId === selected?.resultId;
+          const infoScrollTop = $("image-info-body").scrollTop;
           document.documentElement.lang = snapshot?.locale || "zh-CN";
+          document.documentElement.dataset.galleryVisible = String(visible());
           if (dialogKind && dialogItem) renderDialog(dialogKind, dialogItem);
           document.title = tr("壁纸库", "Wallpaper Library");
           document
@@ -1015,28 +2060,34 @@
               "aria-label",
               tr("壁纸分类", "Wallpaper collections"),
             );
-          $("network-mode").setAttribute(
-            "aria-label",
-            tr("壁纸网络连接方式", "Wallpaper network mode"),
-          );
           $("title").textContent = tr("壁纸库", "Wallpaper Library");
           $("settings").textContent = tr("图库设置", "Gallery settings");
           $("remote-tab").textContent = tr("发现壁纸", "Discover");
           $("local-tab").textContent = tr("本机图库", "Local gallery");
-          $("source-name").textContent = tr("必应图片", "Bing Images");
+          $("source-name").textContent = tr("壁纸图源", "Wallpaper source");
           $("source-help-button").setAttribute(
             "aria-label",
-            tr("搜索来源与使用说明", "Image source and usage help"),
+            tr("图源与使用说明", "Image source and usage help"),
           );
           $("source-note").textContent = tr(
-            "搜索关键词会发送至必应，结果来自第三方网站；使用前请核对来源与使用许可。图库图片会缩放压缩，原图下载上限为 16 MiB / 1600 万像素。网络连接可跟随系统代理或直接连接；本插件只管理应用背景，不改变操作系统壁纸。",
-            "Search keywords are sent to Bing and results come from third-party websites. Review each source and its usage rights. Gallery images are resized and compressed; originals are limited to 16 MiB / 16 million pixels. Connect through the system proxy or directly. This plugin manages the application background, not the operating system wallpaper.",
+            "免费图源每批提供最多 24 张图片。图片经宿主安全加载；原图下载上限为 16 MiB / 1600 万像素，加入图库时会压缩。各图源不保证完整许可，请在使用前查看来源。连接跟随宿主网络设置，背景仅作用于本应用。",
+            "Free sources provide up to 24 images per collection, loaded securely by the host. Originals are limited to 16 MiB / 16 million pixels; gallery copies are compressed. Review source usage rights before use. Connections follow host network settings; backgrounds apply to this app.",
           );
-          $("query").setAttribute(
+          $("preview-close").setAttribute(
             "aria-label",
-            tr("搜索必应图片", "Search Bing Images"),
+            tr("关闭预览", "Close preview"),
           );
-          $("query").placeholder = tr("搜索图片", "Search images");
+          $("preview-info").setAttribute(
+            "aria-label",
+            tr("图片信息", "Image details"),
+          );
+          $("preview-info").title = tr("图片信息", "Image details");
+          $("preview-info").disabled = !selected || !allowed();
+          $("image-info-title").textContent = tr("图片信息", "Image details");
+          $("image-info-close").setAttribute(
+            "aria-label",
+            tr("关闭图片信息", "Close image details"),
+          );
           const missing = [];
           if (!allowed())
             missing.push(
@@ -1049,8 +2100,8 @@
             if (!granted("network:https"))
               missing.push(
                 tr(
-                  "搜索需 HTTPS 网络权限；本机图库仍可使用。",
-                  "Search needs HTTPS network access; the local gallery remains available.",
+                  "获取图源需 HTTPS 网络权限；本机图库仍可使用。",
+                  "Sources need HTTPS network access; the local gallery remains available.",
                 ),
               );
             if (!granted("network:images"))
@@ -1070,33 +2121,16 @@
           }
           $("permission").hidden = missing.length === 0;
           $("permission").textContent = missing.join(" ");
-          $("search").textContent = busy
-            ? tr("处理中…", "Working…")
-            : tr("搜索", "Search");
-          for (const id of ["settings", "refresh", "import", "fit"])
-            $(id).disabled = busy || !allowed();
-          for (const id of ["search", "query", "network-mode"])
-            $(id).disabled = busy || !granted("network:https");
-          $("network-mode").options[0].disabled = !granted(
-            "network:system-proxy",
-          );
-          if (
-            !granted("network:system-proxy") &&
-            $("network-mode").value === "system"
-          )
-            $("network-mode").value = "direct";
+          configureFilters();
+          for (const id of ["settings", "refresh", "import"])
+            $(id).disabled = busy || snapshot?.busy || !allowed();
+          $("fit").disabled = busy || !allowed();
+          for (const id of ["search", "provider"])
+            $(id).disabled =
+              busy || snapshot?.busy || !granted("network:https");
           $("refresh").textContent = tr("刷新", "Refresh");
           $("import").textContent = tr("导入图片", "Import image");
           $("fit-label").textContent = tr("显示方式", "Fit");
-          $("network-label").textContent = tr("连接：", "Connection: ");
-          $("network-mode").options[0].text = tr(
-            "跟随系统代理（需授权）",
-            "Follow system proxy (separate grant)",
-          );
-          $("network-mode").options[1].text = tr(
-            "直接连接",
-            "Direct connection",
-          );
           $("fit").options[0].text = tr("覆盖", "Cover");
           $("fit").options[1].text = tr("完整显示", "Contain");
           for (const name of ["remote", "local"]) {
@@ -1107,77 +2141,32 @@
             );
             $(name + "-tab").tabIndex = tab === name ? 0 : -1;
           }
-          $("presets").replaceChildren();
-          for (const [zh, en, query] of [
-            ["山川", "Mountains", "mountains"],
-            ["海洋", "Ocean", "ocean"],
-            ["森林", "Forest", "forest"],
-            ["星空", "Space", "space nebula"],
-          ])
-            $("presets").append(
-              button(
-                tr(zh, en),
-                async () => {
-                  $("query").value = query;
-                  await search();
-                },
-                false,
-                "preset-" + query,
-                "network:https",
-              ),
-            );
-          $("result-summary").textContent = tr(
-            `${entries.length} 张图片${entriesQuery ? " · " + entriesQuery : ""}`,
-            `${entries.length} images${entriesQuery ? " · " + entriesQuery : ""}`,
-          );
-          $("result-summary").title = $("result-summary").textContent;
-          $("results").replaceChildren();
-          for (const item of entries) {
-            const card = button("", () => select(item));
-            card.className = "result";
-            card.dataset.resultId = item.resultId;
-            card.setAttribute(
-              "aria-pressed",
-              String(selected?.resultId === item.resultId),
-            );
-            card.append(
-              text("strong", item.title),
-              text(
-                "span",
-                [dimensions(item), item.license].filter(Boolean).join(" · "),
-                "muted",
-              ),
-            );
-            $("results").append(card);
-          }
+          renderResults();
+          if (selected)
+            preview = thumbnails.get(selected.resultId)?.dataUrl || null;
           $("preview").replaceChildren();
-          if (!selected)
-            $("preview").append(
-              text(
-                "p",
-                tr(
-                  "搜索并选择一张图片，预览会在这里显示。",
-                  "Search and select an image to preview it here.",
-                ),
-                "placeholder",
-              ),
-            );
-          else {
+          $("image-info-body").replaceChildren();
+          if (selected) {
+            $("preview-title").textContent = selected.title;
+            $("preview-title").title = selected.title;
+            const stage = text("div", "", "preview-stage");
+            stage.id = "preview-stage";
+            $("preview").append(stage);
             if (preview) {
               const image = document.createElement("img");
               image.className = "preview-image";
               image.id = "preview-image";
               image.alt = selected.title;
               image.src = preview;
-              $("preview").append(image);
+              stage.append(image);
             } else
-              $("preview").append(
+              stage.append(
                 text(
                   "p",
                   granted("network:images")
                     ? tr(
-                        "再次选择图片以载入预览。",
-                        "Select the image again to load its preview.",
+                        "正在载入图片，请稍候。",
+                        "Loading this image. Please wait.",
                       )
                     : tr(
                         "远程图片未授权，仍可查看来源信息。",
@@ -1186,9 +2175,37 @@
                   "placeholder",
                 ),
               );
-            $("preview").append(text("h2", selected.title));
-            const meta = document.createElement("div");
-            meta.className = "metadata";
+            if (
+              granted("network:images") &&
+              thumbnails.get(selected.resultId)?.status === "error"
+            ) {
+              $("preview").querySelector(".placeholder").textContent =
+                imageFailure(
+                  thumbnails.get(selected.resultId)?.errorCode,
+                  true,
+                );
+              const retry = button(
+                tr("重试此图片", "Retry image"),
+                async () => {
+                  const record = thumbnails.get(selected.resultId);
+                  if (record?.status === "error") record.status = "idle";
+                  pumpThumbnails();
+                },
+                false,
+                "retry-preview",
+                "network:images",
+              );
+              retry.id = "retry-preview";
+              stage.append(retry);
+            }
+            const meta = $("image-info-body");
+            meta.append(
+              text("p", tr("名称：", "Name: ") + selected.title),
+              text(
+                "p",
+                tr("图源：", "Source: ") + (providers[entriesProvider] || ""),
+              ),
+            );
             if (selected.author)
               meta.append(
                 text("p", tr("作者：", "Creator: ") + selected.author),
@@ -1211,16 +2228,10 @@
               text("p", details.join(" · ")),
               text("p", selected.sourceUrl, "muted"),
             );
-            const detailsPanel = document.createElement("details");
-            detailsPanel.className = "image-details";
-            detailsPanel.dataset.resultId = selected.resultId;
-            detailsPanel.open = Boolean(detailsOpen);
-            const summary = text("summary", tr("图片信息", "Image details"));
-            summary.id = "image-details-summary";
-            detailsPanel.append(summary, meta);
-            $("preview").append(detailsPanel);
+            meta.scrollTop = infoScrollTop;
             const actions = document.createElement("div");
-            actions.className = "actions";
+            actions.id = "preview-actions";
+            actions.className = "preview-actions";
             actions.append(
               button(
                 tr("加入本机图库", "Add to gallery"),
@@ -1246,7 +2257,7 @@
                 "network:images",
               ),
               button(
-                tr("下载原图…", "Save original…"),
+                tr("下载原图", "Save original"),
                 async () => {
                   const item = selected;
                   await withImage(item.originalUrl, async (resource) => {
@@ -1294,6 +2305,31 @@
                 "links:open",
               ),
             );
+            for (const [id, label, path] of [
+              [
+                "add-to-gallery",
+                tr("加入图库", "Add to gallery"),
+                "M4 4h16v8M4 4v16h8M4 15l5-5 4 4 2-2M15 8h.01M18 15v6M15 18h6",
+              ],
+              [
+                "download-original",
+                tr("下载原图", "Save original"),
+                "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
+              ],
+              [
+                "open-source",
+                tr("来源", "Source"),
+                "M15 3h6v6M10 14 21 3M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6",
+              ],
+            ]) {
+              const control = actions.querySelector("#" + id);
+              control.title = control.textContent;
+              control.setAttribute("aria-label", control.textContent);
+              control.replaceChildren(
+                icon(path),
+                text("span", label, "action-label"),
+              );
+            }
             $("preview").append(actions);
           }
           $("local-summary").textContent = tr(
@@ -1309,69 +2345,82 @@
             const card = document.createElement("article");
             card.className = "card" + (item.active ? " active" : "");
             card.dataset.wallpaperId = item.id;
-            const image = document.createElement("img");
-            if (typeof item.dataUrl === "string") image.src = item.dataUrl;
-            image.alt = item.name;
-            image.loading = "lazy";
-            card.append(
-              typeof item.dataUrl === "string"
-                ? image
-                : text(
-                    "p",
-                    tr("无法预览此图片", "Preview unavailable"),
-                    "placeholder",
-                  ),
-              text("h2", item.name),
+            const apply = wallpaperButton(
+              item,
+              "apply",
+              tr("设为背景", "Apply background"),
+              async () => {
+                library = await request("apply", {
+                  id: item.id,
+                  expectedRevision: library.revision,
+                  fit: $("fit").value,
+                });
+                message(
+                  tr("已设置应用背景。", "Application background updated."),
+                );
+              },
             );
-            card.append(
-              text(
-                "p",
-                item.active ? tr("当前应用背景", "Current app background") : "",
-                "muted card-status",
-              ),
+            apply.className = "card-image";
+            apply.setAttribute("aria-pressed", String(item.active));
+            if (typeof item.dataUrl === "string") {
+              const image = document.createElement("img");
+              image.src = item.dataUrl;
+              image.alt = "";
+              image.loading = "lazy";
+              apply.append(image);
+            } else
+              apply.append(
+                text(
+                  "span",
+                  tr("无法预览此图片", "Preview unavailable"),
+                  "placeholder",
+                ),
+              );
+            if (item.active) {
+              const check = text("span", "", "card-check");
+              check.append(
+                icon("m6 12 4 4 8-8"),
+                text(
+                  "span",
+                  tr("当前应用背景", "Current app background"),
+                  "sr-only",
+                ),
+              );
+              apply.append(check);
+            }
+            const rename = wallpaperButton(
+              item,
+              "rename",
+              tr("重命名", "Rename"),
+              async () => {
+                const name = await confirm("rename", item);
+                if (name)
+                  library = await request("rename", { id: item.id, name });
+              },
             );
-            const actions = document.createElement("div");
-            actions.className = "actions";
-            actions.append(
-              button(
-                tr("设为背景", "Apply"),
-                async () => {
-                  library = await request("apply", {
+            rename.className = "card-icon-button";
+            rename.append(
+              icon("m16 3 5 5M4 20l4-1L21 6a2.12 2.12 0 0 0-3-3L5 16Z"),
+            );
+            const remove = wallpaperButton(
+              item,
+              "remove",
+              tr("移除", "Remove"),
+              async () => {
+                if (await confirm("remove", item))
+                  library = await request("remove", {
                     id: item.id,
                     expectedRevision: library.revision,
-                    fit: $("fit").value,
                   });
-                  message(
-                    tr("已设置应用背景。", "Application background updated."),
-                  );
-                },
-                true,
-                "apply",
-              ),
-              button(
-                tr("重命名", "Rename"),
-                async () => {
-                  const name = await confirm("rename", item);
-                  if (name)
-                    library = await request("rename", { id: item.id, name });
-                },
-                false,
-                "rename",
-              ),
-              button(
-                tr("移除", "Remove"),
-                async () => {
-                  if (await confirm("remove", item))
-                    library = await request("remove", {
-                      id: item.id,
-                      expectedRevision: library.revision,
-                    });
-                },
-                false,
-                "remove",
-              ),
+              },
             );
-            card.append(actions);
+            remove.className = "card-icon-button";
+            remove.append(
+              icon("M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"),
+            );
+            const heading = text("div", "", "card-heading");
+            heading.append(text("h2", item.name), rename, remove);
+            card.append(apply, heading);
             $("gallery").append(card);
           }
           if (!library.items.length)
@@ -1389,19 +2438,60 @@
             );
           restoreFocus(returnFocus);
         }
+        $("search").onclick = () => void work(loadCollection);
+        $("provider").onchange = () => {
+          configureFilters(true);
+          checkpointNavigation(true);
+          void work(loadCollection);
+        };
+        $("category").onchange = () => {
+          checkpointNavigation(true);
+          void work(loadCollection);
+        };
+        $("query").oninput = () => {
+          configureFilters();
+          checkpointNavigation();
+        };
         $("search-form").onsubmit = (event) => {
           event.preventDefault();
         };
-        $("search").onclick = () => void work(search);
         $("query").onkeydown = (event) => {
           if (event.key === "Enter" && !event.isComposing) {
             event.preventDefault();
-            if (!event.repeat) void work(search);
+            if (!event.repeat) void work(loadCollection);
           }
         };
+        $("retry-failed").onclick = () => {
+          if (!canLoadImages()) return;
+          batchErrorNotified = "";
+          for (const record of thumbnails.values())
+            if (record.status === "error") record.status = "idle";
+          for (const item of entries) updateThumbnail(item);
+          updateRetryControl();
+          pumpThumbnails();
+        };
+        $("preview-close").onclick = closePreview;
+        $("preview-info").onclick = () => {
+          if (selected && allowed() && !$("image-info-dialog").open) {
+            $("image-info-dialog").showModal();
+            $("image-info-close").focus();
+          }
+        };
+        $("image-info-close").onclick = () => $("image-info-dialog").close();
+        $("image-info-dialog").onclose = () =>
+          restoreFocus(() =>
+            $("preview-dialog").open && allowed() && visible()
+              ? $("preview-info")
+              : null,
+          );
+        $("preview-dialog").onclose = () => {
+          if ($("image-info-dialog").open) $("image-info-dialog").close();
+          const result = Array.from($("results").children).find(
+            (node) => node.dataset.resultId === selected?.resultId,
+          );
+          result?.focus({ preventScroll: true });
+        };
         $("refresh").onclick = () => void work(refresh);
-        $("query").oninput = () => checkpointNavigation();
-        $("network-mode").onchange = () => checkpointNavigation(true);
         $("fit").onchange = () => checkpointNavigation(true);
         $("settings").onclick = () => void work(() => request("open-settings"));
         $("import").onclick = () =>
@@ -1426,6 +2516,7 @@
               if (busy) refreshPending = true;
               else void work(refresh);
             }
+            initializeContent();
           };
           $(name + "-tab").onkeydown = (event) => {
             if (
@@ -1481,49 +2572,69 @@
             accessEpoch++;
           if (wasAllowed && !allowed()) {
             entries = [];
+            entriesProvider = "";
             entriesQuery = "";
+            entriesCategory = "";
+            thumbnails.clear();
+            collectionEpoch++;
             lastResultsState = "";
+            cardsKey = "";
+            loadingCollection = false;
             selected = null;
             preview = null;
-            library = { revision: 0, items: [], limit: 24 };
+            library = { revision: 0, items: [], limit: 0 };
             libraryLoaded = false;
             refreshPending = false;
             if ($("confirm-dialog").open) $("confirm-dialog").close("no");
           } else if (!granted("network:images")) {
             preview = null;
+            thumbnails.clear();
+            for (const item of entries)
+              thumbnails.set(item.resultId, {
+                url: item.previewUrl,
+                status: "idle",
+                dataUrl: null,
+              });
+            cardsKey = "";
           }
+          if (!allowed()) closePreview();
           if (allowed()) readResults(next);
           render();
           if (wasAllowed && !allowed())
             message($("permission").textContent, true);
           if (initialized && !wasAllowed && allowed()) {
-            if (busy) refreshPending = true;
-            else void work(refresh);
+            initializePending = true;
+            collectionAttempted = false;
           }
+          initializeContent();
+          if (!snapshot.busy && visible()) void flushCheckpoint();
+        });
+        document.addEventListener("visibilitychange", () => {
+          document.documentElement.dataset.galleryVisible = String(visible());
+          pumpThumbnails();
+          initializeContent();
+          if (visible()) void flushCheckpoint();
+        });
+        window.addEventListener("pagehide", () => {
+          cardObserver?.disconnect();
         });
         void starter.ready
           .then(async (next) => {
             snapshot = next;
             const saved = next.checkpoint;
-            $("network-mode").value = granted("network:system-proxy")
-              ? "system"
-              : "direct";
-            const draftQuery = next.fields?.query;
-            if (typeof draftQuery === "string" && draftQuery.length <= 400)
-              $("query").value = draftQuery;
+            const provider = saved?.provider ?? next.fields?.provider;
+            if (Object.hasOwn(providers, provider))
+              $("provider").value = provider;
+            configureFilters();
+            const query = saved?.query ?? next.fields?.query ?? "";
+            if (validQuery(query)) $("query").value = query;
+            const category = saved?.category ?? next.fields?.category;
             if (
-              saved &&
-              typeof saved.query === "string" &&
-              Array.from(saved.query).length <= 100
+              categories[$("provider").value].some(
+                (item) => item[0] === category,
+              )
             )
-              $("query").value = saved.query;
-            if (
-              saved &&
-              ["system", "direct"].includes(saved.networkMode) &&
-              (saved.networkMode !== "system" ||
-                granted("network:system-proxy"))
-            )
-              $("network-mode").value = saved.networkMode;
+              $("category").value = category;
             if (saved && ["cover", "contain"].includes(saved.fit))
               $("fit").value = saved.fit;
             if (saved && ["remote", "local"].includes(saved.tab))
@@ -1531,7 +2642,7 @@
             if (allowed()) readResults(next);
             initialized = true;
             render();
-            if (allowed()) await work(refresh);
+            if (allowed()) initializeContent();
             else message($("permission").textContent, true);
           })
           .catch((error) => message(failure(error), true));
