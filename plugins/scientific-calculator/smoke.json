@@ -10,7 +10,7 @@
     },
     "expectJsonSubset": {
       "version": 2,
-      "display": "科学计算器",
+      "display": "计算器",
       "effects": [],
       "errors": {},
       "artifacts": []
@@ -23,43 +23,9 @@
       "action": "calculate",
       "state": "",
       "fields": {
-        "expression": "2^3^2"
-      },
-      "locale": "en"
-    },
-    "expectJsonSubset": {
-      "display": "Scientific calculator",
-      "errors": {},
-      "blocks": [
-        {
-          "kind": "metrics",
-          "items": [
-            {
-              "label": "Result",
-              "value": "512"
-            },
-            {
-              "label": "Memory",
-              "value": "0"
-            },
-            {
-              "label": "History",
-              "value": "1"
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "command": "workspace",
-    "input": {
-      "version": 2,
-      "action": "calculate",
-      "state": "",
-      "fields": {
         "expression": "sin(30) + cos(60)",
-        "angle": "deg"
+        "angle": "deg",
+        "mode": "scientific"
       },
       "locale": "en"
     },
@@ -72,40 +38,6 @@
             {
               "label": "Result",
               "value": "1"
-            },
-            {
-              "label": "Memory",
-              "value": "0"
-            },
-            {
-              "label": "History",
-              "value": "1"
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "command": "workspace",
-    "input": {
-      "version": 2,
-      "action": "calculate",
-      "state": "",
-      "fields": {
-        "expression": "5! + log(100)"
-      },
-      "locale": "en"
-    },
-    "expectJsonSubset": {
-      "errors": {},
-      "blocks": [
-        {
-          "kind": "metrics",
-          "items": [
-            {
-              "label": "Result",
-              "value": "122"
             },
             {
               "label": "Memory",
@@ -160,20 +92,6 @@
     "command": "workspace",
     "input": {
       "version": 2,
-      "action": "save",
-      "state": "",
-      "fields": {},
-      "locale": "en"
-    },
-    "expectJsonSubset": {
-      "effects": [],
-      "description": "Saving requires the optional storage permission; calculation and graphs remain available offline."
-    }
-  },
-  {
-    "command": "workspace",
-    "input": {
-      "version": 2,
       "action": "export",
       "state": "",
       "fields": {},
@@ -185,7 +103,7 @@
           "name": "calculator-history.md",
           "mediaType": "text/markdown",
           "encoding": "utf8",
-          "content": "# Scientific calculation history\n\n"
+          "content": "# Calculation history\n\n"
         }
       ]
     }
@@ -230,30 +148,14 @@
     "command": "workspace",
     "input": {
       "version": 2,
-      "action": "calculate",
-      "state": "",
-      "fields": {
-        "expression": "sqrt(-1)"
-      },
-      "locale": "en"
-    },
-    "expectJsonSubset": {
-      "errors": {
-        "expression": "sqrt requires a non-negative argument"
-      },
-      "effects": []
-    }
-  },
-  {
-    "command": "workspace",
-    "input": {
-      "version": 2,
       "action": "save",
       "state": "",
       "fields": {},
       "locale": "en",
       "host": {
-        "permissions": ["storage"],
+        "permissions": [
+          "storage"
+        ],
         "storage": {
           "revision": 7,
           "values": {}
@@ -352,7 +254,9 @@
       "fields": {},
       "locale": "en",
       "host": {
-        "permissions": ["storage"],
+        "permissions": [
+          "storage"
+        ],
         "storage": {
           "revision": 7,
           "values": {
@@ -369,18 +273,17 @@
     "command": "workspace",
     "input": {
       "version": 2,
-      "action": "root",
+      "action": "calculate",
       "state": "",
       "fields": {
-        "functions": "sign(x-0.12345)+1-1e-10",
-        "a": "0",
-        "b": "1"
+        "expression": "sqrt(-1)",
+        "mode": "scientific"
       },
-      "locale": "en"
+      "locale": "zh-CN"
     },
     "expectJsonSubset": {
       "errors": {
-        "a": "Root did not converge; the interval may contain a singularity"
+        "expression": "平方根的参数不能为负数。"
       },
       "effects": []
     }
@@ -389,11 +292,12 @@
     "command": "workspace",
     "input": {
       "version": 2,
-      "action": "calculate",
+      "action": "evaluate",
       "state": "",
       "fields": {
-        "expression": "sin(-1e-20)",
-        "angle": "deg"
+        "expression": "2 + sqrt(9)",
+        "operand": "sqrt(9)",
+        "mode": "scientific"
       },
       "locale": "en"
     },
@@ -405,7 +309,42 @@
           "items": [
             {
               "label": "Result",
-              "value": "-1.745329251994e-22"
+              "value": "3"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "calculate",
+      "state": "",
+      "fields": {
+        "mode": "standard",
+        "expression": "2+3*4"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "20"
             },
             {
               "label": "Memory",
@@ -427,15 +366,767 @@
       "action": "calculate",
       "state": "",
       "fields": {
-        "expression": "sqrt(-1)"
+        "mode": "standard",
+        "expression": "0.1+0.2"
       },
-      "locale": "zh-CN"
+      "locale": "en"
     },
     "expectJsonSubset": {
-      "errors": {
-        "expression": "平方根的参数不能为负数。"
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "0.3"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "standard-evaluate",
+      "state": "",
+      "fields": {
+        "mode": "standard",
+        "left": "200",
+        "operator": "+",
+        "right": "10%"
       },
-      "effects": []
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "220"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "programmer-evaluate",
+      "state": "",
+      "fields": {
+        "mode": "programmer",
+        "expression": "FFFFFFFFFFFFFFFF",
+        "radix": "16",
+        "bits": "64"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "-1"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "date-difference",
+      "state": "",
+      "fields": {
+        "mode": "date",
+        "dateFrom": "2024-02-28",
+        "dateTo": "2024-03-01"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "2"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "volume",
+        "converterFrom": "74",
+        "converterTo": "75",
+        "converterInput": "1.25"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "1250"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "length",
+        "converterFrom": "32",
+        "converterTo": "30",
+        "converterInput": "1"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "2.54"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "weight",
+        "converterFrom": "92",
+        "converterTo": "86",
+        "converterInput": "1"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "453.59237"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "temperature",
+        "converterFrom": "47",
+        "converterTo": "46",
+        "converterInput": "212"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "100"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "energy",
+        "converterFrom": "166",
+        "converterTo": "27",
+        "converterInput": "1"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "3600000"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "area",
+        "converterFrom": "7",
+        "converterTo": "3",
+        "converterInput": "1"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "10000"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "speed",
+        "converterFrom": "62",
+        "converterTo": "57",
+        "converterInput": "1"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "100"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "time",
+        "converterFrom": "50",
+        "converterTo": "54",
+        "converterInput": "1.5"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "5400"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "power",
+        "converterFrom": "44",
+        "converterTo": "45",
+        "converterInput": "-2.5"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "-2500"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "data",
+        "converterFrom": "150",
+        "converterTo": "12",
+        "converterInput": "1"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "1024"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "pressure",
+        "converterFrom": "141",
+        "converterTo": "139",
+        "converterInput": "1000"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "1.0000000000000028371000000000081"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "angle",
+        "converterFrom": "136",
+        "converterTo": "134",
+        "converterInput": "100"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "90"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "converter-convert",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "currency",
+        "converterFrom": "USD",
+        "converterTo": "CNY",
+        "converterInput": "10"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "—"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "currency-refresh",
+      "state": "",
+      "fields": {
+        "mode": "converter",
+        "converterCategory": "currency",
+        "converterFrom": "USD",
+        "converterTo": "CNY",
+        "converterInput": "10"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": [
+          "network:https"
+        ],
+        "storage": null
+      }
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "effects": [
+        {
+          "kind": "http",
+          "id": "currency-rates-1",
+          "request": {
+            "url": "https://open.er-api.com/v6/latest/USD",
+            "method": "GET",
+            "headers": {
+              "Accept": "application/json"
+            },
+            "body": null,
+            "credential": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"ans\":0,\"memory\":0,\"history\":[],\"result\":\"0\",\"notice\":\"\",\"fields\":{\"expression\":\"0\",\"angle\":\"deg\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\",\"mode\":\"converter\",\"converterCategory\":\"currency\",\"converterFrom\":\"USD\",\"converterTo\":\"CNY\",\"converterInput\":\"10\"},\"pending\":false,\"pending_revision\":null,\"currency_sequence\":1,\"currency_pending\":1}",
+      "fields": {},
+      "locale": "en",
+      "results": [
+        {
+          "id": "currency-rates-1",
+          "value": {
+            "url": "https://open.er-api.com/v6/latest/USD",
+            "status": 200,
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": "{\"result\":\"success\",\"base_code\":\"USD\",\"time_last_update_unix\":1700000000,\"time_next_update_unix\":1700086400,\"rates\":{\"USD\":1,\"EUR\":0.8,\"CNY\":7.2,\"JPY\":160}}"
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "72"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "command": "workspace",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":1,\"ans\":0,\"memory\":0,\"history\":[],\"result\":\"0\",\"notice\":\"\",\"fields\":{\"expression\":\"0\",\"angle\":\"deg\",\"functions\":\"x\",\"xmin\":\"-10\",\"xmax\":\"10\",\"ymin\":\"-3\",\"ymax\":\"3\",\"a\":\"0\",\"b\":\"3\",\"curve\":\"0\",\"mode\":\"converter\",\"converterCategory\":\"currency\",\"converterFrom\":\"USD\",\"converterTo\":\"CNY\",\"converterInput\":\"10\"},\"pending\":false,\"pending_revision\":null,\"currency_sequence\":1,\"currency_pending\":1,\"currency\":{\"base\":\"USD\",\"updatedAt\":1700000000,\"nextUpdateAt\":1700086400,\"rates\":{\"USD\":\"1\",\"EUR\":\"0.8\",\"CNY\":\"7.2\",\"JPY\":\"160\"}}}",
+      "fields": {},
+      "locale": "en",
+      "results": [
+        {
+          "id": "currency-rates-1",
+          "value": null,
+          "error": {
+            "code": "HTTP_TIMEOUT",
+            "message": "offline fixture",
+            "retryable": false
+          }
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "errors": {},
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Result",
+              "value": "72"
+            },
+            {
+              "label": "Memory",
+              "value": "0"
+            },
+            {
+              "label": "History",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "effects": [],
+      "description": "Rate refresh failed. Existing cached rates were retained; retry manually later."
     }
   }
 ]

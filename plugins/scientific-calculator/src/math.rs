@@ -13,6 +13,7 @@ const INTEGRATION_DEPTH: usize = 20;
 pub enum Angle {
     Deg,
     Rad,
+    Grad,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -52,6 +53,7 @@ impl Vars {
             // adds 360 to them and can round them to a full turn.
             Angle::Deg => (value % 360.0).to_radians(),
             Angle::Rad => value,
+            Angle::Grad => (value % 400.0) * (std::f64::consts::PI / 200.0),
         }
     }
 
@@ -59,6 +61,7 @@ impl Vars {
         match self.angle {
             Angle::Deg => radians.to_degrees(),
             Angle::Rad => radians,
+            Angle::Grad => radians * (200.0 / std::f64::consts::PI),
         }
     }
 }
@@ -135,13 +138,28 @@ enum Function {
     Sin,
     Cos,
     Tan,
+    Sec,
+    Csc,
+    Cot,
     Asin,
     Acos,
     Atan,
+    Asec,
+    Acsc,
+    Acot,
     Atan2,
     Sinh,
     Cosh,
     Tanh,
+    Sech,
+    Csch,
+    Coth,
+    Asinh,
+    Acosh,
+    Atanh,
+    Asech,
+    Acsch,
+    Acoth,
     Sqrt,
     Cbrt,
     Abs,
@@ -158,10 +176,13 @@ enum Function {
     Min,
     Max,
     Pow,
+    Root,
     Hypot,
     Clamp,
     Deg,
     Rad,
+    Dms,
+    Degrees,
 }
 
 impl Function {
@@ -170,13 +191,28 @@ impl Function {
             "sin" => Self::Sin,
             "cos" => Self::Cos,
             "tan" => Self::Tan,
+            "sec" => Self::Sec,
+            "csc" => Self::Csc,
+            "cot" => Self::Cot,
             "asin" => Self::Asin,
             "acos" => Self::Acos,
             "atan" => Self::Atan,
+            "asec" => Self::Asec,
+            "acsc" => Self::Acsc,
+            "acot" => Self::Acot,
             "atan2" => Self::Atan2,
             "sinh" => Self::Sinh,
             "cosh" => Self::Cosh,
             "tanh" => Self::Tanh,
+            "sech" => Self::Sech,
+            "csch" => Self::Csch,
+            "coth" => Self::Coth,
+            "asinh" => Self::Asinh,
+            "acosh" => Self::Acosh,
+            "atanh" => Self::Atanh,
+            "asech" => Self::Asech,
+            "acsch" => Self::Acsch,
+            "acoth" => Self::Acoth,
             "sqrt" => Self::Sqrt,
             "cbrt" => Self::Cbrt,
             "abs" => Self::Abs,
@@ -193,17 +229,20 @@ impl Function {
             "min" => Self::Min,
             "max" => Self::Max,
             "pow" => Self::Pow,
+            "root" => Self::Root,
             "hypot" => Self::Hypot,
             "clamp" => Self::Clamp,
             "deg" => Self::Deg,
             "rad" => Self::Rad,
+            "dms" => Self::Dms,
+            "degrees" => Self::Degrees,
             _ => return Err(format!("Unknown function: {name}")),
         })
     }
 
     fn check_arity(self, name: &str, count: usize) -> Result<(), String> {
         let (min, max) = match self {
-            Self::Atan2 | Self::Pow | Self::Hypot => (2, 2),
+            Self::Atan2 | Self::Pow | Self::Root | Self::Hypot => (2, 2),
             Self::Clamp => (3, 3),
             Self::Min | Self::Max => (2, MAX_ARGUMENTS),
             Self::Log => (1, 2),
@@ -232,6 +271,30 @@ impl Function {
                 }
                 radians.tan()
             }
+            Self::Sec | Self::Csc | Self::Cot => {
+                let radians = vars.radians(first);
+                let denominator = if matches!(self, Self::Sec) {
+                    let cosine = radians.cos();
+                    if cosine.abs() < 1e-14 {
+                        return Err("sec is undefined at this angle".into());
+                    }
+                    cosine
+                } else {
+                    let sine = radians.sin();
+                    // π 的整数倍会有微小弧度舍入残差，不应将接近零的非零角误判为极点
+                    if sine == 0.0
+                        || radians != 0.0 && (radians % std::f64::consts::PI).abs() == 0.0
+                    {
+                        return Err("csc/cot is undefined at this angle".into());
+                    }
+                    sine
+                };
+                if matches!(self, Self::Cot) {
+                    radians.cos() / denominator
+                } else {
+                    1.0 / denominator
+                }
+            }
             Self::Asin | Self::Acos => {
                 if !(-1.0..=1.0).contains(&first) {
                     return Err("Inverse sine/cosine requires an argument between -1 and 1".into());
@@ -243,6 +306,25 @@ impl Function {
                 })
             }
             Self::Atan => vars.angle_value(first.atan()),
+            Self::Asec | Self::Acsc => {
+                if first.abs() < 1.0 {
+                    return Err(
+                        "Inverse secant/cosecant requires an absolute argument of at least 1"
+                            .into(),
+                    );
+                }
+                vars.angle_value(if matches!(self, Self::Asec) {
+                    (1.0 / first).acos()
+                } else {
+                    (1.0 / first).asin()
+                })
+            }
+            Self::Acot => {
+                if first == 0.0 {
+                    return Err("Inverse cotangent is undefined at zero".into());
+                }
+                vars.angle_value((1.0 / first).atan())
+            }
             Self::Atan2 => {
                 if first == 0.0 && args[1] == 0.0 {
                     return Err("atan2 is undefined when both arguments are zero".into());
@@ -252,6 +334,53 @@ impl Function {
             Self::Sinh => first.sinh(),
             Self::Cosh => first.cosh(),
             Self::Tanh => first.tanh(),
+            Self::Sech => 1.0 / first.cosh(),
+            Self::Csch | Self::Coth => {
+                if first == 0.0 {
+                    return Err("Hyperbolic cosecant/cotangent is undefined at zero".into());
+                }
+                if matches!(self, Self::Csch) {
+                    1.0 / first.sinh()
+                } else {
+                    1.0 / first.tanh()
+                }
+            }
+            Self::Asinh => first.asinh(),
+            Self::Acosh => {
+                if first < 1.0 {
+                    return Err(
+                        "Inverse hyperbolic cosine requires an argument of at least 1".into(),
+                    );
+                }
+                first.acosh()
+            }
+            Self::Atanh => {
+                if first.abs() >= 1.0 {
+                    return Err("Inverse hyperbolic tangent requires an argument between -1 and 1, exclusive".into());
+                }
+                first.atanh()
+            }
+            Self::Asech => {
+                if !(0.0..=1.0).contains(&first) || first == 0.0 {
+                    return Err("Inverse hyperbolic secant requires an argument greater than 0 and at most 1".into());
+                }
+                (1.0 / first).acosh()
+            }
+            Self::Acsch => {
+                if first == 0.0 {
+                    return Err("Inverse hyperbolic cosecant is undefined at zero".into());
+                }
+                (1.0 / first).asinh()
+            }
+            Self::Acoth => {
+                if first.abs() <= 1.0 {
+                    return Err(
+                        "Inverse hyperbolic cotangent requires an absolute argument greater than 1"
+                            .into(),
+                    );
+                }
+                (1.0 / first).atanh()
+            }
             Self::Sqrt => {
                 if first < 0.0 {
                     return Err("sqrt requires a non-negative argument".into());
@@ -293,6 +422,7 @@ impl Function {
             Self::Min => args.iter().copied().fold(f64::INFINITY, f64::min),
             Self::Max => args.iter().copied().fold(f64::NEG_INFINITY, f64::max),
             Self::Pow => power(first, args[1])?,
+            Self::Root => real_root(first, args[1])?,
             Self::Hypot => first.hypot(args[1]),
             Self::Clamp => {
                 if args[1] > args[2] {
@@ -302,6 +432,20 @@ impl Function {
             }
             Self::Deg => first.to_degrees(),
             Self::Rad => first.to_radians(),
+            Self::Dms | Self::Degrees => {
+                // Windows 用十进制打包度分秒：12.3456 表示 12°34′56″，
+                // 负小数和超出范围的分秒也沿用其归一化规则
+                let (split, join) = if matches!(self, Self::Dms) {
+                    (60.0, 100.0)
+                } else {
+                    (100.0, 60.0)
+                };
+                let degrees = first.trunc();
+                let minutes = (first - degrees) * split;
+                let whole_minutes = minutes.trunc();
+                let seconds = (minutes - whole_minutes) * split;
+                degrees + (whole_minutes + seconds / join) / join
+            }
         })
     }
 }
@@ -333,7 +477,15 @@ impl Node {
                         if right == 0.0 {
                             return Err("Modulo by zero".into());
                         }
-                        left % right
+                        let remainder = left % right;
+                        // Windows 科学模式采用模运算，非零结果的符号跟随除数
+                        if remainder != 0.0
+                            && remainder.is_sign_negative() != right.is_sign_negative()
+                        {
+                            remainder + right
+                        } else {
+                            remainder
+                        }
                     }
                     Binary::Power => power(left, right)?,
                 }
@@ -373,7 +525,28 @@ fn power(base: f64, exponent: f64) -> Result<f64, String> {
             "A negative base requires an integer exponent; use cbrt for real cube roots".into(),
         );
     }
-    finite(base.powf(exponent))
+    let result = finite(base.powf(exponent))?;
+    if base != 0.0 && result == 0.0 {
+        return Err("Power result is below the supported floating-point range".into());
+    }
+    Ok(result)
+}
+
+fn real_root(value: f64, degree: f64) -> Result<f64, String> {
+    if degree == 0.0 {
+        return Err("Root degree must not be zero".into());
+    }
+    if value == 0.0 && degree < 0.0 {
+        return Err("Zero cannot have a negative root degree".into());
+    }
+    if value < 0.0 {
+        if degree.fract() != 0.0 || degree % 2.0 == 0.0 {
+            return Err("A negative radicand requires an odd integer root degree".into());
+        }
+        finite(-(-value).powf(1.0 / degree))
+    } else {
+        finite(value.powf(1.0 / degree))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -497,9 +670,18 @@ impl Lexer<'_> {
                 return Err(format!("Invalid scientific notation at byte {start}"));
             }
         }
-        let value = self.source[start..self.position]
+        let literal = &self.source[start..self.position];
+        let value = literal
             .parse::<f64>()
             .map_err(|_| format!("Invalid number at byte {start}"))?;
+        if value == 0.0
+            && literal
+                .bytes()
+                .take_while(|byte| !matches!(byte, b'e' | b'E'))
+                .any(|byte| matches!(byte, b'1'..=b'9'))
+        {
+            return Err("Nonzero literal is below the supported floating-point range".into());
+        }
         finite(value).map(Token::Number)
     }
 }
@@ -726,7 +908,7 @@ fn bisect(
     mut left: f64,
     mut right: f64,
     mut left_value: f64,
-    right_value: f64,
+    mut right_value: f64,
     vars: Vars,
 ) -> Result<f64, String> {
     // The residual must improve on both ends of the original bracket. Using
@@ -743,7 +925,18 @@ fn bisect(
             return Ok(midpoint);
         }
         let narrow = right - left <= 1e-12 * (1.0 + midpoint.abs());
-        if narrow && value.abs() <= residual_tolerance {
+        if narrow
+            && value.abs() <= residual_tolerance
+            && locally_consistent_root(
+                expression,
+                left,
+                right,
+                left_value,
+                value,
+                right_value,
+                vars,
+            )?
+        {
             return Ok(midpoint);
         }
         if midpoint == left || midpoint == right {
@@ -751,12 +944,65 @@ fn bisect(
         }
         if opposite(left_value, value) {
             right = midpoint;
+            right_value = value;
         } else {
             left = midpoint;
             left_value = value;
         }
     }
     Err("Root iteration limit reached; narrow the interval".into())
+}
+
+fn locally_consistent_root(
+    expression: &Expression,
+    left: f64,
+    right: f64,
+    left_value: f64,
+    midpoint_value: f64,
+    right_value: f64,
+    vars: Vars,
+) -> Result<bool, String> {
+    let width = right - left;
+    let midpoint = left + width * 0.5;
+    let quarter = left + (midpoint - left) * 0.5;
+    let three_quarters = midpoint + (right - midpoint) * 0.5;
+    if quarter == left
+        || quarter == midpoint
+        || three_quarters == midpoint
+        || three_quarters == right
+    {
+        return Ok(false);
+    }
+    // A small residual across a jump is not evidence of a root. Compare
+    // independent local samples with the bracket's secant before accepting.
+    // This is a bounded consistency check, not a proof of continuity.
+    let roundoff_fraction = 8.0 * f64::EPSILON * (1.0 + midpoint.abs()) / width;
+    if roundoff_fraction > 0.01 {
+        return Ok(false);
+    }
+    let quarter_value = expression.eval(Vars { x: quarter, ..vars })?;
+    let three_quarters_value = expression.eval(Vars {
+        x: three_quarters,
+        ..vars
+    })?;
+    let scale = [
+        left_value,
+        midpoint_value,
+        right_value,
+        quarter_value,
+        three_quarters_value,
+    ]
+    .iter()
+    .map(|value| value.abs())
+    .fold(0.0_f64, f64::max);
+    let tolerance = scale * (1e-5 + roundoff_fraction);
+    Ok([
+        (midpoint_value, left_value * 0.5 + right_value * 0.5),
+        (quarter_value, left_value * 0.75 + right_value * 0.25),
+        (three_quarters_value, left_value * 0.25 + right_value * 0.75),
+    ]
+    .iter()
+    .all(|(actual, expected)| (actual - expected).abs() <= tolerance))
 }
 
 /// Adaptive Simpson quadrature with explicit depth and evaluation limits.
@@ -1024,6 +1270,96 @@ mod tests {
     }
 
     #[test]
+    fn gradians_apply_to_direct_and_inverse_trigonometry() {
+        let vars = Vars {
+            angle: Angle::Grad,
+            ..Vars::default()
+        };
+        near(evaluate("sin(100)+cos(200)+tan(50)", vars).unwrap(), 1.0);
+        near(evaluate("asin(1)+acos(0)+atan(1)", vars).unwrap(), 250.0);
+        near(evaluate("sin(-100)+sin(500)", vars).unwrap(), 0.0);
+        near(evaluate("atan2(-1,-1)", vars).unwrap(), -150.0);
+        assert!(evaluate("tan(100)", vars).is_err());
+        let tiny = evaluate("sin(-1e-20)", vars).unwrap();
+        assert!((tiny / (-1e-20 * std::f64::consts::PI / 200.0) - 1.0).abs() < 1e-14);
+    }
+
+    #[test]
+    fn reciprocal_trigonometry_and_inverses() {
+        let vars = Vars {
+            angle: Angle::Deg,
+            ..Vars::default()
+        };
+        near(evaluate("sec(60)+csc(30)+cot(45)", vars).unwrap(), 5.0);
+        near(evaluate("asec(2)+acsc(2)+acot(1)", vars).unwrap(), 135.0);
+        near(evaluate("acot(-1)", vars).unwrap(), -45.0);
+        assert!(evaluate("sec(90)", vars).is_err());
+        assert!(evaluate("cot(180)", vars).is_err());
+        for source in [
+            "csc(0)",
+            "cot(pi)",
+            "csc(pi)",
+            "asec(0.5)",
+            "acsc(0)",
+            "acot(0)",
+        ] {
+            assert!(evaluate(source, Vars::default()).is_err(), "{source}");
+        }
+        let tiny = evaluate("csc(-1e-20)", vars).unwrap();
+        assert!((tiny * (-1e-20_f64).to_radians() - 1.0).abs() < 1e-14);
+    }
+
+    #[test]
+    fn hyperbolic_functions_do_not_use_angle_mode() {
+        let vars = Vars {
+            angle: Angle::Grad,
+            ..Vars::default()
+        };
+        for source in [
+            "asinh(sinh(2))",
+            "acosh(cosh(2))",
+            "atanh(tanh(2))",
+            "asech(sech(2))",
+            "acsch(csch(2))",
+            "acoth(coth(2))",
+        ] {
+            near(evaluate(source, vars).unwrap(), 2.0);
+        }
+        near(value("sech(0)"), 1.0);
+        near(value("acsch(csch(-2))"), -2.0);
+        near(value("acoth(coth(-2))"), -2.0);
+        for source in [
+            "acosh(0)",
+            "atanh(1)",
+            "atanh(-1)",
+            "csch(0)",
+            "coth(0)",
+            "asech(0)",
+            "asech(-1)",
+            "asech(2)",
+            "acsch(0)",
+            "acoth(1)",
+            "acoth(-1)",
+            "acoth(0)",
+        ] {
+            assert!(evaluate(source, vars).is_err(), "{source}");
+        }
+    }
+
+    #[test]
+    fn arbitrary_real_roots_support_negative_odd_degrees() {
+        near(value("root(81,4)"), 3.0);
+        near(value("root(-27,3)"), -3.0);
+        near(value("root(-8,-3)"), -0.5);
+        near(value("root(16,0.5)"), 256.0);
+        near(value("root(0,3)"), 0.0);
+        for source in ["root(2,0)", "root(0,-2)", "root(-4,2)", "root(-8,1.5)"] {
+            assert!(evaluate(source, Vars::default()).is_err(), "{source}");
+        }
+        assert!(compile("root(2)").is_err());
+    }
+
+    #[test]
     fn atan2_respects_quadrants_and_angle_mode() {
         near(value("atan2(1,-1)"), std::f64::consts::PI * 0.75);
         near(
@@ -1063,9 +1399,30 @@ mod tests {
     }
 
     #[test]
-    fn modulo_uses_signed_remainder() {
+    fn packed_dms_conversion_follows_windows_signed_normalization() {
+        near(value("dms(12.5)"), 12.3);
+        near(value("degrees(12.3)"), 12.5);
+        near(value("dms(-12.5)"), -12.3);
+        near(value("degrees(-12.3)"), -12.5);
+        near(value("dms(12+34/60+56/3600)"), 12.3456);
+        near(
+            value("degrees(12.3456)"),
+            12.0 + 34.0 / 60.0 + 56.0 / 3600.0,
+        );
+        near(value("degrees(1.9999)"), 2.6775);
+        near(value("degrees(dms(-0.12345))"), -0.12345);
+        near(value("dms(0)+degrees(0)"), 0.0);
+        near(value("dms(1e20)"), 1e20);
+    }
+
+    #[test]
+    fn scientific_modulo_follows_the_divisor_sign() {
         near(value("5.5%2"), 1.5);
-        near(value("-5%2"), -1.0);
+        near(value("-5%2"), 1.0);
+        near(value("5%-2"), -1.0);
+        near(value("-5%-2"), -1.0);
+        near(value("5.5%-2"), -0.5);
+        near(value("4%-2"), 0.0);
     }
 
     #[test]
@@ -1122,6 +1479,48 @@ mod tests {
                 }
             )
             .is_err()
+        );
+    }
+
+    #[test]
+    fn nonzero_literals_must_not_underflow_to_zero() {
+        for source in ["1e-9999", "sin(1e-9999)", "-1E-9999"] {
+            assert_eq!(
+                evaluate(source, Vars::default()).unwrap_err(),
+                "Nonzero literal is below the supported floating-point range",
+                "{source}"
+            );
+        }
+        let decimal = format!("0.{}1", "0".repeat(324));
+        assert!(evaluate(&decimal, Vars::default()).is_err());
+        for source in ["0", "0.0", "0e-9999", "0E9999"] {
+            assert_eq!(evaluate(source, Vars::default()).unwrap(), 0.0, "{source}");
+        }
+        assert!(value("1e-323") > 0.0);
+    }
+
+    #[test]
+    fn nonzero_powers_must_not_underflow_to_zero() {
+        for source in ["(1e-200)^5000", "pow(1e-200,5000)", "(-1e-200)^5001"] {
+            assert_eq!(
+                evaluate(source, Vars::default()).unwrap_err(),
+                "Power result is below the supported floating-point range",
+                "{source}"
+            );
+        }
+        near(value("0^2"), 0.0);
+        near(value("0^0"), 1.0);
+        near(value("2^0.5"), 2.0_f64.sqrt());
+        near(
+            evaluate(
+                "sin(30)",
+                Vars {
+                    angle: Angle::Deg,
+                    ..Vars::default()
+                },
+            )
+            .unwrap(),
+            0.5,
         );
     }
 
@@ -1253,6 +1652,28 @@ mod tests {
         assert!(root("tan(x)", 1.0, 2.0, Vars::default()).is_err());
         assert!(root("sign(x-0.12345)+1-1e-10", 0.0, 1.0, Vars::default()).is_err());
         assert!(root("sign(x-0.12345)-1+1e-10", 0.0, 1.0, Vars::default()).is_err());
+    }
+
+    #[test]
+    fn root_rejects_small_discontinuous_sign_changes_at_different_scales() {
+        for scale in ["1e-200", "1", "1e200"] {
+            let source = format!("{scale}*(sign(x-0.12345)+0.5)*(1e-15+abs(x-0.12345))");
+            assert!(
+                root(&source, 0.0, 1.0, Vars::default()).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn root_local_consistency_check_preserves_scaled_smooth_roots() {
+        for scale in ["1e-200", "1", "1e200"] {
+            let source = format!("{scale}*(x^2-2)");
+            near(
+                root(&source, 0.0, 2.0, Vars::default()).unwrap(),
+                2.0_f64.sqrt(),
+            );
+        }
     }
 
     #[test]
