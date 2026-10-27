@@ -3,126 +3,265 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>局域网信使</title>
+    <title>内网通信</title>
     <style>
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
       body {
+        margin: 0;
         padding: 0;
+        background: var(--background);
+      }
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+      button {
+        -webkit-tap-highlight-color: transparent;
+      }
+      button:not(:disabled) {
+        transition:
+          background 160ms,
+          border-color 160ms,
+          color 160ms,
+          transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      button:not(:disabled):active {
+        transform: scale(0.96);
       }
       button.secondary {
         background: var(--background);
         color: var(--foreground);
         border: 1px solid var(--border);
       }
-      .app {
-        max-width: 1500px;
-        margin: auto;
-        min-height: 100dvh;
-        padding: 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+      button.icon-button {
+        width: 36px;
+        height: 36px;
+        padding: 8px;
+        flex: 0 0 auto;
+        border: 0;
+        background: transparent;
+        color: var(--muted-foreground);
+        border-radius: 10px;
       }
-      .top {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+      button.icon-button:hover,
+      button.icon-button[aria-expanded="true"],
+      button.icon-button[aria-pressed="true"] {
+        background: var(--accent);
+        color: var(--foreground);
       }
-      h1 {
-        margin: 0;
-        font-size: 1.4rem;
-        letter-spacing: -0.03em;
+      button svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
       }
-      h2 {
-        margin: 0;
-        font-size: 1rem;
-      }
+      h1,
+      h2,
+      h3,
       p {
         margin: 0;
       }
+      h1 {
+        font-size: 1.05rem;
+        letter-spacing: -0.03em;
+        font-weight: 700;
+      }
+      h2 {
+        font-size: 1rem;
+        font-weight: 650;
+      }
+      h3 {
+        font-size: 0.85rem;
+        font-weight: 650;
+      }
       .muted {
         color: var(--muted-foreground);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        line-height: 1.5;
       }
-      .status {
-        margin-left: auto;
-        flex: 0 0 auto;
-        width: 11em;
-        border: 1px solid var(--border);
-        border-radius: 99px;
-        padding: 5px 11px;
-        font-size: 0.8rem;
-        white-space: nowrap;
-        text-align: center;
-        font-variant-numeric: tabular-nums;
-      }
-      .status.on {
-        color: var(--primary);
-        background: var(--accent);
-      }
-      .status.error,
-      #draft-count[data-invalid="true"] {
-        color: var(--destructive);
-      }
-      .layout {
+      .app {
+        position: relative;
         display: grid;
-        grid-template-columns: 230px minmax(0, 1fr) 260px;
-        gap: 1px;
-        border: 1px solid var(--border);
-        border-radius: 15px;
-        overflow: hidden;
-        background: var(--border);
-        min-height: 570px;
-        height: calc(100dvh - 130px);
+        grid-template-columns: 48px var(--conversation-width, 224px) 6px minmax(
+            0,
+            1fr
+          );
+        height: 100dvh;
+        min-height: 0;
+        overflow: clip;
+        isolation: isolate;
       }
-      .contacts,
-      .chat,
-      .settings {
-        background: var(--background);
-        min-width: 0;
-      }
-      .contacts {
+      .rail {
         display: flex;
         flex-direction: column;
-        padding: 14px 10px;
+        align-items: center;
         gap: 12px;
+        padding: 16px 8px 12px;
+        background: color-mix(in oklab, var(--muted) 80%, var(--background));
+        border-right: 1px solid var(--border);
       }
-      .contacts h2 {
+      .rail .my-avatar {
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
+        border-radius: 50%;
+        margin-bottom: 12px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .rail .icon-button {
+        width: 32px;
+        height: 32px;
+        min-height: 0;
+        padding: 6px;
+        border-radius: 9px;
+      }
+      .rail .rail-selected {
+        color: var(--primary);
+        background: color-mix(in oklab, var(--primary) 12%, transparent);
+        position: relative;
+      }
+      .rail-selected:before {
+        content: "";
+        position: absolute;
+        left: -8px;
+        width: 3px;
+        top: 9px;
+        bottom: 9px;
+        background: var(--primary);
+        border-radius: 50%;
+      }
+      .rail-space {
+        flex: 1;
+      }
+      .contacts {
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: color-mix(in oklab, var(--muted) 38%, var(--background));
+        border-right: 1px solid var(--border);
+      }
+      .list-header {
+        padding: 23px 18px 16px;
+        display: grid;
+        gap: 15px;
+        flex-shrink: 0;
+      }
+      .list-heading {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 8px;
       }
-      #peer-count {
-        flex-shrink: 0;
-        font-variant-numeric: tabular-nums;
+      .list-heading .icon-button {
+        width: 29px;
+        height: 29px;
+        padding: 5px;
+        border: 1px solid var(--border);
+        background: var(--background);
+        border-radius: 9px;
+      }
+      .search-wrap {
+        position: relative;
+      }
+      .search-wrap svg {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: var(--muted-foreground);
+        stroke-width: 1.7;
+      }
+      #search {
+        width: 100%;
+        height: 35px;
+        padding-left: 32px;
+        background: color-mix(in oklab, var(--background) 65%, var(--muted));
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        font-size: 0.78rem;
+      }
+      .list-caption {
+        padding: 1px 18px 9px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .status {
+        font-size: 0.7rem;
+        display: block;
+        color: var(--muted-foreground);
+        margin-top: 4px;
+        line-height: 1.5;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 175px;
+      }
+      .status:before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        margin-right: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        vertical-align: middle;
+      }
+      .status.on {
+        color: var(--primary);
+      }
+      .status.error,
+      #draft-count[data-invalid="true"] {
+        color: var(--destructive);
       }
       .contact-list {
-        overflow: auto;
         flex: 1;
         min-height: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
+        overflow: auto;
+        padding: 0 8px 12px;
+      }
+      .contact-list > .muted {
+        padding: 20px 10px;
+        text-align: center;
       }
       .contact {
         display: flex;
-        gap: 9px;
-        padding: 10px;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 10px;
         width: 100%;
-        min-height: 4.25rem;
-        height: 4.25rem;
-        flex-shrink: 0;
+        height: 74px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        margin-bottom: 3px;
         background: transparent;
         color: var(--foreground);
         text-align: left;
         justify-content: flex-start;
-        border: 1px solid transparent;
+        position: relative;
       }
-      .contact:hover,
+      .contact:hover {
+        background: color-mix(in oklab, var(--accent) 60%, transparent);
+      }
       .contact[aria-pressed="true"] {
         background: var(--accent);
-        border-color: var(--border);
+        border-color: color-mix(in oklab, var(--primary) 14%, var(--border));
+        box-shadow: 0 2px 8px
+          color-mix(in oklab, var(--foreground) 3%, transparent);
       }
       .avatar {
         display: grid;
@@ -130,25 +269,129 @@
         width: 36px;
         height: 36px;
         flex: 0 0 36px;
-        border-radius: 12px;
-        background: var(--muted);
-        color: var(--foreground);
-        font-weight: 700;
+        border-radius: 50%;
+        background: color-mix(in oklab, var(--primary) 10%, var(--background));
+        color: var(--primary);
+        user-select: none;
+        border: 1px solid color-mix(in oklab, var(--primary) 10%, var(--border));
       }
+      .avatar[data-avatar="self"] {
+        background: var(--primary);
+        color: var(--primary-foreground);
+        border-color: transparent;
+      }
+      .avatar[data-avatar="bot"] {
+        background: var(--accent);
+        color: var(--accent-foreground);
+        border-radius: 12px;
+        border-color: color-mix(in oklab, var(--primary) 25%, var(--border));
+      }
+      .avatar-mark {
+        width: 22px;
+        height: 22px;
+      }
+      .vector-icon {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
+      }
+      .empty .empty-mark {
+        width: 34px;
+        height: 34px;
+        stroke-width: 1.4;
+      }
+      .file-symbol .vector-icon {
+        width: 23px;
+        height: 26px;
+      }
+      .message > .avatar .avatar-mark {
+        width: 18px;
+        height: 18px;
+      }
+      .resize-handle {
+        position: relative;
+        flex-shrink: 0;
+        border: 0;
+        background: var(--background);
+        outline: none;
+        touch-action: none;
+        user-select: none;
+        z-index: 2;
+      }
+      .resize-handle::before {
+        content: "";
+        position: absolute;
+        background: var(--border);
+        transition: background 160ms;
+      }
+      .resize-handle::after {
+        content: "";
+        position: absolute;
+        background: var(--muted-foreground);
+        opacity: 0.35;
+        border-radius: 4px;
+        transition:
+          background 160ms,
+          opacity 160ms;
+      }
+      .resize-handle:hover::after,
+      .resize-handle:focus-visible::after,
+      .resize-handle[data-dragging="true"]::after {
+        background: var(--primary);
+        opacity: 1;
+      }
+      .resize-handle:focus-visible {
+        box-shadow: inset 0 0 0 1px var(--ring);
+      }
+      #conversation-resizer {
+        cursor: col-resize;
+      }
+      #conversation-resizer::before {
+        inset: 0 auto 0 2px;
+        width: 1px;
+      }
+      #conversation-resizer::after {
+        width: 2px;
+        height: 30px;
+        left: 2px;
+        top: calc(50% - 15px);
+      }
+      #composer-resizer {
+        height: 6px;
+        cursor: row-resize;
+      }
+      #composer-resizer::before {
+        inset: 2px 0 auto;
+        height: 1px;
+      }
+      #composer-resizer::after {
+        height: 2px;
+        width: 36px;
+        top: 2px;
+        left: calc(50% - 18px);
+      }
+      .app[data-resizing] {
+        user-select: none;
+      }
+
       .contact-copy {
         flex: 1;
         min-width: 0;
         display: grid;
-        gap: 3px;
+        gap: 4px;
       }
       .contact-copy > .muted {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        font-size: 0.72rem;
       }
       .contact-name {
         display: flex;
-        gap: 5px;
+        gap: 6px;
         align-items: center;
         min-width: 0;
       }
@@ -157,52 +400,71 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 0.9rem;
+        font-size: 0.83rem;
+        font-weight: 600;
       }
       .dot {
-        width: 7px;
-        height: 7px;
-        flex: 0 0 7px;
+        width: 6px;
+        height: 6px;
+        flex: 0 0 6px;
         background: var(--muted-foreground);
         border-radius: 50%;
       }
       .dot.online {
         background: var(--primary);
       }
+      .contact-end {
+        display: grid;
+        align-self: stretch;
+        justify-items: end;
+        align-content: space-between;
+        padding: 3px 0;
+        flex: 0 0 auto;
+      }
+      .contact-time {
+        color: var(--muted-foreground);
+        font-size: 0.63rem;
+        font-variant-numeric: tabular-nums;
+      }
       .badge {
-        min-width: 20px;
-        flex-shrink: 0;
+        min-width: 18px;
         padding: 1px 5px;
         border-radius: 20px;
         background: var(--primary);
         color: var(--primary-foreground);
-        font-size: 0.7rem;
+        font-size: 0.65rem;
+        line-height: 1.4;
         text-align: center;
         font-variant-numeric: tabular-nums;
       }
+      .draft-label {
+        color: var(--destructive);
+      }
       .chat {
+        min-width: 0;
+        min-height: 0;
         display: flex;
         flex-direction: column;
-        min-height: 0;
+        background: var(--background);
       }
       .chat-head {
+        position: relative;
         display: flex;
         flex-shrink: 0;
         align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 14px 18px;
-        min-height: 76px;
+        gap: 10px;
+        padding: 6px 20px;
+        min-height: 56px;
         border-bottom: 1px solid var(--border);
       }
-      .head-actions {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
+      .chat-head .avatar {
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
+        border-radius: 50%;
       }
       .peer-copy {
-        flex: 1 1 12rem;
+        flex: 1;
         min-width: 0;
       }
       #peer-name,
@@ -210,48 +472,87 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-      }
-      #peer-name {
-        line-height: 1.5;
+        line-height: 1.35;
       }
       #peer-detail {
-        line-height: 1.5;
-        min-height: 1.5em;
+        font-size: 0.7rem;
+        min-height: 1.35em;
       }
       .messages {
         flex: 1;
         overflow: auto;
         min-height: 0;
-        padding: 20px;
-        background: color-mix(in oklab, var(--muted) 38%, var(--background));
+        padding: 24px 28px;
+        background: color-mix(in oklab, var(--muted) 24%, var(--background));
+        overscroll-behavior: contain;
       }
       .empty {
-        display: grid;
-        place-content: center;
-        gap: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 11px;
         text-align: center;
-        min-height: 220px;
-        padding: 18px;
+        min-height: 100%;
+        padding: 24px;
         color: var(--muted-foreground);
       }
       .empty .symbol {
-        font-size: 2.8rem;
-        line-height: 1;
-        opacity: 0.7;
+        display: grid;
+        place-items: center;
+        width: 78px;
+        height: 78px;
+        margin-bottom: 9px;
+        font-size: 2.1rem;
+        border: 1px solid var(--border);
+        background: var(--background);
+        color: var(--primary);
+        border-radius: 25px;
+        box-shadow: 0 8px 24px
+          color-mix(in oklab, var(--foreground) 3%, transparent);
+      }
+      .empty strong {
+        color: var(--foreground);
+        font-size: 0.96rem;
+        font-weight: 600;
+      }
+      .empty p {
+        max-width: 260px;
+      }
+      .empty .secondary {
+        margin-top: 5px;
+        font-size: 0.78rem;
       }
       .message {
         display: flex;
-        flex-direction: column;
         align-items: flex-start;
-        margin-bottom: 16px;
-        gap: 5px;
+        margin-bottom: 22px;
+        gap: 9px;
       }
       .message.outgoing {
+        flex-direction: row-reverse;
+      }
+      .message > .avatar {
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
+        border-radius: 50%;
+        font-size: 0.75rem;
+      }
+      .message-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        min-width: 0;
+        max-width: min(82%, 580px);
+      }
+      .outgoing .message-content {
         align-items: flex-end;
       }
       .message-meta {
-        font-size: 0.72rem;
         color: var(--muted-foreground);
+        font-size: 0.65rem;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -259,337 +560,1135 @@
         line-height: 1.5;
       }
       .bubble {
-        max-width: min(88%, 570px);
         padding: 10px 13px;
         border: 1px solid var(--border);
-        border-radius: 3px 13px 13px;
+        border-radius: 3px 12px 12px;
         background: var(--background);
         white-space: pre-wrap;
         overflow-wrap: anywhere;
-        font-size: 0.9rem;
-        line-height: 1.6;
+        font-size: 0.86rem;
+        line-height: 1.65;
+        text-align: left;
       }
       .outgoing .bubble {
-        border-radius: 13px 3px 13px 13px;
-        background: var(--primary);
-        color: var(--primary-foreground);
+        border-radius: 12px 3px 12px 12px;
+        background: color-mix(in oklab, var(--primary) 16%, var(--background));
+        border-color: color-mix(in oklab, var(--primary) 16%, var(--border));
+        color: var(--foreground);
+      }
+      .bubble.sticker {
+        font-size: 3.5rem;
+        line-height: 1.25;
+        padding: 2px 4px;
+        background: transparent;
+        border: 0;
+      }
+      .thumbnail-button {
+        display: block;
+        width: 100%;
+        height: auto;
+        padding: 0;
+        border: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--muted);
+      }
+      .image-thumbnail {
+        display: block;
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+      }
+      .attachment-card {
+        width: min(270px, 100%);
+        padding: 12px;
+        border: 1px solid var(--border);
+        background: var(--background);
+        border-radius: 12px;
+        color: var(--foreground);
+        display: grid;
+        gap: 9px;
+      }
+      .attachment-info {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+      }
+      .file-symbol {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 44px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--muted);
+        color: var(--primary);
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
+      .file-copy {
+        min-width: 0;
+      }
+      .file-name {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 550;
+        overflow-wrap: anywhere;
+      }
+      .attachment-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .attachment-actions button {
+        height: 28px;
+        min-height: 28px;
+        font-size: 0.7rem;
+        padding: 3px 9px;
+        border-radius: 6px;
       }
       .composer {
+        position: relative;
         flex-shrink: 0;
-        border-top: 1px solid var(--border);
-        padding: 12px 16px;
+        border-top: 0;
+        height: var(--composer-height, 168px);
+        flex-basis: var(--composer-height, 168px);
+        padding: 7px 18px 10px;
         display: grid;
-        gap: 8px;
+        grid-template-rows: 33px minmax(0, 1fr) 31px;
+        gap: 4px;
+      }
+      .composer-tools {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .composer-tools .icon-button {
+        width: 33px;
+        height: 33px;
+        padding: 7px;
+        border-radius: 8px;
+      }
+      .tool-divider {
+        width: 1px;
+        height: 17px;
+        background: var(--border);
+        margin: 0 6px;
+      }
+      .composer-hint {
+        margin-left: auto;
+        font-size: 0.65rem;
+        color: var(--muted-foreground);
       }
       .composer textarea {
-        min-height: 84px;
-        max-height: 200px;
-        resize: vertical;
-        background: var(--background);
+        width: 100%;
+        min-height: 0;
+        height: 100%;
+        max-height: none;
+        resize: none;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        padding: 6px 3px;
+        font-size: 0.86rem;
+        line-height: 1.6;
+        box-shadow: none;
+      }
+      .composer textarea:focus-visible {
+        outline-offset: 1px;
       }
       .composer-footer {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 8px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
         align-items: center;
       }
       #draft-count {
+        font-size: 0.65rem;
+        font-variant-numeric: tabular-nums;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-variant-numeric: tabular-nums;
       }
-      .settings {
+      #send {
+        min-width: 85px;
+        height: 31px;
+        font-size: 0.77rem;
+        padding: 4px 17px;
+        border-radius: 8px;
+      }
+      .popover {
+        z-index: 5;
+        position: absolute;
+        border: 1px solid var(--border);
+        background: var(--background);
+        border-radius: 16px;
+        box-shadow:
+          0 12px 40px color-mix(in oklab, var(--foreground) 12%, transparent),
+          0 2px 8px color-mix(in oklab, var(--foreground) 4%, transparent);
+      }
+      .popover:not([hidden]) {
+        animation: panel-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      }
+      #settings-panel {
+        position: fixed;
+        left: 56px;
+        bottom: 14px;
+        width: min(380px, calc(100% - 68px));
+        height: min(640px, calc(100% - 28px));
+        max-height: calc(100% - 28px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         padding: 16px;
+      }
+      #settings-panel > .panel-heading,
+      #settings-panel > .mode-switch {
+        flex-shrink: 0;
+      }
+      #settings-scroll {
+        flex: 1;
+        min-height: 0;
         overflow: auto;
+        overscroll-behavior: contain;
+        padding-right: 4px;
+        scrollbar-gutter: stable;
       }
-      .settings > summary {
-        font-weight: 650;
-        cursor: pointer;
-        margin-bottom: 14px;
-      }
-      .settings-content {
+      #mode-settings {
         display: grid;
-        gap: 16px;
       }
-      .settings section {
+      #mode-settings > * {
+        grid-area: 1 / 1;
+      }
+      #mode-settings > [hidden] {
+        display: block !important;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      .panel-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .panel-heading h2 {
+        font-size: 0.93rem;
+      }
+      .panel-heading .icon-button {
+        width: 28px;
+        height: 28px;
+        padding: 5px;
+      }
+      .mode-switch {
         display: grid;
-        align-content: start;
+        grid-template-columns: 1fr 1fr;
+        gap: 3px;
+        padding: 4px;
+        border: 1px solid var(--border);
+        background: var(--muted);
+        border-radius: 11px;
+        margin-bottom: 16px;
+      }
+      .mode-switch button {
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted-foreground);
+        height: 33px;
+        font-size: 0.79rem;
+      }
+      .mode-switch button[aria-pressed="true"] {
+        background: var(--background);
+        border-color: var(--border);
+        color: var(--foreground);
+        box-shadow: 0 1px 4px
+          color-mix(in oklab, var(--foreground) 7%, transparent);
+      }
+      .settings-section {
+        display: grid;
+        gap: 10px;
+        padding: 15px 0;
+        border-top: 1px solid var(--border);
+      }
+      .settings-section:first-of-type {
+        padding-top: 0;
+        border-top: 0;
+      }
+      .settings-row {
+        display: flex;
         gap: 8px;
+        align-items: end;
       }
-      label {
+      .settings-row > label {
+        flex: 1;
+        min-width: 0;
+      }
+      .settings-row > button {
+        flex-shrink: 0;
+        font-size: 0.74rem;
+      }
+      .settings-row .port-label {
+        flex: 0 0 88px;
+      }
+      .settings-section label {
         display: grid;
         gap: 5px;
-        font-size: 0.8rem;
+        font-size: 0.73rem;
+        color: var(--muted-foreground);
+      }
+      .settings-section input {
+        width: 100%;
+        font-size: 0.78rem;
+      }
+      .settings-section > button {
+        font-size: 0.76rem;
+      }
+      #addresses {
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 11px;
+        background: var(--muted);
+        user-select: text;
+        font-size: 0.72rem;
+        line-height: 1.6;
+      }
+      #addresses[data-running="true"] {
+        font-family: ui-monospace, monospace;
       }
       .connection-details {
-        border: 1px solid var(--border);
-        background: var(--muted);
-        border-radius: 10px;
-        padding: 10px;
+        font-size: 0.74rem;
+        line-height: 1.7;
+        color: var(--muted-foreground);
       }
-      .connection-details > summary {
+      .connection-details summary {
         cursor: pointer;
-        font-size: 0.85rem;
+        color: var(--foreground);
       }
-      .connection-details-content {
+      .connection-details p {
+        margin-top: 9px;
+      }
+      #clear {
+        width: 100%;
+        font-size: 0.75rem;
+      }
+      #conversation-menu {
+        top: calc(100% + 4px);
+        right: 20px;
+        width: 180px;
+        padding: 6px;
+        border-radius: 11px;
+      }
+      #conversation-menu button {
+        width: 100%;
+        border: 0;
+        text-align: left;
+        justify-content: flex-start;
+        background: transparent;
+        color: var(--foreground);
+        font-size: 0.77rem;
+        padding: 8px 10px;
+        border-radius: 6px;
+      }
+      #conversation-menu button:hover {
+        background: var(--accent);
+      }
+      #conversation-menu #forget {
+        color: var(--destructive);
+      }
+      #emoji-picker {
+        left: 18px;
+        bottom: calc(100% + 8px);
+        width: min(340px, calc(100% - 36px));
+        padding: 12px;
+        border-radius: 14px;
+      }
+      .picker-tabs {
+        display: flex;
+        gap: 5px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 10px;
+      }
+      .picker-tabs button {
+        height: 30px;
+        border: 0;
+        background: transparent;
+        color: var(--muted-foreground);
+        font-size: 0.77rem;
+        border-radius: 7px;
+      }
+      .picker-tabs button[aria-selected="true"] {
+        background: var(--accent);
+        color: var(--foreground);
+      }
+      #emoji-grid {
         display: grid;
-        gap: 10px;
-        padding-top: 10px;
-        font-size: 0.8rem;
-        line-height: 1.65;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
       }
-      .address {
-        font: inherit;
-        font-size: 0.85rem;
-        overflow-wrap: anywhere;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-        height: calc(3em + 18px);
-        line-height: 1.5;
-        padding: 9px;
-        background: var(--muted);
+      #emoji-grid button {
+        padding: 4px;
+        border: 0;
+        background: transparent;
+        height: 36px;
+        font-size: 1.35rem;
         border-radius: 8px;
-        user-select: text;
       }
-      .address[data-running="true"] {
-        font-family: ui-monospace, monospace;
-        white-space: pre-line;
+      #emoji-grid button:hover {
+        background: var(--accent);
+        transform: translateY(-2px);
+      }
+      #emoji-grid[data-kind="sticker"] {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      #emoji-grid[data-kind="sticker"] button {
+        font-size: 2.5rem;
+        height: 62px;
+      }
+      .overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: color-mix(in oklab, var(--background) 68%, transparent);
+        backdrop-filter: blur(4px);
+      }
+      .dialog {
+        width: min(400px, 100%);
+        padding: 22px;
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 20px 80px
+          color-mix(in oklab, var(--foreground) 15%, transparent);
+      }
+      .dialog > p {
+        font-size: 0.85rem;
+        line-height: 1.8;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 22px;
       }
       #permission {
-        padding: 20px;
-        border: 1px solid var(--border);
-        border-radius: 12px;
+        position: absolute;
+        inset: 20px 20px 20px 68px;
+        z-index: 3;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        padding: 30px;
+        color: var(--muted-foreground);
+        background: var(--background);
+        line-height: 1.8;
+        font-size: 0.85rem;
+      }
+      #attachment-preview .dialog {
+        width: min(760px, 100%);
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      #preview-image {
+        display: block;
+        width: 100%;
+        min-height: 0;
+        max-height: 65dvh;
+        object-fit: contain;
+        border-radius: 9px;
         background: var(--muted);
       }
-      #confirmation {
-        border: 1px solid var(--destructive);
-        border-radius: 10px;
-        padding: 12px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-      #confirmation-text {
-        flex: 1 1 12rem;
-        min-width: 0;
+      #preview-name {
         overflow-wrap: anywhere;
       }
-      [hidden] {
-        display: none !important;
+      .message[data-new="true"] {
+        animation: message-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
       }
-      @media (max-width: 1050px) {
-        .layout {
-          grid-template-columns: 210px minmax(0, 1fr);
-          height: auto;
-          min-height: 600px;
+      @keyframes panel-in {
+        from {
+          opacity: 0;
+          transform: translateY(7px) scale(0.98);
         }
-        .settings {
-          grid-column: 1 / -1;
-          border-top: 1px solid var(--border);
-        }
-        .settings-content {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 20px;
-        }
-        .chat {
-          min-height: 540px;
-          max-height: 78dvh;
+        to {
+          opacity: 1;
+          transform: none;
         }
       }
-      @media (max-width: 640px) {
+      @keyframes message-in {
+        from {
+          opacity: 0;
+          transform: translateY(7px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      :root[data-active="false"] *,
+      :root[data-motion="reduced"] * {
+        animation: none !important;
+        transition: none !important;
+      }
+      @media (max-width: 900px) {
         .app {
-          padding: 10px;
+          grid-template-columns:
+            48px var(--conversation-width, 224px)
+            6px minmax(0, 1fr);
         }
-        .layout {
-          display: flex;
-          flex-direction: column;
+        .rail {
+          padding-inline: 8px;
         }
-        .contacts {
-          max-height: none;
-        }
-        .contact-list {
-          flex-direction: row;
-          min-height: 76px;
-        }
-        .contact {
-          min-width: 170px;
-          max-width: 210px;
-        }
-        .settings-content {
-          grid-template-columns: 1fr;
-        }
-        .chat {
-          min-height: 0;
-          max-height: none;
+        .list-header,
+        .list-caption {
+          padding-inline: 13px;
         }
         .messages {
+          padding: 20px 18px;
+        }
+        .chat-head {
+          padding-inline: 18px;
+        }
+        .composer {
+          padding-inline: 15px;
+        }
+        .message-content {
+          max-width: 85%;
+        }
+        #settings-panel {
+          left: 56px;
+        }
+      }
+      @media (max-width: 600px) {
+        .app {
+          grid-template-columns: 48px minmax(0, 1fr);
+          grid-template-rows: auto minmax(0, 1fr);
+        }
+        #conversation-resizer {
+          display: none;
+        }
+        .rail {
+          grid-row: 1/-1;
+          padding: 14px 6px 10px;
+          gap: 14px;
+        }
+        .rail .my-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          font-size: 0.85rem;
+          margin-bottom: 6px;
+        }
+        .rail .icon-button {
+          width: 32px;
+          height: 32px;
+          padding: 6px;
+        }
+        .rail-selected:before {
+          left: -6px;
+        }
+        .contacts {
+          grid-column: 2;
+          grid-row: 1;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+        .list-header {
+          padding: 12px 12px 9px;
+          gap: 9px;
+          grid-template-columns: 1fr minmax(90px, 42%);
+          align-items: center;
+        }
+        h1 {
+          font-size: 0.92rem;
+        }
+        .list-heading .icon-button {
+          display: none;
+        }
+        .status {
+          max-width: 140px;
+          margin-top: 1px;
+          font-size: 0.63rem;
+        }
+        .list-caption {
+          display: none;
+        }
+        .contact-list {
+          display: flex;
+          gap: 5px;
+          padding: 0 8px 7px;
+          max-height: 64px;
           flex: none;
-          height: clamp(14rem, 50dvh, 24rem);
-          padding: 12px;
+          min-height: 0;
+        }
+        .contact-list > .muted {
+          padding: 8px;
+          text-align: left;
+          font-size: 0.68rem;
+        }
+        .contact {
+          width: 158px;
+          min-width: 158px;
+          height: 54px;
+          padding: 8px;
+          margin: 0;
+          gap: 7px;
+          border-radius: 9px;
+        }
+        .contact .avatar {
+          width: 33px;
+          height: 33px;
+          flex-basis: 33px;
+          border-radius: 50%;
+          font-size: 0.77rem;
+        }
+        .contact-end {
+          display: none;
+        }
+        .contact-name strong {
+          font-size: 0.8rem;
+        }
+        .contact-copy > .muted {
+          font-size: 0.65rem;
+        }
+        .contact-copy {
+          gap: 2px;
+        }
+        .chat {
+          grid-column: 2;
+          grid-row: 2;
+        }
+        .chat-head {
+          min-height: 52px;
+          padding: 6px 12px;
+          gap: 8px;
+        }
+        .chat-head .avatar {
+          width: 30px;
+          height: 30px;
+          flex-basis: 30px;
+          border-radius: 50%;
+        }
+        #peer-name {
+          font-size: 0.86rem;
+        }
+        #peer-detail {
+          font-size: 0.63rem;
+        }
+        .messages {
+          padding: 16px 12px;
+        }
+        .message {
+          gap: 6px;
+          margin-bottom: 16px;
+        }
+        .message > .avatar {
+          display: none;
+        }
+        .message-content {
+          max-width: 94%;
         }
         .bubble {
-          max-width: 95%;
+          font-size: 0.8rem;
+          padding: 8px 11px;
         }
-        .chat-head,
         .composer {
+          padding: 5px 10px 10px;
+        }
+        .composer textarea {
+          min-height: 0;
+          max-height: none;
+          font-size: 0.8rem;
+        }
+        .composer-hint {
+          display: none;
+        }
+        #draft-count {
+          font-size: 0.59rem;
+        }
+        #settings-panel {
+          left: 54px;
+          bottom: 8px;
+          width: calc(100% - 62px);
+          height: min(640px, calc(100% - 16px));
+          max-height: calc(100% - 16px);
+          padding: 15px;
+        }
+        .empty {
+          padding: 16px 4px;
+        }
+        .empty strong {
+          font-size: 0.84rem;
+        }
+        .empty .symbol {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          font-size: 1.7rem;
+        }
+        .empty p {
+          font-size: 0.7rem;
+        }
+        .overlay {
           padding: 12px;
+        }
+        .dialog {
+          padding: 17px;
+        }
+        #conversation-menu {
+          right: 10px;
+        }
+        #emoji-picker {
+          left: 8px;
+          width: calc(100% - 16px);
+        }
+        #emoji-grid {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+        #permission {
+          inset: 12px 12px 12px 60px;
+          padding: 18px;
         }
       }
       @media (prefers-reduced-motion: reduce) {
         * {
-          scroll-behavior: auto !important;
+          animation: none !important;
           transition: none !important;
+          scroll-behavior: auto !important;
+        }
+      }
+      @media (forced-colors: active) {
+        .contact[aria-pressed="true"],
+        .mode-switch button[aria-pressed="true"] {
+          outline: 2px solid Highlight;
+        }
+        .dot {
+          background: CanvasText;
+        }
+        .dot.online {
+          background: Highlight;
         }
       }
     </style>
   </head>
   <body>
-    <main class="app">
-      <header class="top">
-        <div>
-          <h1>局域网信使</h1>
-        </div>
-        <span id="status" class="status" role="status" aria-live="polite"
-          >尚未监听</span
-        ><button id="refresh" class="secondary" type="button">刷新</button>
-      </header>
-      <div id="permission" hidden>
-        请在扩展中心为本插件启用“局域网消息”能力，再返回此页。聊天不会自动开启监听。
-      </div>
-      <div id="confirmation" hidden role="group" aria-label="确认历史操作">
-        <p id="confirmation-text"></p>
-        <button id="confirm-action" type="button">确认操作</button
-        ><button id="cancel-action" type="button" class="secondary">
-          取消
+    <main class="app" id="layout">
+      <aside class="rail" aria-label="应用工具">
+        <div
+          id="my-avatar"
+          class="avatar my-avatar"
+          role="img"
+          aria-label="我的设备"
+        ></div>
+        <button
+          id="conversations-toggle"
+          class="icon-button rail-selected"
+          type="button"
+          aria-label="会话"
+          title="会话"
+          aria-pressed="true"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M16 3H5a2 2 0 0 0-2 2v11l4-4h9a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"
+            />
+            <path d="M21 7v14l-4-4H7" />
+          </svg>
         </button>
-      </div>
-      <div class="layout" id="layout">
-        <aside class="contacts" aria-label="联系人和会话">
-          <h2>会话 <span id="peer-count" class="muted">0</span></h2>
-          <input
-            id="search"
-            aria-label="搜索联系人"
-            placeholder="搜索昵称或 IP"
-          />
-          <nav id="contacts" class="contact-list" aria-label="选择会话"></nav>
-        </aside>
-        <section class="chat" aria-label="当前聊天">
-          <header class="chat-head">
-            <div class="peer-copy">
-              <h2 id="peer-name">选择一位朋友</h2>
-              <p id="peer-detail" class="muted">未选择会话</p>
+        <div class="rail-space"></div>
+        <button
+          id="refresh"
+          class="icon-button"
+          type="button"
+          aria-label="刷新"
+          title="刷新"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M20 7v5h-5M4 17v-5h5" />
+            <path d="M6.1 7a7 7 0 0 1 11.5-2L20 8M4 16l2.4 3A7 7 0 0 0 18 17" />
+          </svg></button
+        ><button
+          id="settings-toggle"
+          class="icon-button"
+          type="button"
+          aria-label="连接与设置"
+          title="连接与设置"
+          aria-expanded="false"
+          aria-controls="settings-panel"
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="m9 3-.6 2.2-2 .9L4.3 5.5l-2 3.5 1.6 1.6v2.8L2.3 15l2 3.5 2.1-.6 2 .9L9 21h4l.6-2.2 2-.9 2.1.6 2-3.5-1.6-1.6v-2.8L19.7 9l-2-3.5-2.1.6-2-.9L13 3Z"
+            />
+            <circle cx="11" cy="12" r="3" />
+          </svg>
+        </button>
+      </aside>
+      <aside class="contacts" id="conversation-list" aria-label="联系人和会话">
+        <header class="list-header">
+          <div class="list-heading">
+            <div>
+              <h1>内网通信</h1>
+              <span id="status" class="status" role="status" aria-live="polite"
+                >未连接</span
+              >
             </div>
-            <div class="head-actions">
-              <button id="reconnect" type="button" class="secondary" disabled>
-                重新连接</button
-              ><button id="export" type="button" class="secondary" disabled>
-                导出会话</button
-              ><button id="forget" type="button" class="secondary" disabled>
-                移除联系人
+            <button
+              id="add-contact"
+              type="button"
+              class="icon-button"
+              aria-label="连接设备"
+              title="连接设备"
+            >
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+          </div>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m16 16 4 4" /></svg
+            ><input
+              id="search"
+              aria-label="搜索联系人与消息"
+              placeholder="搜索"
+              autocomplete="off"
+            />
+          </div>
+        </header>
+        <div class="list-caption">
+          <span class="muted">最近会话</span
+          ><span id="peer-count" class="muted">0</span>
+        </div>
+        <nav id="contacts" class="contact-list" aria-label="选择会话"></nav>
+      </aside>
+      <div
+        id="conversation-resizer"
+        class="resize-handle"
+        tabindex="0"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="调整会话栏宽度"
+        aria-controls="conversation-list chat"
+        aria-valuemin="180"
+        aria-valuemax="360"
+        aria-valuenow="224"
+      ></div>
+      <section class="chat" id="chat" aria-label="当前聊天">
+        <header class="chat-head" id="chat-header">
+          <div id="peer-avatar" class="avatar" aria-hidden="true"></div>
+          <div class="peer-copy">
+            <h2 id="peer-name">选择一位朋友</h2>
+            <p id="peer-detail" class="muted">未选择会话</p>
+          </div>
+          <button
+            id="conversation-more"
+            class="icon-button"
+            type="button"
+            aria-label="会话操作"
+            title="会话操作"
+            aria-expanded="false"
+            aria-controls="conversation-menu"
+          >
+            <svg viewBox="0 0 24 24">
+              <circle cx="5" cy="12" r="1" />
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="19" cy="12" r="1" />
+            </svg>
+          </button>
+          <div
+            id="conversation-menu"
+            class="popover"
+            hidden
+            role="group"
+            aria-label="会话操作"
+          >
+            <button id="reconnect" type="button" disabled>重新连接</button
+            ><button id="export" type="button" disabled>导出会话</button
+            ><button id="forget" type="button" disabled>移除联系人</button>
+          </div>
+        </header>
+        <div
+          id="messages"
+          class="messages"
+          tabindex="0"
+          role="log"
+          aria-label="消息记录"
+          aria-live="polite"
+          aria-relevant="additions"
+        ></div>
+        <div
+          id="composer-resizer"
+          class="resize-handle"
+          tabindex="0"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="调整输入区高度"
+          aria-controls="messages composer"
+          aria-valuemin="128"
+          aria-valuemax="360"
+          aria-valuenow="168"
+        ></div>
+        <form id="composer" class="composer">
+          <div class="composer-tools" role="group" aria-label="消息工具">
+            <button
+              id="emoji-toggle"
+              class="icon-button"
+              type="button"
+              aria-label="表情与表情包"
+              title="表情与表情包"
+              aria-expanded="false"
+              aria-controls="emoji-picker"
+            >
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M8 14a4.5 4.5 0 0 0 8 0M8 9h.01M16 9h.01" />
+              </svg></button
+            ><button
+              id="send-image"
+              class="icon-button"
+              type="button"
+              aria-label="发送图片"
+              title="发送图片"
+            >
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="4" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="m21 15-5-5L5 21" />
+              </svg></button
+            ><button
+              id="send-file"
+              class="icon-button"
+              type="button"
+              aria-label="发送文件"
+              title="发送文件"
+            >
+              <svg viewBox="0 0 24 24">
+                <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z" />
+                <path d="M3 10h18" />
+              </svg></button
+            ><span class="tool-divider" aria-hidden="true"></span
+            ><span id="composer-hint" class="composer-hint"
+              >Enter 发送 · Shift + Enter 换行</span
+            >
+          </div>
+          <div
+            id="emoji-picker"
+            class="popover"
+            hidden
+            role="group"
+            aria-label="选择表情"
+          >
+            <div class="picker-tabs" role="tablist" aria-label="表情分类">
+              <button
+                id="emoji-tab"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="emoji-grid"
+              >
+                表情</button
+              ><button
+                id="sticker-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="emoji-grid"
+              >
+                大表情
               </button>
             </div>
-          </header>
-          <div
-            id="messages"
-            class="messages"
-            tabindex="0"
-            role="log"
-            aria-label="消息记录"
-            aria-live="polite"
-            aria-relevant="additions"
-          ></div>
-          <form id="composer" class="composer">
-            <label for="draft" class="muted">发送给当前联系人</label
-            ><textarea
-              id="draft"
-              maxlength="8192"
-              placeholder="写点什么吧…  Enter 发送，Shift + Enter 换行"
-              aria-label="消息内容"
-              aria-describedby="draft-count"
-            ></textarea>
-            <div class="composer-footer">
-              <span id="draft-count" class="muted">0 / 8192 字节</span
-              ><button id="send" type="button" disabled>发送消息</button>
-            </div>
-          </form>
-        </section>
-        <details class="settings" open>
-          <summary>连接与设置</summary>
-          <div class="settings-content">
-            <section>
-              <h2>我的设备</h2>
+            <div id="emoji-grid" role="tabpanel" data-kind="emoji"></div>
+          </div>
+          <textarea
+            id="draft"
+            maxlength="8192"
+            placeholder="写点什么吧…"
+            aria-label="消息内容"
+            aria-describedby="draft-count"
+          ></textarea>
+          <div class="composer-footer">
+            <span id="draft-count" class="muted">0 / 8192 字节</span
+            ><button
+              id="cancel-transfer"
+              type="button"
+              class="secondary"
+              hidden
+              aria-label="停止传输并断开连接"
+              title="停止传输并断开连接"
+            >
+              停止传输</button
+            ><button id="send" type="button" disabled>发送消息</button>
+          </div>
+        </form>
+      </section>
+      <section
+        id="settings-panel"
+        class="popover"
+        hidden
+        role="dialog"
+        aria-label="连接与设置"
+        aria-labelledby="settings-title"
+      >
+        <div class="panel-heading">
+          <h2 id="settings-title">连接与设置</h2>
+          <button
+            id="close-settings"
+            class="icon-button"
+            type="button"
+            aria-label="关闭设置"
+            title="关闭设置"
+          >
+            <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+        <div class="mode-switch" role="group" aria-label="通信模式">
+          <button id="mode-lan" type="button" aria-pressed="true">局域网</button
+          ><button id="mode-loopback" type="button" aria-pressed="false">
+            本机回环
+          </button>
+        </div>
+        <div id="settings-scroll">
+          <section class="settings-section">
+            <h3>我的设备</h3>
+            <div class="settings-row">
               <label
                 >聊天昵称<input
                   id="nickname"
                   maxlength="40"
                   autocomplete="off"
                   placeholder="取一个昵称" /></label
-              ><label
-                >监听端口<input
-                  id="port"
-                  type="number"
-                  min="1"
-                  max="65535"
-                  value="45873" /></label
-              ><button id="start" type="button">开启监听</button
-              ><button id="stop" type="button" class="secondary" disabled>
-                停止监听与连接</button
               ><button id="rename" type="button" class="secondary">
                 保存昵称
               </button>
-              <div id="addresses" class="address" tabindex="0">尚未监听</div>
-            </section>
-            <section>
-              <h2>连接朋友</h2>
-              <label
-                >对方 IP<input
-                  id="address"
-                  placeholder="例如 192.168.1.25"
-                  title="输入数字形式的私有或回环 IP；双方均需先开启监听。"
-                  autocomplete="off" /></label
-              ><label
-                >对方端口<input
-                  id="remote-port"
-                  type="number"
-                  min="1"
-                  max="65535"
-                  value="45873" /></label
-              ><button id="connect" type="button" disabled>连接设备</button>
-            </section>
-            <section>
-              <h2>历史记录</h2>
-              <button id="clear" type="button" class="secondary">
-                清空本机消息历史
-              </button>
-              <details id="connection-details" class="connection-details">
-                <summary>连接与隐私说明</summary>
-                <div class="connection-details-content">
-                  <p>
-                    把监听 IP
-                    与端口告诉对方，双方均需先开启监听。仅接受数字形式的私有或回环
-                    IP，不扫描网络。连接失败时核对同一网络、端口和系统防火墙；应用不会修改防火墙。
-                  </p>
-                  <p>
-                    局域网 TCP
-                    为明文传输，昵称由对方自行声明，未认证身份。仅连接可信设备，勿发送密码或敏感信息。本插件只收发文本，不访问或传输文件。
-                  </p>
-                  <p>
-                    联系人来自真实连接，离线会话与最近最多 500 条消息 / 1 MiB
-                    保存在本机。切换页面仍会收信；最后使用的应用窗口关闭、撤权或退出会停止连接。
-                  </p>
-                  <p>
-                    “已写入连接”不等于对方收到；“已送达”表示对方已保存消息。
-                  </p>
+            </div>
+          </section>
+          <div id="mode-settings">
+            <div id="lan-settings">
+              <section class="settings-section">
+                <div class="settings-row">
+                  <label
+                    >监听端口<input
+                      id="port"
+                      type="number"
+                      min="1"
+                      max="65535"
+                      value="45873" /></label
+                  ><button id="start" type="button">开启监听</button>
                 </div>
-              </details>
+                <div id="addresses" tabindex="0">尚未监听</div>
+              </section>
+              <section class="settings-section">
+                <h3>连接朋友</h3>
+                <div class="settings-row">
+                  <label
+                    >对方 IP<input
+                      id="address"
+                      placeholder="例如 192.168.1.25"
+                      title="输入数字形式的私有或回环 IP；双方均需先开启监听。"
+                      autocomplete="off" /></label
+                  ><label class="port-label"
+                    >对方端口<input
+                      id="remote-port"
+                      type="number"
+                      min="1"
+                      max="65535"
+                      value="45873"
+                  /></label>
+                </div>
+                <button id="connect" type="button" disabled>连接设备</button>
+              </section>
+            </div>
+            <section id="loopback-settings" class="settings-section" hidden>
+              <h3>本机回环测试</h3>
+              <p class="muted">
+                在本机建立真实 TCP 连接，回环助手会回复文字、图片和文件。
+              </p>
+              <button id="loopback" type="button">开始回环测试</button>
             </section>
           </div>
-        </details>
+          <section class="settings-section">
+            <button id="stop" type="button" class="secondary" disabled>
+              停止监听与连接
+            </button>
+            <details id="connection-details" class="connection-details">
+              <summary>连接与隐私说明</summary>
+              <p>
+                仅连接可信设备。局域网消息与附件通过明文 TCP
+                传输，昵称未经身份认证。
+              </p>
+              <p>
+                PNG、JPEG、WebP 图片最大 8 MiB，文件最大 1 GiB。本机附件缓存最多
+                2 GiB；另存时选择目标位置。
+              </p>
+              <p>
+                切换页面仍会收信。关闭最后使用的窗口、撤权或退出会停止连接。回环模式只监听本机。
+              </p>
+              <p>“已写入连接”不等于对方收到；“已送达”表示对方已保存消息。</p>
+            </details>
+          </section>
+          <section class="settings-section">
+            <button id="clear" type="button" class="secondary">
+              清空本机消息历史
+            </button>
+          </section>
+        </div>
+      </section>
+      <div id="permission" hidden>
+        请在扩展中心为本插件启用“局域网消息”能力，再返回此页。聊天不会自动开启监听。
+      </div>
+      <div
+        id="confirmation"
+        class="overlay"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-label="确认历史操作"
+        aria-describedby="confirmation-text"
+      >
+        <div class="dialog">
+          <p id="confirmation-text"></p>
+          <div class="dialog-actions">
+            <button id="cancel-action" type="button" class="secondary">
+              取消</button
+            ><button id="confirm-action" type="button">确认操作</button>
+          </div>
+        </div>
+      </div>
+      <div
+        id="attachment-preview"
+        class="overlay"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-label="图片预览"
+        aria-labelledby="preview-name"
+      >
+        <div class="dialog">
+          <div class="panel-heading">
+            <h2 id="preview-name"></h2>
+            <button
+              id="close-preview"
+              class="icon-button"
+              type="button"
+              aria-label="关闭预览"
+              title="关闭预览"
+            >
+              <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+          <img id="preview-image" alt="图片预览" />
+          <div class="dialog-actions">
+            <button id="save-preview" type="button">另存为</button>
+          </div>
+        </div>
       </div>
     </main>
     <script>
@@ -598,7 +1697,100 @@
         const $ = (id) => document.getElementById(id);
         const encoder = new TextEncoder();
         const translations = {
-          局域网信使: "LAN Messenger",
+          停止传输: "Stop transfer",
+          停止传输并断开连接: "Stop transfer and disconnect",
+          正在停止: "Stopping…",
+          "图片最大 8 MiB，请选择较小的图片。":
+            "Images can be up to 8 MiB. Choose a smaller image.",
+          "文件最大 1 GiB，请选择较小的文件。":
+            "Files can be up to 1 GiB. Choose a smaller file.",
+          "本机附件缓存已满（2 GiB）。请在连接与设置中清空本机消息历史后重试。":
+            "The local attachment cache is full (2 GiB). Clear local message history in Connection and settings, then retry.",
+          "传输中断或校验未通过，附件尚未确认送达。请检查连接后重试。":
+            "The transfer was interrupted or failed verification. Delivery is unconfirmed. Check the connection and retry.",
+          "等待对方响应超时，尚未确认送达。请检查连接后重试。":
+            "The peer response timed out. Delivery is unconfirmed. Check the connection and retry.",
+          "当前服务繁忙，请稍后重试。": "The service is busy. Retry shortly.",
+          "图片格式无效，请选择 PNG、JPEG 或 WebP 图片。":
+            "The image is invalid. Choose a PNG, JPEG or WebP image.",
+          "图片像素或解码大小超限，请缩小图片后重试。":
+            "The image exceeds the pixel or decoded-size limit. Resize it and retry.",
+          "附件读取或保存失败，请检查文件访问权限与可用磁盘空间。":
+            "The attachment could not be read or saved. Check file access and available disk space.",
+          "附件未发送，请检查文件和连接后重试。":
+            "The attachment was not sent. Check the file and connection, then retry.",
+          "传输已停止，连接已关闭。历史记录与草稿已保留。":
+            "The transfer stopped and connections closed. History and drafts have been kept.",
+          "停止请求未完成，传输结果未知。请刷新状态后重试。":
+            "The stop request did not complete. The transfer result is unknown. Refresh status and retry.",
+          调整会话栏宽度: "Resize conversation column",
+          调整输入区高度: "Resize composer",
+          "会话栏宽度 {size} 像素": "Conversation width {size} pixels",
+          "输入区高度 {size} 像素": "Composer height {size} pixels",
+          "文件最大 1 GiB，图片最大 8 MiB。传输失败时保留草稿，可检查连接后重试。":
+            "Files can be up to 1 GiB and images up to 8 MiB. Your draft is kept if a transfer fails; check the connection and retry.",
+          应用工具: "App tools",
+          我: "Me",
+          聊: "Chat",
+          最近会话: "Recent chats",
+          搜索: "Search",
+          搜索联系人与消息: "Search contacts and messages",
+          会话操作: "Conversation actions",
+          消息工具: "Message tools",
+          关闭设置: "Close settings",
+          通信模式: "Connection mode",
+          局域网: "LAN",
+          本机回环: "Local loopback",
+          本机回环测试: "Local loopback test",
+          开始回环测试: "Start loopback test",
+          回环助手: "Loopback assistant",
+          "在本机建立真实 TCP 连接，回环助手会回复文字、图片和文件。":
+            "Create a real TCP connection on this device. The loopback assistant echoes text, images and files.",
+          "仅连接可信设备。局域网消息与附件通过明文 TCP 传输，昵称未经身份认证。":
+            "Connect only to trusted devices. LAN messages and attachments use unencrypted TCP; nicknames are not authenticated.",
+          "PNG、JPEG、WebP 图片最大 8 MiB，文件最大 1 GiB。本机附件缓存最多 2 GiB；另存时选择目标位置。":
+            "PNG, JPEG and WebP images can be up to 8 MiB; files up to 1 GiB. The local attachment cache holds up to 2 GiB. You choose a destination when saving.",
+          "切换页面仍会收信。关闭最后使用的窗口、撤权或退出会停止连接。回环模式只监听本机。":
+            "Messages can arrive after navigation. Closing the last window, revoking permission or quitting stops connections. Loopback mode listens only on this device.",
+          "写点什么吧…": "Write a message…",
+          "Enter 发送 · Shift + Enter 换行":
+            "Enter to send · Shift + Enter for a new line",
+          表情与表情包: "Emoji and stickers",
+          发送图片: "Send image",
+          发送文件: "Send file",
+          选择表情: "Choose an emoji",
+          表情分类: "Emoji category",
+          表情: "Emoji",
+          大表情: "Stickers",
+          图片预览: "Image preview",
+          关闭预览: "Close preview",
+          查看图片: "Preview image",
+          另存为: "Save as",
+          图片: "Image",
+          文件: "File",
+          "[草稿] {text}": "[Draft] {text}",
+          "[图片] {name}": "[Image] {name}",
+          "[文件] {name}": "[File] {name}",
+          "[大表情] {text}": "[Sticker] {text}",
+          "本机回环 · 已连接": "Local loopback · Connected",
+          "本机回环 · {status}": "Local loopback · {status}",
+          回环测试运行中: "Loopback test running",
+          连接一台设备: "Connect a device",
+          "添加设备或开始本机回环测试，即可开始聊天。":
+            "Connect a device or start a local loopback test to begin chatting.",
+          "附件另存失败，请重试。": "The attachment could not be saved. Retry.",
+          "附件已另存。": "Attachment saved.",
+          "图片预览未完成，请重试。":
+            "The image preview could not be loaded. Retry.",
+          "此图片无法预览，可另存后查看。":
+            "This image cannot be previewed. Save it to view locally.",
+          "未保存的草稿较多，请发送或清理部分草稿后重试。":
+            "There are too many unsent drafts. Send or clear some drafts and retry.",
+          "附件不可用，可能已被本机清理。":
+            "This attachment is unavailable. It may have been removed from the local cache.",
+          "正在传输…": "Transferring…",
+
+          内网通信: "LAN Chat",
           刷新: "Refresh",
           "请在扩展中心为本插件启用“局域网消息”能力，再返回此页。聊天不会自动开启监听。":
             "Enable LAN messaging for this plugin in the extension center, then return here. Listening starts only when you request it.",
@@ -649,11 +1841,12 @@
           "“已写入连接”不等于对方收到；“已送达”表示对方已保存消息。":
             "Written to the connection does not confirm receipt. Delivered means the other device has saved the message.",
           尚未监听: "Not listening",
+          未连接: "Disconnected",
+          局域网在线: "LAN online",
           正在读取状态: "Reading status",
           状态读取失败: "Refresh failed",
           "状态已过期，请刷新重试。":
             "Status is out of date. Refresh to retry.",
-          "正在监听 · {port}": "Listening · {port}",
           "本机监听地址：{addresses}": "Local listening addresses: {addresses}",
           "{count} 位联系人": "{count} contacts",
           没有匹配的联系人: "No matching contacts",
@@ -700,12 +1893,12 @@
             "The port must be an integer from 1 to 65535.",
           "昵称需要 1 到 40 个可见字符，且不超过 120 UTF-8 字节。":
             "Use 1 to 40 visible characters and no more than 120 UTF-8 bytes for the nickname.",
-          "移除“{nickname}”及其本机消息历史？":
-            "Remove “{nickname}” and its local message history?",
+          "移除“{nickname}”及其本机消息历史和未发送草稿？":
+            "Remove “{nickname}”, its local message history and unsent draft?",
           "清空所有本机聊天消息？联系人与对方设备上的消息将保留。":
             "Clear all local chat messages? Contacts and messages on the other device will be kept.",
           "（我）": " (me)",
-          "局域网信使 · {nickname}": "LAN Messenger · {nickname}",
+          "内网通信 · {nickname}": "LAN Chat · {nickname}",
           "导出时间：{time}": "Exported: {time}",
           "因导出大小限制，省略最早 {count} 条消息。":
             "{count} oldest messages omitted to stay within the export size limit.",
@@ -753,13 +1946,16 @@
             node.textContent = `${t(key)} `;
           for (const { node, attribute, key } of fixedAttributes)
             node.setAttribute(attribute, t(key));
-          document.title = t("局域网信使");
+          document.title = t("内网通信");
         }
         const ui = {
           state: null,
           selected: "",
           pending: false,
           backgroundPending: false,
+          normalRequests: 0,
+          noticePending: false,
+          queuedNotice: null,
           actionEpoch: 0,
           snapshot: null,
           visible: true,
@@ -778,8 +1974,31 @@
           queuedCheckpoint: null,
           checkpointBlocked: false,
           checkpointError: false,
+          checkpointFailures: 0,
+          checkpointRevision: 0,
+          checkpointTooLarge: false,
           readError: null,
           draftRevision: 0,
+          drafts: {},
+          mode: "lan",
+          modeTouched: false,
+          pickerKind: "emoji",
+          renderedPeer: "",
+          renderedIds: new Set(),
+          preview: null,
+          previewTrigger: null,
+          attachmentBusy: false,
+          wasActive: false,
+          thumbnailGeneration: 0,
+          thumbnails: new Map(),
+          thumbnailTasks: new Set(),
+          thumbnailWindow: new Set(),
+          pendingLoopbackPeerId: "",
+          pendingAction: "",
+          pendingEpoch: 0,
+          cancellingTransfer: false,
+          layout: { conversationWidth: 224, composerHeight: 168 },
+          resize: null,
         };
         const bytes = (text) => encoder.encode(text).length;
         const token = (value) =>
@@ -794,61 +2013,427 @@
           !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
         const validPort = (value) =>
           Number.isInteger(value) && value >= 1 && value <= 65535;
+        const validPortDraft = (value) =>
+          value === "" ||
+          /^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value);
         const validTime = (value) =>
           Number.isSafeInteger(value) &&
           value >= 0 &&
           value <= 8640000000000000;
         const selectedPeer = () =>
           ui.state?.peers.find((peer) => peer.id === ui.selected);
+        // SDK requests share four slots. Ordinary work is admitted immediately or fails
+        // before side effects; one slot stays available for checkpoints and one for Stop.
+        async function normalRequest(operation) {
+          if (ui.normalRequests >= 2) throw { code: "EXTENSION_BUSY" };
+          ui.normalRequests++;
+          try {
+            return await operation();
+          } finally {
+            ui.normalRequests--;
+            flushNotice();
+          }
+        }
+        function normalService(request) {
+          return normalRequest(() => starter.services.request("lan", request));
+        }
         function notice(message = "", error = false) {
           if (!message || ui.disposed) return;
-          void starter
-            .notify(message, { tone: error ? "error" : "info" })
-            .catch(() => {});
+          ui.queuedNotice = { message, tone: error ? "error" : "info" };
+          flushNotice();
+        }
+        function flushNotice() {
+          if (
+            !active() ||
+            ui.noticePending ||
+            ui.backgroundPending ||
+            !ui.queuedNotice ||
+            ui.normalRequests >= 2
+          )
+            return;
+          const next = ui.queuedNotice;
+          ui.queuedNotice = null;
+          ui.noticePending = true;
+          void normalRequest(() =>
+            starter.notify(next.message, { tone: next.tone }),
+          )
+            .catch(() => {})
+            .finally(() => {
+              ui.noticePending = false;
+              flushNotice();
+              if (active())
+                queueThumbnails(
+                  (ui.state?.messages ?? []).filter(
+                    (message) => message.peerId === ui.selected,
+                  ),
+                );
+            });
+        }
+        function errorMessage(error, request) {
+          const code = error?.code;
+          if (code === "STORAGE_CORRUPT")
+            return t("本机聊天存档损坏或超限，原始数据已保留，未覆盖。");
+          if (code === "EXTENSION_INCOMPATIBLE")
+            return t(
+              "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。",
+            );
+          if (code === "EXTENSION_ATTACHMENT_TOO_LARGE")
+            return t(
+              request.kind === "image"
+                ? "图片最大 8 MiB，请选择较小的图片。"
+                : "文件最大 1 GiB，请选择较小的文件。",
+            );
+          if (code === "EXTENSION_ATTACHMENT_CACHE_FULL")
+            return t(
+              "本机附件缓存已满（2 GiB）。请在连接与设置中清空本机消息历史后重试。",
+            );
+          if (code === "EXTENSION_TRANSFER_INTERRUPTED")
+            return t(
+              "传输中断或校验未通过，附件尚未确认送达。请检查连接后重试。",
+            );
+          if (code === "EXTENSION_TIMEOUT")
+            return t("等待对方响应超时，尚未确认送达。请检查连接后重试。");
+          if (code === "EXTENSION_BUSY") return t("当前服务繁忙，请稍后重试。");
+          if (code === "EXTENSION_IMAGE_INVALID")
+            return t("图片格式无效，请选择 PNG、JPEG 或 WebP 图片。");
+          if (code === "EXTENSION_IMAGE_TOO_LARGE")
+            return t("图片像素或解码大小超限，请缩小图片后重试。");
+          const attachment = [
+            "sendAttachment",
+            "previewAttachment",
+            "saveAttachment",
+          ].includes(request.action);
+          if (code === "STORAGE_IO" && attachment)
+            return t("附件读取或保存失败，请检查文件访问权限与可用磁盘空间。");
+          if (request.action === "saveAttachment")
+            return t("附件另存失败，请重试。");
+          if (request.action === "previewAttachment")
+            return t("图片预览未完成，请重试。");
+          if (request.action === "sendAttachment")
+            return t("附件未发送，请检查文件和连接后重试。");
+          return t("操作未完成，请核对权限、IP、端口和连接状态。");
         }
         function permitted() {
           return (
             ui.snapshot?.grantedPermissions.includes("messaging:lan") === true
           );
         }
+        function rememberDraft() {
+          const value = $("draft").value;
+          if (value) ui.drafts[ui.selected] = value;
+          else delete ui.drafts[ui.selected];
+        }
+        function selectPeer(id) {
+          if (ui.selected === id) return;
+          const initial = ui.selected === "" ? $("draft").value : "";
+          rememberDraft();
+          if (initial) delete ui.drafts[""];
+          ui.selected = id;
+          $("draft").value = ui.drafts[id] ?? initial;
+          rememberDraft();
+          clearThumbnails();
+          closePreview(false);
+          ui.draftRevision++;
+          ui.messagesKey = "";
+          setPanel("emoji-picker", "emoji-toggle", false);
+          setPanel("conversation-menu", "conversation-more", false);
+        }
+        function active() {
+          return (
+            ui.snapshot?.active !== false &&
+            ui.visible &&
+            !document.hidden &&
+            !ui.disposed
+          );
+        }
+        function layoutBounds() {
+          const width = $("layout").getBoundingClientRect().width;
+          const chatHeight = $("chat").getBoundingClientRect().height;
+          const headerHeight = $("chat-header").getBoundingClientRect().height;
+          const composerMax = Math.max(
+            96,
+            Math.min(360, Math.floor(chatHeight - headerHeight - 6 - 100)),
+          );
+          return {
+            conversationWidth: {
+              min: 180,
+              max: Math.max(
+                180,
+                Math.min(360, Math.floor(width - 48 - 6 - 280)),
+              ),
+              disabled: width <= 600,
+            },
+            composerHeight: {
+              min: Math.min(128, composerMax),
+              max: composerMax,
+              disabled: false,
+            },
+          };
+        }
+        function clampSize(value, bounds) {
+          return Math.round(Math.min(bounds.max, Math.max(bounds.min, value)));
+        }
+        function applyLayout() {
+          const bounds = layoutBounds();
+          for (const [key, id, property] of [
+            [
+              "conversationWidth",
+              "conversation-resizer",
+              "--conversation-width",
+            ],
+            ["composerHeight", "composer-resizer", "--composer-height"],
+          ]) {
+            const handle = $(id),
+              range = bounds[key];
+            const value = clampSize(ui.layout[key], range);
+            $("layout").style.setProperty(property, value + "px");
+            handle.hidden = range.disabled;
+            handle.tabIndex = range.disabled || ui.checkpointBlocked ? -1 : 0;
+            handle.setAttribute(
+              "aria-disabled",
+              String(range.disabled || ui.checkpointBlocked),
+            );
+            handle.setAttribute("aria-valuemin", String(range.min));
+            handle.setAttribute("aria-valuemax", String(range.max));
+            handle.setAttribute("aria-valuenow", String(value));
+            handle.setAttribute(
+              "aria-valuetext",
+              t(
+                key === "conversationWidth"
+                  ? "会话栏宽度 {size} 像素"
+                  : "输入区高度 {size} 像素",
+                { size: value },
+              ),
+            );
+          }
+          if (ui.resize && bounds[ui.resize.key].disabled) finishResize(true);
+        }
+        function finishResize(cancel = false) {
+          const drag = ui.resize;
+          if (!drag) return;
+          ui.resize = null;
+          if (cancel) ui.layout[drag.key] = drag.previous;
+          delete $("layout").dataset.resizing;
+          drag.handle.dataset.dragging = "false";
+          if (drag.handle.hasPointerCapture(drag.pointerId))
+            drag.handle.releasePointerCapture(drag.pointerId);
+          applyLayout();
+          if (!cancel) checkpoint();
+        }
+        function installResizer(key, id) {
+          const handle = $(id);
+          const horizontal = key === "conversationWidth";
+          const coordinate = (event) =>
+            horizontal ? event.clientX : event.clientY;
+          handle.onpointerdown = (event) => {
+            if (
+              event.button !== 0 ||
+              !active() ||
+              ui.checkpointBlocked ||
+              layoutBounds()[key].disabled
+            )
+              return;
+            event.preventDefault();
+            finishResize(true);
+            handle.focus();
+            handle.setPointerCapture(event.pointerId);
+            ui.resize = {
+              key,
+              handle,
+              pointerId: event.pointerId,
+              start: coordinate(event),
+              value: Number(handle.getAttribute("aria-valuenow")),
+              previous: ui.layout[key],
+            };
+            $("layout").dataset.resizing = key;
+            handle.dataset.dragging = "true";
+          };
+          handle.onpointermove = (event) => {
+            const drag = ui.resize;
+            if (
+              !drag ||
+              drag.handle !== handle ||
+              drag.pointerId !== event.pointerId
+            )
+              return;
+            const delta =
+              (coordinate(event) - drag.start) * (horizontal ? 1 : -1);
+            ui.layout[key] = clampSize(drag.value + delta, layoutBounds()[key]);
+            applyLayout();
+          };
+          handle.onpointerup = (event) => {
+            if (
+              ui.resize?.handle === handle &&
+              ui.resize.pointerId === event.pointerId
+            )
+              finishResize();
+          };
+          handle.onpointercancel = (event) => {
+            if (
+              ui.resize?.handle === handle &&
+              ui.resize.pointerId === event.pointerId
+            )
+              finishResize(true);
+          };
+          handle.onlostpointercapture = () => {
+            if (ui.resize?.handle === handle) finishResize(true);
+          };
+          handle.ondblclick = () => {
+            if (
+              !active() ||
+              ui.checkpointBlocked ||
+              layoutBounds()[key].disabled
+            )
+              return;
+            ui.layout[key] = horizontal ? 224 : 168;
+            applyLayout();
+            checkpoint();
+          };
+          handle.onkeydown = (event) => {
+            const range = layoutBounds()[key];
+            if (!active() || ui.checkpointBlocked || range.disabled) return;
+            const current = Number(handle.getAttribute("aria-valuenow")),
+              step = event.shiftKey ? 48 : 16;
+            let value;
+            if (event.key === "Home") value = range.min;
+            else if (event.key === "End") value = range.max;
+            else if (event.key === (horizontal ? "ArrowRight" : "ArrowUp"))
+              value = current + step;
+            else if (event.key === (horizontal ? "ArrowLeft" : "ArrowDown"))
+              value = current - step;
+            else return;
+            event.preventDefault();
+            ui.layout[key] = clampSize(value, range);
+            applyLayout();
+            checkpoint();
+          };
+        }
         function checkpoint() {
           if (!ui.snapshot || ui.disposed || ui.checkpointBlocked) return;
+          const revision = ++ui.checkpointRevision;
+          rememberDraft();
+          if (bytes(JSON.stringify(ui.drafts)) > 220 * 1024) {
+            blockOversizedCheckpoint();
+            return;
+          }
           ui.queuedCheckpoint = {
+            revision,
             value: {
               version: 1,
               selected: ui.selected,
               draft: $("draft").value,
+              drafts: { ...ui.drafts },
+              mode: ui.mode,
+              layout: { ...ui.layout },
               address: $("address").value,
               port: $("port").value,
               remotePort: $("remote-port").value,
               nickname: $("nickname").value,
               nicknameDirty: ui.nicknameDirty,
             },
-            dirty: $("draft").value.length > 0 || ui.nicknameDirty,
+            dirty:
+              Object.values(ui.drafts).some((value) => value.length > 0) ||
+              ui.nicknameDirty,
           };
+          if (bytes(JSON.stringify(ui.queuedCheckpoint.value)) > 255 * 1024) {
+            blockOversizedCheckpoint();
+            return;
+          }
+          ui.checkpointTooLarge = false;
+          ui.checkpointFailures = 0;
           if (!ui.checkpointPending && !ui.checkpointTimer)
             void flushCheckpoint();
         }
+        function blockOversizedCheckpoint() {
+          ui.queuedCheckpoint = null;
+          clearTimeout(ui.checkpointTimer);
+          ui.checkpointTimer = null;
+          if (!ui.checkpointTooLarge)
+            notice(t("未保存的草稿较多，请发送或清理部分草稿后重试。"), true);
+          ui.checkpointTooLarge = true;
+          ui.checkpointError = true;
+        }
+        function retryCheckpoint() {
+          if (!ui.queuedCheckpoint || ui.checkpointBlocked || ui.disposed)
+            return;
+          clearTimeout(ui.checkpointTimer);
+          ui.checkpointTimer = null;
+          ui.checkpointFailures = 0;
+          if (!ui.checkpointPending) void flushCheckpoint();
+        }
         async function flushCheckpoint() {
-          if (ui.disposed || !ui.queuedCheckpoint) return;
+          if (!active() || ui.checkpointPending || !ui.queuedCheckpoint) return;
           const queued = ui.queuedCheckpoint;
           ui.queuedCheckpoint = null;
           ui.checkpointPending = true;
+          let failed = false;
           try {
             await starter.checkpoint(queued.value, queued.dirty);
-            ui.checkpointError = false;
+            if (queued.revision === ui.checkpointRevision) {
+              ui.checkpointError = false;
+              ui.checkpointFailures = 0;
+            }
           } catch {
+            failed = true;
+            ui.checkpointFailures++;
+            // A later edit owns the next write; a failed older value cannot replace it.
+            if (queued.revision === ui.checkpointRevision)
+              ui.queuedCheckpoint ??= queued;
             if (!ui.checkpointError)
               notice(t("草稿尚未保存，请保留此页面后重试。"), true);
             ui.checkpointError = true;
           } finally {
             ui.checkpointPending = false;
-            if (!ui.disposed && ui.queuedCheckpoint)
-              ui.checkpointTimer = setTimeout(() => {
-                ui.checkpointTimer = null;
-                void flushCheckpoint();
-              }, 150);
+            if (!ui.disposed && active() && ui.queuedCheckpoint) {
+              const delay = failed
+                ? [500, 1500, 5000][ui.checkpointFailures - 1]
+                : 150;
+              if (delay !== undefined)
+                ui.checkpointTimer = setTimeout(() => {
+                  ui.checkpointTimer = null;
+                  void flushCheckpoint();
+                }, delay);
+            }
           }
+        }
+        function validAttachment(value, kind) {
+          return (
+            !!value &&
+            typeof value === "object" &&
+            !Array.isArray(value) &&
+            typeof value.name === "string" &&
+            value.name.trim().length > 0 &&
+            bytes(value.name) <= 240 &&
+            !/[\u0000-\u001f\u007f-\u009f]/u.test(value.name) &&
+            (kind === "image"
+              ? ["image/png", "image/jpeg", "image/webp"].includes(value.mime)
+              : value.mime === "application/octet-stream") &&
+            Number.isSafeInteger(value.bytes) &&
+            value.bytes > 0 &&
+            value.bytes <=
+              (kind === "image" ? 8 * 1024 * 1024 : 1024 * 1024 * 1024) &&
+            typeof value.sha256 === "string" &&
+            /^[a-f0-9]{64}$/.test(value.sha256)
+          );
+        }
+        function fileSize(size) {
+          return size >= 1024 * 1024 * 1024
+            ? (size / (1024 * 1024 * 1024)).toFixed(1) + " GiB"
+            : size >= 1024 * 1024
+              ? (size / (1024 * 1024)).toFixed(1) + " MiB"
+              : size >= 1024
+                ? (size / 1024).toFixed(1) + " KiB"
+                : size + " B";
+        }
+        function messageSummary(message) {
+          if (!message) return "";
+          return message.kind === "image"
+            ? t("[图片] {name}", { name: message.attachment.name })
+            : message.kind === "file"
+              ? t("[文件] {name}", { name: message.attachment.name })
+              : message.kind === "sticker"
+                ? t("[大表情] {text}", { text: message.text })
+                : message.text;
         }
         function validated(value) {
           if (
@@ -856,6 +2441,10 @@
             typeof value !== "object" ||
             Array.isArray(value) ||
             typeof value.running !== "boolean" ||
+            !["lan", "loopback"].includes(value.mode) ||
+            (value.loopbackPeerId !== null &&
+              value.loopbackPeerId !== undefined &&
+              !token(value.loopbackPeerId)) ||
             !validName(value.nickname) ||
             !token(value.nodeId) ||
             !Number.isInteger(value.port) ||
@@ -911,7 +2500,14 @@
               !token(message.sender) ||
               !validName(message.nickname) ||
               typeof message.text !== "string" ||
-              !message.text.trim() ||
+              (!message.text.trim() &&
+                !["image", "file"].includes(message.kind)) ||
+              !["text", "sticker", "image", "file"].includes(message.kind) ||
+              (["image", "file"].includes(message.kind) &&
+                !validAttachment(message.attachment, message.kind)) ||
+              (!["image", "file"].includes(message.kind) &&
+                message.attachment !== null &&
+                message.attachment !== undefined) ||
               bytes(message.text) > 8192 ||
               unsafeText(message.text) ||
               typeof message.outgoing !== "boolean" ||
@@ -925,6 +2521,75 @@
           }
           return value;
         }
+        // All vector shapes are author-controlled constants. Remote names only enter text nodes.
+        const iconShapes = {
+          person: [
+            ["circle", { cx: 12, cy: 8, r: 3.2 }],
+            ["path", { d: "M5 20v-1a7 7 0 0 1 14 0v1" }],
+          ],
+          self: [
+            ["circle", { cx: 10, cy: 8, r: 3.2 }],
+            ["path", { d: "M3 20v-1a7 7 0 0 1 10-6.3M15 17l2 2 4-5" }],
+          ],
+          bot: [
+            ["rect", { x: 4, y: 7, width: 16, height: 13, rx: 4 }],
+            ["path", { d: "M12 3v4M8 12h.01M16 12h.01M9 16h6M2 12v3M22 12v3" }],
+          ],
+          chat: [
+            [
+              "path",
+              {
+                d: "M16 3H5a2 2 0 0 0-2 2v11l4-4h9a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z",
+              },
+            ],
+            ["path", { d: "M21 7v14l-4-4H7" }],
+          ],
+          file: [
+            [
+              "path",
+              {
+                d: "M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6M8 13h8M8 17h5",
+              },
+            ],
+          ],
+          image: [
+            ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 3 }],
+            ["circle", { cx: 8, cy: 8, r: 1.5 }],
+            ["path", { d: "m21 15-5-5L5 21" }],
+          ],
+        };
+        function vectorIcon(name, className = "") {
+          const svg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg",
+          );
+          svg.setAttribute("viewBox", "0 0 24 24");
+          svg.setAttribute("class", "vector-icon " + className);
+          svg.setAttribute("aria-hidden", "true");
+          svg.setAttribute("focusable", "false");
+          svg.dataset.icon = name;
+          for (const [tag, attributes] of iconShapes[name]) {
+            const shape = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              tag,
+            );
+            for (const [key, value] of Object.entries(attributes))
+              shape.setAttribute(key, String(value));
+            svg.append(shape);
+          }
+          return svg;
+        }
+        function setAvatar(node, kind) {
+          if (node.dataset.avatar === kind) return;
+          node.dataset.avatar = kind;
+          node.replaceChildren(vectorIcon(kind, "avatar-mark"));
+        }
+        function avatarNode(kind) {
+          const node = element("span", "avatar");
+          node.setAttribute("aria-hidden", "true");
+          setAvatar(node, kind);
+          return node;
+        }
         function element(tag, className, text) {
           const node = document.createElement(tag);
           if (className) node.className = className;
@@ -934,7 +2599,10 @@
         function renderContacts() {
           const peers = (ui.state?.peers ?? [])
             .filter((peer) =>
-              `${peer.nickname} ${peer.address}`
+              `${peer.nickname} ${peer.address} ${(ui.state?.messages ?? [])
+                .filter((message) => message.peerId === peer.id)
+                .map(messageSummary)
+                .join(" ")}`
                 .toLowerCase()
                 .includes($("search").value.toLowerCase()),
             )
@@ -948,6 +2616,9 @@
             ui.selected,
             locale(),
             ui.pending,
+            ui.drafts,
+            ui.state?.messages,
+            ui.state?.loopbackPeerId,
           ]);
           if (key === ui.contactsKey) return;
           ui.contactsKey = key;
@@ -982,7 +2653,9 @@
               String(peer.id === ui.selected),
             );
             button.append(
-              element("span", "avatar", [...peer.nickname][0] ?? t("友")),
+              avatarNode(
+                peer.id === ui.state?.loopbackPeerId ? "bot" : "person",
+              ),
             );
             const copy = element("span", "contact-copy");
             const name = element("span", "contact-name");
@@ -995,8 +2668,37 @@
               peer.connected ? t("已连接") : t("离线"),
             );
             name.append(dot, element("strong", "", peer.nickname));
-            copy.append(name, element("span", "muted", peer.address));
+            const history = (ui.state?.messages ?? []).filter(
+              (message) => message.peerId === peer.id,
+            );
+            const last = history[history.length - 1];
+            const draft = ui.drafts[peer.id];
+            const preview = element(
+              "span",
+              "muted",
+              draft
+                ? t("[草稿] {text}", { text: draft })
+                : last
+                  ? messageSummary(last)
+                  : peer.connected
+                    ? t("已连接")
+                    : t("离线"),
+            );
+            if (draft) preview.className = "muted draft-label";
+            copy.append(name, preview);
             button.append(copy);
+            const end = element("span", "contact-end");
+            if (last)
+              end.append(
+                element(
+                  "span",
+                  "contact-time",
+                  new Date(last.at).toLocaleTimeString(locale(), {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                ),
+              );
             if (peer.unread) {
               const unread = element(
                 "span",
@@ -1004,12 +2706,13 @@
                 peer.unread > 99 ? "99+" : String(peer.unread),
               );
               unread.title = t("{count} 条未读消息", { count: peer.unread });
-              button.append(unread);
+              end.append(unread);
             }
+            button.append(end);
             button.onclick = () => {
               if (ui.pending) return;
-              ui.selected = peer.id;
-              ui.messagesKey = "";
+              ui.pendingLoopbackPeerId = "";
+              selectPeer(peer.id);
               render();
               checkpoint();
             };
@@ -1020,21 +2723,437 @@
               .find((node) => node.dataset.peer === focused)
               ?.focus();
         }
+        function setPanel(id, trigger, open) {
+          $(id).hidden = !open;
+          $(trigger).setAttribute("aria-expanded", String(open));
+        }
+        function closePopovers() {
+          setPanel("settings-panel", "settings-toggle", false);
+          setPanel("emoji-picker", "emoji-toggle", false);
+          setPanel("conversation-menu", "conversation-more", false);
+        }
+        function openSettings(focus = "nickname") {
+          if (!permitted() || !active()) return;
+          closePopovers();
+          setPanel("settings-panel", "settings-toggle", true);
+          $(focus).focus();
+        }
+        function trapFocus(event, container) {
+          const controls = [...container.querySelectorAll("button")].filter(
+            (node) => !node.disabled && !node.hidden,
+          );
+          if (!controls.length) return;
+          const first = controls[0],
+            last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+        function clearThumbnails() {
+          ui.messagesKey = "";
+          ui.thumbnailGeneration++;
+          ui.thumbnails.clear();
+        }
+        function validPreview(value) {
+          return (
+            typeof value === "string" &&
+            value.length <= 128 * 1024 &&
+            /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(
+              value,
+            )
+          );
+        }
+        function queueThumbnails(messages) {
+          if (
+            ui.backgroundPending ||
+            ui.noticePending ||
+            ui.normalRequests >= 2
+          )
+            return;
+          if (
+            !active() ||
+            !permitted() ||
+            ui.pending ||
+            ui.attachmentBusy ||
+            ui.snapshot?.busy
+          )
+            return;
+          const candidates = messages
+            .filter((message) => message.kind === "image")
+            .slice(-12);
+          for (const message of candidates) {
+            const generation = ui.thumbnailGeneration;
+            const task = generation + ":" + message.id;
+            if (ui.thumbnailTasks.size >= 1) break;
+            if (ui.thumbnails.has(message.id) || ui.thumbnailTasks.has(task))
+              continue;
+            ui.thumbnailTasks.add(task);
+            ui.backgroundPending = true;
+            void (async () => {
+              let dataUrl = null;
+              try {
+                const response = await normalService({
+                  action: "previewAttachment",
+                  messageId: message.id,
+                });
+                if (validPreview(response?.dataUrl)) dataUrl = response.dataUrl;
+              } catch {
+                /* An unavailable thumbnail keeps the explicit preview/save controls. */
+              } finally {
+                ui.thumbnailTasks.delete(task);
+                ui.backgroundPending = false;
+                flushNotice();
+                if (
+                  active() &&
+                  permitted() &&
+                  generation === ui.thumbnailGeneration &&
+                  ui.thumbnailWindow.has(message.id) &&
+                  ui.state?.messages.some(
+                    (current) =>
+                      current.id === message.id &&
+                      current.peerId === ui.selected,
+                  )
+                ) {
+                  ui.thumbnails.set(message.id, dataUrl);
+                  ui.messagesKey = "";
+                  render();
+                } else if (active() && !ui.disposed) {
+                  queueThumbnails(
+                    (ui.state?.messages ?? []).filter(
+                      (current) => current.peerId === ui.selected,
+                    ),
+                  );
+                }
+              }
+            })();
+          }
+        }
+        function attachmentCard(message) {
+          const card = element("div", "attachment-card");
+          card.dataset.message = message.id;
+          const attachment = message.attachment;
+          const image = message.kind === "image";
+          const thumbnail = ui.thumbnails.get(message.id);
+          if (image && thumbnail) {
+            const show = element(
+              "button",
+              "thumbnail-button preview-attachment",
+            );
+            show.type = "button";
+            show.dataset.message = message.id;
+            show.dataset.action = "preview";
+            show.setAttribute(
+              "aria-label",
+              t("查看图片") + ": " + attachment.name,
+            );
+            const img = element("img", "image-thumbnail");
+            img.src = thumbnail;
+            img.alt = attachment.name;
+            show.append(img);
+            show.onclick = () => void previewAttachment(message, show);
+            card.append(show);
+          }
+          const info = element("div", "attachment-info");
+          const copy = element("div", "file-copy");
+          copy.append(
+            element("strong", "file-name", attachment.name),
+            element(
+              "span",
+              "muted",
+              fileSize(attachment.bytes) +
+                " · " +
+                (image ? t("图片") : t("文件")),
+            ),
+          );
+          if (!image || !thumbnail) {
+            const symbol = element("span", "file-symbol");
+            symbol.append(vectorIcon(image ? "image" : "file"));
+            info.append(symbol);
+          }
+          info.append(copy);
+          const actions = element("div", "attachment-actions");
+          if (image && !thumbnail) {
+            const show = element(
+              "button",
+              "secondary preview-attachment",
+              t("查看图片"),
+            );
+            show.type = "button";
+            show.dataset.message = message.id;
+            show.dataset.action = "preview";
+            show.onclick = () => void previewAttachment(message, show);
+            actions.append(show);
+          }
+          const save = element(
+            "button",
+            "secondary save-attachment",
+            t("另存为"),
+          );
+          save.type = "button";
+          save.dataset.message = message.id;
+          save.dataset.action = "save";
+          save.onclick = () => void saveAttachment(message.id);
+          actions.append(save);
+          card.append(info, actions);
+          return card;
+        }
+        function closePreview(restoreFocus = true) {
+          const trigger = ui.previewTrigger;
+          ui.preview = null;
+          ui.previewTrigger = null;
+          $("attachment-preview").hidden = true;
+          $("preview-image").src = "";
+          if (restoreFocus && active()) {
+            const replacement =
+              trigger &&
+              [...$("messages").querySelectorAll("button")].find(
+                (button) =>
+                  button.dataset.message === trigger.dataset.message &&
+                  button.dataset.action === trigger.dataset.action,
+              );
+            (trigger?.isConnected
+              ? trigger
+              : (replacement ?? $("draft"))
+            ).focus();
+          }
+        }
+        async function previewAttachment(message, trigger) {
+          if (!active() || !permitted() || ui.pending || ui.attachmentBusy)
+            return;
+          ui.attachmentBusy = true;
+          ui.actionEpoch++;
+          const epoch = ui.actionEpoch,
+            peer = ui.selected;
+          render();
+          try {
+            const cached = ui.thumbnails.get(message.id);
+            const response = cached
+              ? { dataUrl: cached }
+              : await normalService({
+                  action: "previewAttachment",
+                  messageId: message.id,
+                });
+            if (
+              !active() ||
+              !permitted() ||
+              epoch !== ui.actionEpoch ||
+              peer !== ui.selected
+            )
+              return;
+            if (!validPreview(response?.dataUrl)) {
+              notice(t("此图片无法预览，可另存后查看。"), true);
+              return;
+            }
+            closePopovers();
+            ui.preview = message;
+            ui.previewTrigger = trigger;
+            $("preview-name").textContent = message.attachment.name;
+            $("preview-image").src = response.dataUrl;
+            $("preview-image").alt = message.attachment.name;
+            $("attachment-preview").hidden = false;
+            $("close-preview").focus();
+          } catch (error) {
+            if (epoch === ui.actionEpoch && permitted())
+              notice(
+                errorMessage(error, {
+                  action: "previewAttachment",
+                  kind: "image",
+                }),
+                true,
+              );
+          } finally {
+            ui.attachmentBusy = false;
+            if (!ui.disposed) render();
+          }
+        }
+        async function saveAttachment(messageId) {
+          if (!active() || !permitted() || ui.pending || ui.attachmentBusy)
+            return;
+          ui.attachmentBusy = true;
+          ui.actionEpoch++;
+          const epoch = ui.actionEpoch;
+          render();
+          try {
+            const response = await normalService({
+              action: "saveAttachment",
+              messageId,
+            });
+            if (ui.disposed || !permitted() || epoch !== ui.actionEpoch) return;
+            if (!response || typeof response.cancelled !== "boolean")
+              throw new Error("Invalid attachment save result");
+            if (!response.cancelled) notice(t("附件已另存。"));
+          } catch (error) {
+            if (epoch === ui.actionEpoch && permitted())
+              notice(errorMessage(error, { action: "saveAttachment" }), true);
+          } finally {
+            ui.attachmentBusy = false;
+            if (!ui.disposed) render();
+          }
+        }
+        const emojiChoices = [
+          "😀",
+          "😄",
+          "😁",
+          "😂",
+          "🥹",
+          "😊",
+          "😍",
+          "🥰",
+          "😎",
+          "🤔",
+          "😮",
+          "😭",
+          "😅",
+          "🙃",
+          "👍",
+          "👏",
+          "🙏",
+          "💪",
+          "🤝",
+          "👋",
+          "❤️",
+          "✨",
+          "🎉",
+          "🔥",
+          "🌹",
+          "☕",
+          "🎂",
+          "✅",
+        ];
+        const stickerChoices = [
+          "🥳",
+          "😂",
+          "🥰",
+          "😭",
+          "🤔",
+          "😎",
+          "👍",
+          "❤️",
+          "🎉",
+          "☕",
+          "👋",
+          "💪",
+        ];
+        function renderPicker() {
+          $("emoji-grid").dataset.kind = ui.pickerKind;
+          $("emoji-tab").setAttribute(
+            "aria-selected",
+            String(ui.pickerKind === "emoji"),
+          );
+          $("sticker-tab").setAttribute(
+            "aria-selected",
+            String(ui.pickerKind === "sticker"),
+          );
+          $("emoji-tab").tabIndex = ui.pickerKind === "emoji" ? 0 : -1;
+          $("sticker-tab").tabIndex = ui.pickerKind === "sticker" ? 0 : -1;
+          $("emoji-grid").setAttribute(
+            "aria-labelledby",
+            ui.pickerKind === "emoji" ? "emoji-tab" : "sticker-tab",
+          );
+          $("emoji-grid").replaceChildren();
+          for (const value of ui.pickerKind === "emoji"
+            ? emojiChoices
+            : stickerChoices) {
+            const button = element("button", "", value);
+            button.type = "button";
+            button.dataset[ui.pickerKind] = value;
+            button.setAttribute(
+              "aria-label",
+              (ui.pickerKind === "sticker" ? t("大表情") : t("表情")) +
+                " " +
+                value,
+            );
+            button.disabled =
+              ui.pickerKind === "sticker" &&
+              (!selectedPeer()?.connected || ui.pending);
+            button.onclick = async () => {
+              if (ui.pickerKind === "sticker") {
+                const peer = selectedPeer();
+                if (!peer?.connected || ui.pending || ui.checkpointBlocked)
+                  return;
+                setPanel("emoji-picker", "emoji-toggle", false);
+                await call({
+                  action: "send",
+                  peerId: peer.id,
+                  text: value,
+                  kind: "sticker",
+                });
+              } else {
+                const draft = $("draft");
+                const start = draft.selectionStart ?? draft.value.length;
+                const end = draft.selectionEnd ?? start;
+                draft.value =
+                  draft.value.slice(0, start) + value + draft.value.slice(end);
+                draft.oninput();
+                draft.focus();
+                draft.setSelectionRange?.(
+                  start + value.length,
+                  start + value.length,
+                );
+                setPanel("emoji-picker", "emoji-toggle", false);
+              }
+            };
+            $("emoji-grid").append(button);
+          }
+        }
+        function syncActivity() {
+          const current = active();
+          if (current === ui.wasActive) return;
+          ui.wasActive = current;
+          if (!current) {
+            finishResize(true);
+            clearTimeout(ui.pollTimer);
+            ui.pollTimer = null;
+            clearTimeout(ui.readTimer);
+            ui.readTimer = null;
+            clearTimeout(ui.checkpointTimer);
+            ui.checkpointTimer = null;
+            closePopovers();
+            closePreview(false);
+            clearThumbnails();
+          } else {
+            flushNotice();
+            void poll();
+            retryCheckpoint();
+            queueThumbnails(
+              (ui.state?.messages ?? []).filter(
+                (message) => message.peerId === ui.selected,
+              ),
+            );
+          }
+        }
         function renderMessages() {
           const peer = selectedPeer();
           const messages = (ui.state?.messages ?? []).filter(
             (message) => message.peerId === ui.selected,
           );
+          ui.thumbnailWindow = new Set(
+            messages
+              .filter((message) => message.kind === "image")
+              .slice(-12)
+              .map((message) => message.id),
+          );
+          for (const id of ui.thumbnails.keys())
+            if (!ui.thumbnailWindow.has(id)) ui.thumbnails.delete(id);
           const key = JSON.stringify([
             ui.selected,
             peer?.connected,
             messages,
             locale(),
           ]);
-          if (key === ui.messagesKey) return;
-          const changedPeer = !ui.messagesKey;
+          if (key === ui.messagesKey) {
+            queueThumbnails(messages);
+            return;
+          }
+          const changedPeer = ui.renderedPeer !== ui.selected;
           ui.messagesKey = key;
           const target = $("messages");
+          const focusedMessage = document.activeElement?.dataset.message;
+          const focusedAction = document.activeElement?.dataset.action;
           const nearBottom =
             changedPeer ||
             target.scrollHeight - target.scrollTop - target.clientHeight < 90;
@@ -1042,7 +3161,11 @@
           if (!messages.length) {
             const empty = element("div", "empty");
             empty.append(
-              element("span", "symbol", "✉"),
+              (() => {
+                const symbol = element("span", "symbol");
+                symbol.append(vectorIcon("chat", "empty-mark"));
+                return symbol;
+              })(),
               element(
                 "strong",
                 "",
@@ -1055,9 +3178,15 @@
                 "muted",
                 peer
                   ? t("当前会话还没有消息。")
-                  : t("先开启监听，再使用 IP 连接可信设备。"),
+                  : t("添加设备或开始本机回环测试，即可开始聊天。"),
               ),
             );
+            if (!peer) {
+              const connect = element("button", "secondary", t("连接一台设备"));
+              connect.type = "button";
+              connect.onclick = () => openSettings("mode-lan");
+              empty.append(connect);
+            }
             target.append(empty);
           }
           const delivery = {
@@ -1091,15 +3220,46 @@
                 : (delivery[message.delivery] ?? t("未知状态")),
             );
             receipt.title = receipt.textContent;
-            row.append(author, element("div", "bubble", message.text), receipt);
+            row.dataset.new = String(
+              !changedPeer && !ui.renderedIds.has(message.id),
+            );
+            const avatar = avatarNode(
+              message.outgoing
+                ? "self"
+                : message.peerId === ui.state?.loopbackPeerId
+                  ? "bot"
+                  : "person",
+            );
+            const content = element("div", "message-content");
+            const bubble = ["image", "file"].includes(message.kind)
+              ? attachmentCard(message)
+              : element(
+                  "div",
+                  "bubble" + (message.kind === "sticker" ? " sticker" : ""),
+                  message.text,
+                );
+            content.append(author, bubble, receipt);
+            row.append(avatar, content);
             target.append(row);
           }
+          if (focusedMessage && !ui.preview)
+            [...target.querySelectorAll("button")]
+              .find(
+                (button) =>
+                  button.dataset.message === focusedMessage &&
+                  button.dataset.action === focusedAction,
+              )
+              ?.focus();
+          ui.renderedPeer = ui.selected;
+          ui.renderedIds = new Set(messages.map((message) => message.id));
           if (nearBottom) target.scrollTop = target.scrollHeight;
+          queueThumbnails(messages);
         }
         function scheduleRead() {
           clearTimeout(ui.readTimer);
           const peer = selectedPeer();
           if (
+            !active() ||
             !peer?.unread ||
             !ui.visible ||
             document.hidden ||
@@ -1109,6 +3269,7 @@
             return;
           ui.readTimer = setTimeout(() => {
             if (
+              active() &&
               selectedPeer()?.unread &&
               ui.selected === peer.id &&
               !ui.pending &&
@@ -1124,30 +3285,52 @@
         function render() {
           const allowed = permitted();
           $("permission").hidden = allowed;
-          $("layout").hidden = !allowed;
+          $("layout").setAttribute("aria-busy", String(ui.pending));
           const state = ui.state;
           const peer = selectedPeer();
-          const busy = ui.pending || ui.snapshot?.busy === true;
-          const writeBlocked = busy || ui.checkpointBlocked || !allowed;
+          const busy =
+            ui.pending || ui.attachmentBusy || ui.snapshot?.busy === true;
+          const writeBlocked =
+            busy || ui.checkpointBlocked || !allowed || !active();
           const invalidDraft =
             bytes($("draft").value) > 8192 || unsafeText($("draft").value);
           $("confirm-action").disabled = busy;
+          $("composer-hint").textContent =
+            ui.pendingAction === "sendAttachment"
+              ? t("正在传输…")
+              : t("Enter 发送 · Shift + Enter 换行");
           $("status").textContent = ui.readError
             ? t("状态读取失败")
             : state?.running
-              ? t("正在监听 · {port}", { port: state.port })
+              ? state.mode === "loopback"
+                ? t("本机回环")
+                : t("局域网在线")
               : !state && allowed
                 ? t("正在读取状态")
-                : t("尚未监听");
+                : t("未连接");
           $("status").classList.toggle("on", state?.running === true);
           $("status").classList.toggle("error", ui.readError !== null);
           $("status").title = ui.readError
             ? t("状态已过期，请刷新重试。")
             : $("status").textContent;
           $("peer-name").textContent = peer?.nickname ?? t("选择一位朋友");
+          setAvatar(
+            $("peer-avatar"),
+            !peer
+              ? "chat"
+              : peer.id === state?.loopbackPeerId
+                ? "bot"
+                : "person",
+          );
+          setAvatar($("my-avatar"), "self");
+          $("my-avatar").title = state?.nickname ?? t("我的设备");
           $("peer-name").title = $("peer-name").textContent;
           $("peer-detail").textContent = peer
-            ? `${peer.address}:${peer.port} · ${peer.connected ? t("已连接") : t("离线")}`
+            ? peer.id === state?.loopbackPeerId
+              ? t("本机回环 · {status}", {
+                  status: peer.connected ? t("已连接") : t("离线"),
+                })
+              : `${peer.address}:${peer.port} · ${peer.connected ? t("已连接") : t("离线")}`
             : t("未选择会话");
           $("peer-detail").title = $("peer-detail").textContent;
           $("addresses").textContent = state?.running
@@ -1170,9 +3353,53 @@
             invalidDraft;
           $("draft").setAttribute("aria-invalid", String(invalidDraft));
           $("draft-count").dataset.invalid = String(invalidDraft);
-          $("start").disabled = writeBlocked || state?.running === true;
-          $("stop").disabled = writeBlocked || !state?.running;
-          $("connect").disabled = writeBlocked || !state?.running;
+          $("start").disabled =
+            writeBlocked || (state?.running === true && state.mode === "lan");
+          $("loopback").disabled =
+            writeBlocked ||
+            (state?.running === true && state.mode === "loopback");
+          $("loopback").textContent =
+            state?.running && state.mode === "loopback"
+              ? t("回环测试运行中")
+              : t("开始回环测试");
+          $("mode-lan").disabled = busy;
+          $("mode-loopback").disabled = busy;
+          $("mode-lan").setAttribute("aria-pressed", String(ui.mode === "lan"));
+          $("mode-loopback").setAttribute(
+            "aria-pressed",
+            String(ui.mode === "loopback"),
+          );
+          $("lan-settings").hidden = ui.mode !== "lan";
+          $("loopback-settings").hidden = ui.mode !== "loopback";
+          $("lan-settings").inert = ui.mode !== "lan";
+          $("loopback-settings").inert = ui.mode !== "loopback";
+          $("lan-settings").setAttribute(
+            "aria-hidden",
+            String(ui.mode !== "lan"),
+          );
+          $("loopback-settings").setAttribute(
+            "aria-hidden",
+            String(ui.mode !== "loopback"),
+          );
+          $("emoji-toggle").disabled = writeBlocked || !peer;
+          $("send-image").disabled = writeBlocked || !peer?.connected;
+          $("send-file").disabled = writeBlocked || !peer?.connected;
+          $("save-preview").disabled = busy || !permitted();
+          for (const button of $("messages").querySelectorAll("button"))
+            button.disabled = busy || !permitted() || !active();
+          const transferring = ui.pendingAction === "sendAttachment";
+          $("cancel-transfer").hidden = !transferring;
+          $("send").hidden = transferring;
+          $("cancel-transfer").disabled =
+            ui.cancellingTransfer || !allowed || !active();
+          $("cancel-transfer").textContent = ui.cancellingTransfer
+            ? t("正在停止")
+            : t("停止传输");
+          $("stop").disabled = transferring
+            ? ui.cancellingTransfer || !allowed || !active()
+            : writeBlocked || !state?.running;
+          $("connect").disabled =
+            writeBlocked || !state?.running || state.mode !== "lan";
           $("rename").disabled = writeBlocked;
           $("reconnect").disabled =
             writeBlocked || !state?.running || !peer || peer.connected;
@@ -1185,7 +3412,11 @@
           $("refresh").disabled = busy || !allowed;
           for (const id of ["draft", "nickname", "address", "remote-port"])
             $(id).disabled = ui.checkpointBlocked;
-          $("port").disabled = ui.checkpointBlocked || state?.running === true;
+          $("draft").disabled =
+            ui.checkpointBlocked || ui.pendingAction === "forget";
+          $("port").disabled =
+            ui.checkpointBlocked ||
+            (state?.running === true && state.mode === "lan");
           $("draft-count").textContent = t("{count} / 8192 字节", {
             count: bytes($("draft").value),
           });
@@ -1196,58 +3427,88 @@
             const request = ui.confirmation.request;
             $("confirmation-text").textContent =
               request.action === "forget"
-                ? t("移除“{nickname}”及其本机消息历史？", {
+                ? t("移除“{nickname}”及其本机消息历史和未发送草稿？", {
                     nickname: ui.confirmation.nickname,
                   })
                 : t("清空所有本机聊天消息？联系人与对方设备上的消息将保留。");
           }
+          applyLayout();
           renderContacts();
           renderMessages();
+          for (const button of $("messages").querySelectorAll("button"))
+            button.disabled = busy || !allowed || !active();
           scheduleRead();
         }
         async function call(request, { background = false } = {}) {
           if (
             ui.pending ||
+            ui.attachmentBusy ||
+            !active() ||
             ui.disposed ||
             ui.snapshot?.busy === true ||
             !permitted() ||
             (ui.checkpointBlocked && request.action !== "status") ||
-            (background && ui.backgroundPending)
+            (background &&
+              (ui.backgroundPending ||
+                ui.noticePending ||
+                ui.normalRequests >= 2))
           )
             return false;
           if (background) ui.backgroundPending = true;
           else {
             ui.pending = true;
+            ui.pendingAction = request.action;
             ui.actionEpoch++;
             render();
           }
           // 一个后台请求在途；手动动作会使它失效，旧快照不能覆盖发送 / 停止结果。
           const epoch = ui.actionEpoch;
+          if (!background) ui.pendingEpoch = epoch;
           try {
-            const state = validated(
-              await starter.services.request("lan", request),
-            );
+            const state = validated(await normalService(request));
             if (ui.disposed || !permitted() || epoch !== ui.actionEpoch)
               return false;
             ui.state = state;
+            if (request.action === "forget") {
+              if (ui.selected === request.peerId) {
+                $("draft").value = "";
+                ui.draftRevision++;
+              }
+              delete ui.drafts[request.peerId];
+            }
+            if (!ui.modeTouched) ui.mode = state.mode;
+            if (request.action === "loopback" && token(state.loopbackPeerId))
+              ui.pendingLoopbackPeerId = state.loopbackPeerId;
+            if (
+              ui.pendingLoopbackPeerId &&
+              state.peers.some((peer) => peer.id === ui.pendingLoopbackPeerId)
+            ) {
+              selectPeer(ui.pendingLoopbackPeerId);
+              ui.pendingLoopbackPeerId = "";
+            }
+            if (["start", "stop"].includes(request.action))
+              ui.pendingLoopbackPeerId = "";
+            if (request.action === "clearHistory") clearThumbnails();
             ui.readError = null;
             if (
               !ui.selected ||
               !state.peers.some((peer) => peer.id === ui.selected)
             ) {
-              ui.selected = state.peers[0]?.id ?? "";
-              ui.messagesKey = "";
+              selectPeer(state.peers[0]?.id ?? "");
             }
             if (
-              (request.action === "nickname" || request.action === "start") &&
+              ["nickname", "start", "loopback"].includes(request.action) &&
               $("nickname").value === request.nickname
             )
               ui.nicknameDirty = false;
-            if (!ui.nicknameDirty && document.activeElement !== $("nickname"))
+            if (!ui.nicknameDirty && $("nickname").value !== state.nickname)
               $("nickname").value = state.nickname;
             if (state.lastError && state.lastError !== ui.lastError) {
               notice(t("服务报告连接或历史写入错误，请检查连接并刷新。"), true);
-            } else if (!background && request.action !== "status")
+            } else if (
+              !background &&
+              !["status", "send", "sendAttachment"].includes(request.action)
+            )
               notice(
                 request.action === "connect"
                   ? t("已发起连接，正在等待对方协议握手。")
@@ -1256,7 +3517,11 @@
                     : t("操作已完成。"),
               );
             ui.lastError = state.lastError;
-            if (request.action === "nickname" || request.action === "start")
+            if (
+              ["nickname", "start", "loopback", "forget"].includes(
+                request.action,
+              )
+            )
               checkpoint();
             return true;
           } catch (error) {
@@ -1266,22 +3531,17 @@
               const report = !background || ui.readError !== code;
               if (request.action === "status" || request.action === "markRead")
                 ui.readError = code;
-              if (report)
-                notice(
-                  error?.code === "STORAGE_CORRUPT"
-                    ? t("本机聊天存档损坏或超限，原始数据已保留，未覆盖。")
-                    : error?.code === "EXTENSION_INCOMPATIBLE"
-                      ? t(
-                          "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。",
-                        )
-                      : t("操作未完成，请核对权限、IP、端口和连接状态。"),
-                  true,
-                );
+              if (report) notice(errorMessage(error, request), true);
             }
             return false;
           } finally {
-            if (background) ui.backgroundPending = false;
-            else ui.pending = false;
+            if (background) {
+              ui.backgroundPending = false;
+              flushNotice();
+            } else if (ui.pendingEpoch === epoch) {
+              ui.pending = false;
+              ui.pendingAction = "";
+            }
             if (!ui.disposed) render();
           }
         }
@@ -1311,9 +3571,57 @@
               action: "start",
               nickname: name,
               port: value,
+              mode: "lan",
             });
         };
-        $("stop").onclick = () => call({ action: "stop" });
+        async function cancelTransfer() {
+          if (
+            ui.pendingAction !== "sendAttachment" ||
+            ui.cancellingTransfer ||
+            !permitted() ||
+            !active()
+          )
+            return;
+          ui.cancellingTransfer = true;
+          const epoch = ++ui.actionEpoch;
+          ui.pendingEpoch = epoch;
+          render();
+          try {
+            const state = validated(
+              await starter.services.request("lan", { action: "stop" }),
+            );
+            if (ui.disposed || !permitted() || epoch !== ui.actionEpoch) return;
+            ui.state = state;
+            ui.pendingLoopbackPeerId = "";
+            ui.readError = null;
+            notice(t("传输已停止，连接已关闭。历史记录与草稿已保留。"));
+          } catch (error) {
+            if (!ui.disposed && permitted() && epoch === ui.actionEpoch) {
+              ui.readError =
+                typeof error?.code === "string" ? error.code : "UNKNOWN";
+              notice(
+                t("停止请求未完成，传输结果未知。请刷新状态后重试。"),
+                true,
+              );
+            }
+          } finally {
+            ui.cancellingTransfer = false;
+            if (ui.pendingEpoch === epoch) {
+              ui.pending = false;
+              ui.pendingAction = "";
+            }
+            if (!ui.disposed) render();
+          }
+        }
+        $("cancel-transfer").onclick = () => void cancelTransfer();
+        $("stop").onclick = () =>
+          ui.pendingAction === "sendAttachment"
+            ? void cancelTransfer()
+            : call({ action: "stop" });
+        $("loopback").onclick = () => {
+          const name = nickname();
+          if (name) void call({ action: "loopback", nickname: name });
+        };
         $("connect").onclick = () => {
           const value = port("remote-port");
           if (value)
@@ -1327,7 +3635,10 @@
           const name = nickname();
           if (name) call({ action: "nickname", nickname: name });
         };
-        $("refresh").onclick = () => call({ action: "status" });
+        $("refresh").onclick = () => {
+          retryCheckpoint();
+          return call({ action: "status" });
+        };
         $("reconnect").onclick = () => {
           const peer = selectedPeer();
           if (peer)
@@ -1341,6 +3652,7 @@
             !permitted()
           )
             return;
+          closePopovers();
           ui.confirmation = { request, trigger, nickname };
           $("confirmation").hidden = false;
           render();
@@ -1353,7 +3665,15 @@
           return confirmation;
         }
         function restoreConfirmationFocus(confirmation) {
-          const trigger = confirmation && $(confirmation.trigger);
+          const trigger =
+            confirmation &&
+            $(
+              confirmation.trigger === "forget"
+                ? "conversation-more"
+                : confirmation.trigger === "clear"
+                  ? "settings-toggle"
+                  : confirmation.trigger,
+            );
           (trigger && !trigger.disabled ? trigger : $("refresh")).focus();
         }
         $("confirm-action").onclick = async () => {
@@ -1366,6 +3686,34 @@
         $("cancel-action").onclick = () =>
           restoreConfirmationFocus(closeConfirmation());
         document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && ui.resize) {
+            event.preventDefault();
+            finishResize(true);
+            return;
+          }
+          if (event.key === "Tab" && (ui.confirmation || ui.preview)) {
+            trapFocus(
+              event,
+              ui.confirmation ? $("confirmation") : $("attachment-preview"),
+            );
+          }
+          if (event.key === "Escape" && ui.preview) {
+            event.preventDefault();
+            closePreview();
+            return;
+          }
+          if (event.key === "Escape" && !ui.confirmation) {
+            if (!$("emoji-picker").hidden) {
+              setPanel("emoji-picker", "emoji-toggle", false);
+              $("emoji-toggle").focus();
+            } else if (!$("conversation-menu").hidden) {
+              setPanel("conversation-menu", "conversation-more", false);
+              $("conversation-more").focus();
+            } else if (!$("settings-panel").hidden) {
+              setPanel("settings-panel", "settings-toggle", false);
+              $("settings-toggle").focus();
+            }
+          }
           if (event.key === "Escape" && ui.confirmation) {
             event.preventDefault();
             restoreConfirmationFocus(closeConfirmation());
@@ -1395,8 +3743,10 @@
               ui.selected === peer.id &&
               ui.draftRevision === revision &&
               $("draft").value === content
-            )
+            ) {
               $("draft").value = "";
+              delete ui.drafts[peer.id];
+            }
             checkpoint();
             render();
           }
@@ -1410,6 +3760,7 @@
         };
         $("draft").oninput = () => {
           ui.draftRevision++;
+          rememberDraft();
           checkpoint();
           render();
         };
@@ -1418,12 +3769,115 @@
           checkpoint();
         };
         $("draft").onkeydown = (event) => {
-          if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+          if (
+            event.key === "Enter" &&
+            !event.shiftKey &&
+            !event.isComposing &&
+            event.keyCode !== 229
+          ) {
             event.preventDefault();
             void sendMessage();
           }
         };
         $("search").oninput = renderContacts;
+        $("settings-toggle").onclick = () => {
+          if ($("settings-panel").hidden) openSettings();
+          else setPanel("settings-panel", "settings-toggle", false);
+        };
+        $("close-settings").onclick = () => {
+          setPanel("settings-panel", "settings-toggle", false);
+          $("settings-toggle").focus();
+        };
+        $("add-contact").onclick = () => {
+          ui.mode = "lan";
+          ui.modeTouched = true;
+          render();
+          openSettings("address");
+        };
+        $("conversations-toggle").onclick = () => {
+          closePopovers();
+          $("search").focus();
+        };
+        $("conversation-more").onclick = () => {
+          const open = $("conversation-menu").hidden;
+          closePopovers();
+          setPanel("conversation-menu", "conversation-more", open);
+          if (open)
+            [...$("conversation-menu").querySelectorAll("button")]
+              .find((button) => !button.disabled)
+              ?.focus();
+        };
+        for (const mode of ["lan", "loopback"])
+          $("mode-" + mode).onclick = () => {
+            ui.mode = mode;
+            ui.modeTouched = true;
+            render();
+            checkpoint();
+          };
+        $("emoji-toggle").onclick = () => {
+          if ($("emoji-toggle").disabled) return;
+          const open = $("emoji-picker").hidden;
+          closePopovers();
+          if (open) {
+            renderPicker();
+            setPanel("emoji-picker", "emoji-toggle", true);
+            $(ui.pickerKind === "emoji" ? "emoji-tab" : "sticker-tab").focus();
+          }
+        };
+        for (const kind of ["emoji", "sticker"]) {
+          $(kind + "-tab").onclick = () => {
+            ui.pickerKind = kind;
+            renderPicker();
+            $(kind + "-tab").focus();
+          };
+          $(kind + "-tab").onkeydown = (event) => {
+            if (
+              ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+            ) {
+              event.preventDefault();
+              ui.pickerKind =
+                event.key === "Home"
+                  ? "emoji"
+                  : event.key === "End"
+                    ? "sticker"
+                    : kind === "emoji"
+                      ? "sticker"
+                      : "emoji";
+              renderPicker();
+              $(ui.pickerKind + "-tab").focus();
+            }
+          };
+        }
+        for (const kind of ["image", "file"])
+          $("send-" + kind).onclick = () => {
+            const peer = selectedPeer();
+            if (peer?.connected && !$("send-" + kind).disabled) {
+              closePopovers();
+              return call({ action: "sendAttachment", peerId: peer.id, kind });
+            }
+          };
+        $("close-preview").onclick = () => closePreview();
+        $("save-preview").onclick = () => {
+          if (ui.preview) return saveAttachment(ui.preview.id);
+        };
+        $("attachment-preview").onclick = (event) => {
+          if (event.target === $("attachment-preview")) closePreview();
+        };
+        document.addEventListener("click", (event) => {
+          for (const [id, trigger] of [
+            ["settings-panel", "settings-toggle"],
+            ["conversation-menu", "conversation-more"],
+            ["emoji-picker", "emoji-toggle"],
+          ]) {
+            if (
+              !$(id).hidden &&
+              !$(id).contains(event.target) &&
+              !$(trigger).contains(event.target) &&
+              event.target !== $("add-contact")
+            )
+              setPanel(id, trigger, false);
+          }
+        });
         for (const id of ["address", "port", "remote-port"])
           $(id).onchange = checkpoint;
         $("export").onclick = async () => {
@@ -1441,11 +3895,11 @@
           );
           const lines = all.map(
             (message) =>
-              `[${new Date(message.at).toLocaleString(locale())}] ${message.nickname}${message.outgoing ? t("（我）") : ""}:\n${message.text}\n`,
+              `[${new Date(message.at).toLocaleString(locale())}] ${message.nickname}${message.outgoing ? t("（我）") : ""}:\n${messageSummary(message)}${message.attachment ? " (" + fileSize(message.attachment.bytes) + ")" : ""}\n`,
           );
           const exportedAt = new Date().toLocaleString(locale());
           const header = (omitted) =>
-            `${t("局域网信使 · {nickname}", { nickname: peer.nickname })}\n${t("导出时间：{time}", { time: exportedAt })}\n${omitted ? `${t("因导出大小限制，省略最早 {count} 条消息。", { count: omitted })}\n` : ""}\n`;
+            `${t("内网通信 · {nickname}", { nickname: peer.nickname })}\n${t("导出时间：{time}", { time: exportedAt })}\n${omitted ? `${t("因导出大小限制，省略最早 {count} 条消息。", { count: omitted })}\n` : ""}\n`;
           const budget = 200 * 1024 - bytes(header(lines.length));
           let first = lines.length;
           let used = 0;
@@ -1462,15 +3916,17 @@
           const epoch = ui.actionEpoch;
           render();
           try {
-            await starter.run("export", {
-              nickname: ui.state.nickname,
-              // The actual unsent draft belongs to the checkpoint; it may exceed
-              // the send limit while being edited and must not prevent an export.
-              draft: "",
-              export: body,
-            });
+            await normalRequest(() =>
+              starter.run("export", {
+                nickname: ui.state.nickname,
+                // The actual unsent draft belongs to the checkpoint; it may exceed
+                // the send limit while being edited and must not prevent an export.
+                draft: "",
+                export: body,
+              }),
+            );
             if (ui.disposed || !permitted() || epoch !== ui.actionEpoch) return;
-            const saved = await starter.saveArtifact(0);
+            const saved = await normalRequest(() => starter.saveArtifact(0));
             if (ui.disposed || !permitted() || epoch !== ui.actionEpoch) return;
             notice(
               saved ? t("会话已导出。") : t("已取消导出，消息仍保存在本机。"),
@@ -1488,19 +3944,19 @@
           if (ui.polling || ui.disposed) return;
           ui.polling = true;
           try {
-            if (ui.visible && !document.hidden && permitted() && !ui.pending)
+            if (active() && permitted() && !ui.pending && !ui.attachmentBusy)
               await call({ action: "status" }, { background: true });
           } finally {
             ui.polling = false;
-            if (!ui.disposed) ui.pollTimer = setTimeout(poll, 2000);
+            if (active()) ui.pollTimer = setTimeout(poll, 2000);
           }
         }
         document.addEventListener("visibilitychange", () => {
-          if (!document.hidden) poll();
+          syncActivity();
         });
         const observer = new IntersectionObserver(([entry]) => {
           ui.visible = entry?.isIntersecting === true;
-          if (ui.visible) poll();
+          syncActivity();
         });
         observer.observe(document.body);
         function restore(snapshot) {
@@ -1522,6 +3978,9 @@
             "remotePort",
             "nickname",
             "nicknameDirty",
+            "drafts",
+            "mode",
+            "layout",
           ];
           if (
             typeof saved !== "object" ||
@@ -1535,11 +3994,50 @@
               typeof saved.nicknameDirty !== "boolean")
           )
             throw new Error("Unsupported LAN checkpoint");
+          if (
+            saved.mode !== undefined &&
+            !["lan", "loopback"].includes(saved.mode)
+          )
+            throw new Error("Invalid checkpoint mode");
+          if (
+            saved.drafts !== undefined &&
+            (!saved.drafts ||
+              typeof saved.drafts !== "object" ||
+              Array.isArray(saved.drafts) ||
+              Object.keys(saved.drafts).length > 65 ||
+              bytes(JSON.stringify(saved.drafts)) > 220 * 1024 ||
+              Object.entries(saved.drafts).some(
+                ([id, value]) =>
+                  (id !== "" && !token(id)) ||
+                  typeof value !== "string" ||
+                  bytes(value) > 32768,
+              ))
+          )
+            throw new Error("Invalid checkpoint drafts");
+          if (
+            saved.layout !== undefined &&
+            (!saved.layout ||
+              typeof saved.layout !== "object" ||
+              Array.isArray(saved.layout) ||
+              Object.keys(saved.layout).length !== 2 ||
+              Object.keys(saved.layout).some(
+                (key) => !["conversationWidth", "composerHeight"].includes(key),
+              ) ||
+              !Number.isInteger(saved.layout.conversationWidth) ||
+              saved.layout.conversationWidth < 180 ||
+              saved.layout.conversationWidth > 360 ||
+              !Number.isInteger(saved.layout.composerHeight) ||
+              saved.layout.composerHeight < 96 ||
+              saved.layout.composerHeight > 360)
+          )
+            throw new Error("Invalid checkpoint layout");
+          // Unsubmitted connection drafts may be outside the business limits.
+          // The action handlers still validate ports and the native service validates IPs.
           const fields = [
             ["draft", "draft", 32768],
-            ["address", "address", 100],
-            ["port", "port", 5],
-            ["remotePort", "remote-port", 5],
+            ["address", "address", 255 * 1024],
+            ["port", "port", 255 * 1024],
+            ["remotePort", "remote-port", 255 * 1024],
             ["nickname", "nickname", 160],
           ];
           for (const [key, , limit] of fields) {
@@ -1548,15 +4046,21 @@
               typeof saved[key] !== "string" ||
               bytes(saved[key]) > limit ||
               ((key === "port" || key === "remotePort") &&
-                (!/^\d{1,5}$/.test(saved[key]) ||
-                  !validPort(Number(saved[key]))))
+                !validPortDraft(saved[key]))
             )
               throw new Error("Invalid LAN checkpoint");
           }
           // Validate the entire checkpoint before changing any of the current inputs.
           ui.selected = saved.selected ?? "";
+          if (saved.layout) ui.layout = { ...saved.layout };
+          ui.drafts = { ...(saved.drafts ?? {}) };
+          ui.mode = saved.mode ?? "lan";
+          ui.modeTouched = saved.mode !== undefined;
           for (const [key, id] of fields)
             if (saved[key] !== undefined) $(id).value = saved[key];
+          if (saved.drafts && saved.drafts[ui.selected] !== undefined)
+            $("draft").value = saved.drafts[ui.selected];
+          rememberDraft();
           ui.nicknameDirty =
             saved.nicknameDirty === true && typeof saved.nickname === "string";
         }
@@ -1564,17 +4068,22 @@
           if (ui.disposed) return;
           const wasAllowed = permitted();
           const previousLocale = locale();
+          const wasBusy = ui.snapshot?.busy === true;
           ui.snapshot = snapshot;
           const allowed = permitted();
           if (wasAllowed !== allowed) {
             ui.actionEpoch++;
             if (!allowed) {
               ui.state = null;
+              ui.pendingLoopbackPeerId = "";
               ui.contactsKey = "";
               ui.messagesKey = "";
               ui.readError = null;
               ui.lastError = null;
               closeConfirmation();
+              clearThumbnails();
+              closePopovers();
+              closePreview(false);
             }
           }
           if (previousLocale !== locale()) translate();
@@ -1593,8 +4102,17 @@
             }
           }
           render();
+          syncActivity();
+          if (wasBusy && snapshot.busy !== true) retryCheckpoint();
           if (!wasAllowed && allowed) void poll();
         }
+        installResizer("conversationWidth", "conversation-resizer");
+        installResizer("composerHeight", "composer-resizer");
+        const layoutObserver = new ResizeObserver(() => applyLayout());
+        layoutObserver.observe($("layout"));
+        layoutObserver.observe($("chat"));
+        layoutObserver.observe($("chat-header"));
+        window.addEventListener("resize", applyLayout);
         const off = starter.onChange(updateSnapshot);
         window.addEventListener(
           "pagehide",
@@ -1604,6 +4122,7 @@
             clearTimeout(ui.readTimer);
             clearTimeout(ui.checkpointTimer);
             observer.disconnect();
+            layoutObserver.disconnect();
             off();
           },
           { once: true },
@@ -1614,6 +4133,9 @@
             poll();
           })
           .catch(() => notice(t("界面连接未完成，请重新打开本插件。"), true));
+        closePopovers();
+        closePreview(false);
+        $("confirmation").hidden = true;
         translate();
         render();
       })();
