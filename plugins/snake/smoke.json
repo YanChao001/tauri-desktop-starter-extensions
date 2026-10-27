@@ -35,7 +35,7 @@
       "action": "validate",
       "state": "",
       "fields": {
-        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[]}"
       },
       "locale": "en"
     },
@@ -54,13 +54,107 @@
             },
             {
               "label": "Ticks",
-              "value": "14"
+              "value": "0"
             }
           ]
         },
         {
           "kind": "table",
           "columns": ["mode", "best"],
+          "rows": []
+        },
+        {
+          "kind": "table",
+          "columns": ["Score", "Kills", "Foods", "Ticks", "Difficulty", "Run"],
+          "rows": []
+        }
+      ],
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]}"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "description": "The checkpoint was replayed and validated by Wasm.",
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Score",
+              "value": "13"
+            },
+            {
+              "label": "Mode best",
+              "value": "0"
+            },
+            {
+              "label": "Ticks",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "kind": "table",
+          "columns": ["mode", "best"],
+          "rows": []
+        },
+        {
+          "kind": "table",
+          "columns": ["Score", "Kills", "Foods", "Ticks", "Difficulty", "Run"],
+          "rows": []
+        }
+      ],
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,8],[81,false,15],[130,true,12]]}"
+      },
+      "locale": "en"
+    },
+    "expectJsonSubset": {
+      "blocks": [
+        {
+          "kind": "metrics",
+          "items": [
+            {
+              "label": "Score",
+              "value": "13"
+            },
+            {
+              "label": "Mode best",
+              "value": "0"
+            },
+            {
+              "label": "Ticks",
+              "value": "35"
+            }
+          ]
+        },
+        {
+          "kind": "table",
+          "columns": ["mode", "best"],
+          "rows": []
+        },
+        {
+          "kind": "table",
+          "columns": ["Score", "Kills", "Foods", "Ticks", "Difficulty", "Run"],
           "rows": []
         }
       ],
@@ -74,7 +168,7 @@
       "action": "save-best",
       "state": "",
       "fields": {
-        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]}"
       },
       "locale": "en"
     },
@@ -90,7 +184,7 @@
       "action": "save-best",
       "state": "",
       "fields": {
-        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]}"
       },
       "locale": "en",
       "host": {
@@ -99,10 +193,11 @@
           "revision": 7,
           "values": {
             "snake-records": {
-              "schema": 1,
+              "schema": 4,
               "best": {
-                "fast-wrap-rocks": 50
-              }
+                "hard": 900
+              },
+              "scores": []
             }
           }
         }
@@ -116,11 +211,21 @@
           "expectedRevision": 7,
           "changes": {
             "snake-records": {
-              "schema": 1,
+              "schema": 4,
               "best": {
-                "fast-wrap-rocks": 50,
-                "normal-wall-clear": 10
-              }
+                "hard": 900,
+                "normal": 13
+              },
+              "scores": [
+                {
+                  "score": 13,
+                  "kills": 0,
+                  "foods": 1,
+                  "ticks": 1,
+                  "difficulty": "normal",
+                  "runId": "013528a21"
+                }
+              ]
             }
           }
         }
@@ -132,7 +237,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
       "fields": {},
       "locale": "en",
       "host": {
@@ -141,10 +246,11 @@
           "revision": 7,
           "values": {
             "snake-records": {
-              "schema": 1,
+              "schema": 4,
               "best": {
-                "fast-wrap-rocks": 50
-              }
+                "hard": 900
+              },
+              "scores": []
             }
           }
         }
@@ -156,11 +262,21 @@
             "revision": 8,
             "values": {
               "snake-records": {
-                "schema": 1,
+                "schema": 4,
                 "best": {
-                  "fast-wrap-rocks": 50,
-                  "normal-wall-clear": 10
-                }
+                  "hard": 900,
+                  "normal": 13
+                },
+                "scores": [
+                  {
+                    "score": 13,
+                    "kills": 0,
+                    "foods": 1,
+                    "ticks": 1,
+                    "difficulty": "normal",
+                    "runId": "013528a21"
+                  }
+                ]
               }
             }
           },
@@ -169,23 +285,22 @@
       ]
     },
     "expectJsonSubset": {
-      "description": "The best score for this mode was saved.",
-      "effects": [],
+      "description": "The best score for this difficulty was saved.",
       "blocks": [
         {
           "kind": "metrics",
           "items": [
             {
               "label": "Score",
-              "value": "10"
+              "value": "13"
             },
             {
               "label": "Mode best",
-              "value": "10"
+              "value": "13"
             },
             {
               "label": "Ticks",
-              "value": "14"
+              "value": "1"
             }
           ]
         },
@@ -193,11 +308,17 @@
           "kind": "table",
           "columns": ["mode", "best"],
           "rows": [
-            ["fast-wrap-rocks", "50"],
-            ["normal-wall-clear", "10"]
+            ["hard", "900"],
+            ["normal", "13"]
           ]
+        },
+        {
+          "kind": "table",
+          "columns": ["Score", "Kills", "Foods", "Ticks", "Difficulty", "Run"],
+          "rows": [["13", "0", "1", "1", "normal", "013528a21"]]
         }
-      ]
+      ],
+      "effects": []
     }
   },
   {
@@ -205,7 +326,7 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
       "fields": {},
       "locale": "en",
       "host": {
@@ -214,10 +335,11 @@
           "revision": 7,
           "values": {
             "snake-records": {
-              "schema": 1,
+              "schema": 4,
               "best": {
-                "fast-wrap-rocks": 50
-              }
+                "hard": 900
+              },
+              "scores": []
             }
           }
         }
@@ -228,7 +350,7 @@
           "value": null,
           "error": {
             "code": "CONFLICT",
-            "message": "changed",
+            "message": "fixture",
             "retryable": false
           }
         }
@@ -244,16 +366,31 @@
     "input": {
       "version": 2,
       "action": "host-result",
-      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
       "fields": {},
       "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 4,
+              "best": {
+                "hard": 900
+              },
+              "scores": []
+            }
+          }
+        }
+      },
       "results": [
         {
           "id": "save-best",
           "value": null,
           "error": {
             "code": "INPUT_TOO_LONG",
-            "message": "completed",
+            "message": "fixture",
             "retryable": false
           }
         }
@@ -268,63 +405,196 @@
     "command": "play",
     "input": {
       "version": 2,
-      "action": "validate",
-      "state": "",
-      "fields": {
-        "checkpoint": "{\"schema\":2,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[],\"muted\":false}"
-      },
-      "locale": "en"
-    },
-    "expectError": "EXTENSION_RUN_FAILED"
-  },
-  {
-    "command": "play",
-    "input": {
-      "version": 2,
-      "action": "validate",
-      "state": "",
-      "fields": {
-        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[],\"muted\":false,\"score\":9999}"
-      },
-      "locale": "en"
-    },
-    "expectError": "EXTENSION_RUN_FAILED"
-  },
-  {
-    "command": "play",
-    "input": {
-      "version": 2,
-      "action": "validate",
-      "state": "",
-      "fields": {
-        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"left\"],\"muted\":false}"
-      },
-      "locale": "en"
-    },
-    "expectError": "EXTENSION_RUN_FAILED"
-  },
-  {
-    "command": "play",
-    "input": {
-      "version": 2,
-      "action": "save-best",
-      "state": "",
-      "fields": {
-        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false}"
-      },
+      "action": "host-result",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
+      "fields": {},
       "locale": "en",
       "host": {
         "permissions": ["storage"],
         "storage": {
-          "revision": 1,
+          "revision": 7,
           "values": {
             "snake-records": {
-              "schema": 2,
-              "best": {}
+              "schema": 4,
+              "best": {
+                "hard": 900
+              },
+              "scores": []
             }
           }
         }
-      }
+      },
+      "results": [
+        {
+          "id": "save-best",
+          "value": null,
+          "error": {
+            "code": "USER_CANCELLED",
+            "message": "fixture",
+            "retryable": false
+          }
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "description": "Waiting for the save was cancelled. Your game is retained; the write may have completed. Refresh records before deciding to save again.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 4,
+              "best": {
+                "hard": 900
+              },
+              "scores": []
+            }
+          }
+        }
+      },
+      "results": [
+        {
+          "id": "save-best",
+          "value": null,
+          "error": {
+            "code": "STORAGE_IO",
+            "message": "fixture",
+            "retryable": false
+          }
+        }
+      ]
+    },
+    "expectJsonSubset": {
+      "description": "The save did not complete. Your game is retained; no automatic retry was made.",
+      "effects": []
+    }
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":4,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":70,\"nickname\":\"\",\"inputs\":[]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":2,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":70,\"nickname\":\"\",\"inputs\":[]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[256,false,1]]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[0,false,0]]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[0,false,12001]]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":15,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":101,\"nickname\":\"\",\"inputs\":[]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"1234567890123456789012345\",\"inputs\":[]}"
+      },
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "validate",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[],\"maxScore\":9999}"
+      },
+      "locale": "en"
     },
     "expectError": "EXTENSION_RUN_FAILED"
   },
@@ -343,9 +613,22 @@
     "command": "play",
     "input": {
       "version": 2,
-      "action": "host-result",
-      "state": "{\"schema\":1,\"game\":{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"up\",\"left\",\"left\",\"left\",\"left\",\"left\",\"left\"],\"muted\":false},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal-wall-clear\",\"best\":10,\"expected\":{\"schema\":1,\"best\":{\"fast-wrap-rocks\":50,\"normal-wall-clear\":10}}}}",
+      "action": null,
+      "state": "{\"schema\":2,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":null}",
       "fields": {},
+      "locale": "en"
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "save-best",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]}"
+      },
       "locale": "en",
       "host": {
         "permissions": ["storage"],
@@ -353,31 +636,39 @@
           "revision": 7,
           "values": {
             "snake-records": {
-              "schema": 1,
-              "best": {
-                "fast-wrap-rocks": 50
-              }
+              "schema": 5,
+              "best": {},
+              "scores": []
             }
           }
         }
+      }
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "save-best",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]}"
       },
-      "results": [
-        {
-          "id": "save-best",
-          "value": {
-            "revision": 8,
-            "values": {
-              "snake-records": {
-                "schema": 1,
-                "best": {
-                  "normal-wall-clear": 10
-                }
-              }
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 2,
+              "best": {},
+              "scores": []
             }
-          },
-          "error": null
+          }
         }
-      ]
+      }
     },
     "expectError": "EXTENSION_RUN_FAILED"
   },
@@ -392,11 +683,12 @@
       "host": {
         "permissions": ["storage"],
         "storage": {
-          "revision": 1,
+          "revision": 7,
           "values": {
             "snake-records": {
               "schema": 2,
-              "best": {}
+              "best": {},
+              "scores": []
             }
           }
         }
@@ -430,13 +722,218 @@
     "command": "play",
     "input": {
       "version": 2,
-      "action": "validate",
-      "state": "",
-      "fields": {
-        "checkpoint": "{\"schema\":1,\"seed\":20261026,\"difficulty\":\"normal\",\"wrap\":false,\"obstacles\":false,\"moves\":[\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"right\",\"down\"],\"muted\":false}"
+      "action": "host-result",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 4,
+              "best": {
+                "hard": 900
+              },
+              "scores": []
+            }
+          }
+        }
       },
-      "locale": "en"
+      "results": [
+        {
+          "id": "save-best",
+          "value": {
+            "revision": 8,
+            "values": {
+              "snake-records": {
+                "schema": 4,
+                "best": {
+                  "hard": 900,
+                  "normal": 13
+                },
+                "scores": []
+              }
+            }
+          },
+          "error": null
+        }
+      ]
     },
     "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 4,
+              "best": {
+                "hard": 900
+              },
+              "scores": []
+            }
+          }
+        }
+      },
+      "results": [
+        {
+          "id": "save-best",
+          "value": {
+            "revision": 9,
+            "values": {
+              "snake-records": {
+                "schema": 4,
+                "best": {
+                  "hard": 900,
+                  "normal": 13
+                },
+                "scores": [
+                  {
+                    "score": 13,
+                    "kills": 0,
+                    "foods": 1,
+                    "ticks": 1,
+                    "difficulty": "normal",
+                    "runId": "013528a21"
+                  }
+                ]
+              }
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 4,
+              "best": {
+                "hard": 900
+              },
+              "scores": []
+            }
+          }
+        }
+      },
+      "results": [
+        {
+          "id": "save-best",
+          "value": {
+            "revision": 8,
+            "values": {}
+          },
+          "error": null
+        }
+      ]
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "host-result",
+      "state": "{\"schema\":3,\"game\":{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,1]]},\"notice\":\"ready\",\"pending\":{\"revision\":7,\"mode\":\"normal\",\"best\":13,\"expected\":{\"schema\":4,\"best\":{\"hard\":900,\"normal\":13},\"scores\":[{\"score\":13,\"kills\":0,\"foods\":1,\"ticks\":1,\"difficulty\":\"normal\",\"runId\":\"013528a21\"}]}}}",
+      "fields": {},
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 7,
+          "values": {
+            "snake-records": {
+              "schema": 4,
+              "best": {
+                "hard": 900
+              },
+              "scores": []
+            }
+          }
+        }
+      },
+      "results": [
+        {
+          "id": "other",
+          "value": null,
+          "error": {
+            "code": "CONFLICT",
+            "message": "fixture",
+            "retryable": false
+          }
+        }
+      ]
+    },
+    "expectError": "EXTENSION_RUN_FAILED"
+  },
+  {
+    "command": "play",
+    "input": {
+      "version": 2,
+      "action": "save-best",
+      "state": "",
+      "fields": {
+        "checkpoint": "{\"schema\":3,\"seed\":20261026,\"difficulty\":\"normal\",\"skin\":0,\"muted\":false,\"volume\":65,\"nickname\":\"\",\"inputs\":[[13,false,8],[81,false,15],[130,true,12]]}"
+      },
+      "locale": "en",
+      "host": {
+        "permissions": ["storage"],
+        "storage": {
+          "revision": 4,
+          "values": {}
+        }
+      }
+    },
+    "expectJsonSubset": {
+      "effects": [
+        {
+          "kind": "storage",
+          "id": "save-best",
+          "expectedRevision": 4,
+          "changes": {
+            "snake-records": {
+              "schema": 4,
+              "best": {
+                "normal": 13
+              },
+              "scores": [
+                {
+                  "score": 13,
+                  "kills": 0,
+                  "foods": 1,
+                  "ticks": 35,
+                  "difficulty": "normal",
+                  "runId": "013528a21"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
   }
 ]
