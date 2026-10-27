@@ -2,9 +2,15 @@
 
 本指南面向向市场提交插件的作者。市场仓库负责插件源码、收录清单和构建；宿主负责权限、视图协议、Wasm 运行与安装。先了解 [架构与边界](./architecture.md)，再按本页准备环境。验证要求见 [测试规范](./testing.md)，上架与签名见 [发布指南](./publishing.md)。
 
+## 首次编写插件
+
+先走 [独立作者入口](./plugin-authoring.md)：该页区分市场本地可用的材料、需要取得的宿主公共契约与工具，并提供可编译、真实 Wasm 校验和本地打包的最小文本插件。当前市场文档与检出内容还不是完整的独立开发套件；作者无需理解宿主内部实现，但仍需配套宿主文档、SDK 及 `extension-tool`。预编译 CLI、版本化市场 SDK 快照和完整服务类型尚未在这里交付，具体边界及后续完善方式由该页统一维护。
+
+最短路径是确定配套宿主提交并准备工具 → 完成最小示例 → 按业务选择文本、通用视图或自定义 HTML → 编写手写 fixture 并验收真实宿主交互 → 按本页新增插件和贡献流程提交。先验证单个插件，再运行完整市场检查；教学示例不加入发布收录清单。
+
 ## 环境与目录
 
-市场脚本只使用 Node 内置模块，没有需要安装的 npm 运行依赖。Node 要求以 [`package.json`](../package.json) 为准，目前为 24 或以上；首次还要编译宿主工具，应选择同时满足宿主 `package.json` engines 的 Node 版本，并使用其中指定的 pnpm。不要直接把宿主 `.nvmrc` 的默认版本用于市场：两个仓库的支持范围并不完全相同。
+市场脚本只使用 Node 内置模块，无需安装 npm 依赖。Node 以 [`package.json`](../package.json) 为准；编译宿主工具时，还须满足宿主 `engines` 并使用其指定 pnpm。两个仓库的 Node 支持范围不同，不直接照搬宿主 `.nvmrc`。
 
 Rust 使用本仓库 [`rust-toolchain.toml`](../rust-toolchain.toml) 钉住的工具链，插件依赖以各自 `Cargo.lock` 为准。宿主工具使用宿主自己的 `rust-toolchain.toml`；不要将宿主的 `RUSTUP_TOOLCHAIN` 导出到市场构建步骤，否则会覆盖市场工具链选择。宿主工具构建还需要对应平台的 Tauri 编译依赖；按 [宿主环境说明](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/development.md#环境要求) 安装。即使工具本身不启动窗口，其所属 Rust crate 仍依赖这些库。
 
@@ -64,36 +70,21 @@ rustup target add wasm32-unknown-unknown
 
 ### 独立检出市场仓库
 
-独立 clone 不带宿主源码，也不提供预编译宿主工具。准备一个与市场协议匹配的宿主 checkout，按上一节前四步构建工具，再通过 `STARTER_EXTENSION_TOOL` 传递**绝对路径**。两个仓库不要求存在父子关系。
+独立 clone 不包含宿主源码或预编译工具。另行检出配套宿主，在其根目录执行上一节的 `pnpm install`、`pnpm build` 与 `cargo build`，再回到市场目录准备本仓库 Rust 工具链和 Wasm 目标。两个检出目录不要求存在父子关系。
 
-例如，宿主与市场目录位于同一工作目录下，并分别命名为 `tauri-desktop-starter` 和 `tauri-desktop-starter-extensions`。PowerShell 从**市场仓库根目录**执行：
+通过 `STARTER_EXTENSION_TOOL` 指定工具的**绝对路径**，例如 PowerShell：
 
 ```powershell
-Push-Location ../tauri-desktop-starter
-pnpm install --frozen-lockfile
-pnpm build
-cargo build --locked --manifest-path src-tauri/Cargo.toml --bin extension-tool
-$env:STARTER_EXTENSION_TOOL = (Resolve-Path src-tauri/target/debug/extension-tool.exe).Path
-Pop-Location
-rustup toolchain install
-rustup target add wasm32-unknown-unknown
+$env:STARTER_EXTENSION_TOOL = "E:\tools\tauri-desktop-starter\src-tauri\target\debug\extension-tool.exe"
 ```
 
-macOS / Linux 也从**市场仓库根目录**执行：
+macOS / Linux：
 
 ```sh
-market_root="$PWD"
-cd ../tauri-desktop-starter
-pnpm install --frozen-lockfile
-pnpm build
-cargo build --locked --manifest-path src-tauri/Cargo.toml --bin extension-tool
-export STARTER_EXTENSION_TOOL="$PWD/src-tauri/target/debug/extension-tool"
-cd "$market_root"
-rustup toolchain install
-rustup target add wasm32-unknown-unknown
+export STARTER_EXTENSION_TOOL="/absolute/path/to/tauri-desktop-starter/src-tauri/target/debug/extension-tool"
 ```
 
-变量只作用于当前 shell 及其子进程。另开终端需要重新设置；Windows 文件名必须为 `extension-tool.exe`，其他平台为 `extension-tool`。具体探测与检查见 [`scripts/host-tool.mjs`](../scripts/host-tool.mjs)。
+替换为实际位置，另开终端后重新设置。工具选择规则见 [`scripts/host-tool.mjs`](../scripts/host-tool.mjs)。
 
 ## 首次完整离线检查
 
@@ -113,13 +104,13 @@ node scripts/check.mjs
 
 `MARKET_REVISION` 必须为正 u32。Unix 秒适合日常生成不重复的本地目录；同一秒重复执行仍会冲突，请生成一个未使用的值。工具不覆盖已有 `dist/market-<revision>`，也不会把本地修订号自动登记为线上最新版本。生产目录必须满足比线上已发布修订更高的要求，见 [发布指南](./publishing.md)。
 
-`check` 检查所有收录插件的 Rust 格式，按锁文件编译 Wasm，调用宿主 `validate` / `test`，再打包并用一次性内存密钥进行完整离线验签。成功时输出包目录及离线回归通过提示；输出包含 `catalog-unsigned.json` 和可本地导入的 `.starter-extension.json`，不生成可发布的签名 `catalog.json`，不读取生产私钥或修改 `public-key.txt`。
+`check` 检查 Rust 格式、按锁文件编译全部 Wasm，通过宿主 `test` 后打包并用一次性内存密钥离线验签。输出为 `catalog-unsigned.json` 和可本地导入的 `.starter-extension.json`，不生成生产 `catalog.json` 或使用生产私钥。具体检查与未覆盖范围见 [测试规范](./testing.md#真实-wasm-与手写-fixture)。
 
 仅需构建和真实 Wasm 校验时也可在设置新修订号后，从**市场仓库根目录**运行 `node scripts/build.mjs`。`check` 已包含该步骤，不要先用相同修订号运行 `build` 再运行 `check`。
 
 ## 新增一个插件
 
-当前四个市场插件都使用官方 Extism Rust PDK，分别独立维护 Cargo 清单和锁文件。按业务参考 [科学计算器](../plugins/scientific-calculator/) 的计算与工作区、[贪吃蛇](../plugins/snake/) 的本地高频循环和日志校验，或 [局域网信使](../plugins/lan-chat/) / [壁纸库](../plugins/wallpaper-browser/) 的固定服务调用。复制后先修改身份和说明，不要为不相关的功能顺带复制存储、监听或下载能力。
+当前四个市场插件都使用官方 Extism Rust PDK，分别独立维护 Cargo 清单和锁文件。按业务参考 [计算器](../plugins/scientific-calculator/) 的计算与工作区、[贪吃蛇](../plugins/snake/) 的本地高频循环和日志校验，或 [内网通信](../plugins/lan-chat/) / [壁纸库](../plugins/wallpaper-browser/) 的固定服务调用。复制后先修改身份和说明，不要为不相关的功能顺带复制存储、监听或下载能力。
 
 1. 建立 `plugins/<directory>/`。目录名使用小写字母开头的小写字母、数字和连字符，最长 64 字符；不要复制 `target/` 或 `dist/`。
 2. 修改 `Cargo.toml` 的包名、版本与许可。保留 `cdylib` 产物类型，新增依赖时审阅 Wasm 支持、许可、体积和维护情况。只为新插件生成或更新自身的 `Cargo.lock`，不要顺带升级其他插件。
@@ -141,48 +132,47 @@ cargo test --locked --manifest-path plugins/my-plugin/Cargo.toml --target-dir ta
 
 ## Rust、JavaScript、TypeScript 与界面
 
-宿主并不限于 Rust：其开发示例同时提供 JavaScript 和 TypeScript 经 Extism JS PDK 编译为 Wasm 的路线，参见 [宿主 JS / TS 构建说明](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md#构建-javascript-和-typescript-示例)。这些是宿主仓库的示例；市场当前的统一 `build.mjs` 固定调用 Cargo，仅直接构建 Rust 插件，不能只在收录清单填入一个 `.js` 文件。
-
-JS / TS 插件运行于 Wasm 中的 JavaScript 环境，不是 Node.js 进程或浏览器页面。不要使用 Node 内置模块、DOM 或自行调用宿主 IPC 来获取能力。网络、持久化和用户文件等交给声明式请求及宿主授权处理。需要把 JS / TS 插件正式纳入市场时，需同时扩展受审查的构建流程并保留同样的宿主验证、fixture、打包和签名步骤。
+宿主提供 [JS / TS 编译为 Wasm 的示例](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md#构建-javascript-和-typescript-示例)，其执行环境没有 Node 内置模块或浏览器 DOM。市场 `build.mjs` 当前固定调用 Cargo；收录其他语言须先实现受审核的构建流程，并保留相同的宿主验证、fixture、打包与签名步骤。语言与界面的区别见 [架构说明](./architecture.md#语言与-wasm)。
 
 ## 自定义界面开发
 
-简单命令不需要 HTML；复杂应用在视图命令 ui 中设置 document，例如 main，并建立 `ui/main.html`。自包含 HTML 内嵌 CSS、JavaScript、数据图片和字体；可用普通 DOM / Canvas，也可让框架构建为单文件。保留键盘、焦点、减少动效、主题和窄屏；不要引用 CDN、外部脚本或远程网页。
+简单命令不需要 HTML；复杂应用在视图命令中设置 `ui.document: "main"`，并建立 `ui/main.html`。自包含 HTML 内嵌 CSS、JavaScript、数据图片和字体，可使用 DOM / Canvas 或框架生成的单文件。保留键盘、焦点、减少动效、主题和窄屏，不引用 CDN、外部脚本或远程网页。
 
 宿主在作者代码之前注入 SDK，HTML 不需要导入脚本。SDK 提供与宿主一致的主题 token、字体、语言、减少动效和基础控件样式；默认样式可以被作者 CSS 覆写，不必复制宿主组件或引入框架。独立窗口可选择主题和语言，包括跟随宿主语言；消费 snapshot 更新，避免只在初次加载时固定文案或画布颜色。
 
 说明密度、Tooltip / placeholder、操作反馈和动态长文布局遵循 [宿主说明与布局规范](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/conventions/ui-guidelines.md#说明与布局稳定)；操作提示使用 SDK `notify`，其参数和限制见 [SDK](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/sdk/README.md)。
 
-普通单选 select 由 SDK 渐进增强，仍读写原节点的值并使用原事件处理；需要原生交互时声明 `data-starter-select="native"`。支持范围、表单语义和覆写统一见 [SDK 默认外观](https://github.com/YanChao001/tauri-desktop-starter/blob/feature/workflows-and-extensions/sdk/README.md#默认外观与动效)，不要另写原型补丁或复制宿主控件实现。
+普通单选 select 由 SDK 渐进增强，保留原节点值和事件；需原生交互时声明 `data-starter-select="native"`。支持范围、表单语义和覆写见 [SDK 默认外观](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/sdk/README.md#默认外观与动效)。
 
 首屏骨架由宿主真实加载状态控制，SDK 在首个视图、主题与 DOM 呈现就绪后通知展示；作者不手工发送内部握手或人为添加启动延迟。自己的异步业务仍需真实加载 / 失败状态，后续忙碌保持正文可见。宿主工具入口位于左侧当前扩展导航项或独立窗口标题栏，正文只组织业务内容。
 
-`starter.onChange` 接收当前 view、fields、checkpoint、忙碌、语言和主题；`starter.run` 请求本命令动作，`starter.setFields` 只更新字段，`starter.checkpoint` 报告草稿及是否未保存，`starter.saveArtifact` 请求保存已生成产物。异步失败保留输入并显示可理解的反馈，保存取消返回 false，不能标成已保存。完整类型与示例见 [宿主界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/feature/workflows-and-extensions/sdk)，不要复制一套 DTO。
+通过 `starter.onChange` 消费状态更新；用 `run` 执行业务动作、`setFields` 更新字段、`checkpoint` 报告草稿和未保存状态、`saveArtifact` 保存已生成产物。失败保留输入，保存取消返回 `false`。完整类型与示例见 [宿主界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/tree/develop/sdk)，不另写 DTO。
 
 隔离界面的 sandbox 不含 `allow-forms`；浏览器可能在触发 `onsubmit` 前就阻止表单提交。操作按钮显式使用 `type="button"`，通过点击处理调用业务函数，不依赖 `onsubmit`、`requestSubmit()` 或按钮默认的 submit 行为。需要回车操作时，在对应输入框中按产品语义处理键盘事件、阻止默认提交，再调用同一业务函数；多行输入保留换行或使用明确的组合键。不要为修复按钮无响应而放宽宿主 sandbox。
 
 高频游戏的帧和逻辑步放在界面内，必要时合并检查点，不逐帧调用 Wasm 或原生服务。普通临时游玩可以报告 `dirty: false`；真实未保存编辑用 `dirty: true`。离开暂停、返回手动恢复，并清理 RAF、音频、轮询与监听。检查点导入仍是未知数据，必须重验 schema、范围与可达性。
 
-画布拖动和缩放同样在本地动画帧中绘制，按有界间隔合并最新 fields / checkpoint，并等待上一批完成，不能为每个 pointermove 连续调用 SDK。科学计算器按 250 ms 合并草稿，保留现有通道频率预算；开始业务动作前提交最新字段，避免旧回执覆盖新视口。幂等草稿写入遇到宿主忙碌冲突时，等待新的空闲状态再对同一草稿恢复一次；区分早到的拒绝与空闲后才到的回执，不用旧空闲快照反复抢跑，也不自动重放业务动作或重试一般失败。
+画布拖动和缩放在本地动画帧中绘制，按有界间隔串行合并最新 fields / checkpoint，业务动作前先提交末次草稿。忙碌冲突后，幂等草稿只在新空闲状态到达后恢复一次，并处理拒绝回执晚于空闲通知的时序；不凭旧快照循环重试，不重放业务动作或一般失败。计算器提供 250 ms 合并的实际示例。
 
 本仓库 build 自动读取被引用的 `ui/<id>.html`，检查目录与文件不是链接、UTF-8 和额度，固定同一快照传给原生工具并打包。只修改 HTML 也必须提高插件版本；完整 JSON 包和 UI 文档摘要都会改变。界面重载恢复本窗口字段与检查点，不重新初始化 Wasm；未上报的局部状态无法保留。不同示例见各插件的 `ui/main.html`。
 
-UI 与 Wasm 是不同上下文。界面不会获得宿主 DOM、可用 Tauri IPC、任意路径或凭据原文。通用 HTTP 和私有 KV 由 Wasm 返回受控 effects；LAN 长连接、短期图片资源、现有图库与外部链接使用下面的有限原生服务。供应商 URL、网页解析与结果来源解释在插件 Wasm 中实现，不向宿主追加具体网站业务。界面脚本不要使用 Node API 或另建浏览器存储。路线选择与边界见 [插件界面与 HTML](./architecture.md#插件界面与-html)。
+通用 HTTP 和私有 KV 由 Wasm 返回受控 effects，长连接等使用下面的固定服务；供应商 URL、网页解析与来源解释留在插件 Wasm。UI 不使用原生 IPC、Node API 或另建浏览器存储，隔离边界见 [安全规范](./security.md#执行隔离与数据能力)。
 
 ## 固定原生服务
 
-`starter.services.request(service, request)` 只接受宿主固定的 `lan`、`wallpaper`、`resources` 与 `links` 操作。宿主附加安装身份、哈希、代次和原生窗口，重新检查当前启用与授权；插件不能传入另一个 ID、任意命令或路径。完整字段以配套宿主 SDK 和 Rust 服务为准。
+`starter.services.request(service, request)` 只接受宿主固定的 `lan`、`wallpaper`、`resources`、`links` 与 `window` 操作。宿主附加安装身份、哈希、代次和原生窗口，重新检查当前启用与授权；插件不能传入另一个 ID、任意命令、窗口 label 或路径。完整字段以配套宿主 SDK 和 Rust 服务为准。
 
-- **LAN** 使用 `messaging:lan`，信使将其作为必需权限。用户明确开启监听或输入数字私有 / 回环 IP 连接；不会自动发现公网设备、扫描网络或在导入会话时重连。连接属于原生窗口，导航后保持；界面仅在可见时读取状态，不能在 iframe 清理时误停整个服务。实际停止、最后服务窗口关闭、撤权、替换和退出由宿主回收。
-- **图库** 使用 `wallpapers:manage`，仅支持 `list`、`import` 本机选择、`import-resource`、`apply`、`rename`、`remove` 和 `open-settings`，复用应用现有图库与设置。`import-resource` 接受本窗口有效的 `resourceId` 与显示名称；不接受 URL、`resultId` 或 `pageId`，没有供应商搜索接口。
-- **图片资源** 使用可选 `network:images`，以 `fetch-image` 的公共 HTTPS URL 获取资源，返回 `resourceId`、MIME、字节数、尺寸和哈希。`preview` 生成安全 data URL，`save` 经系统对话框另存已验证原图，`release` 主动释放；收到取消不能标记已保存。句柄短期有效且绑定当前安装与窗口，关闭 / 撤权清理，不把它当长期存储或会话恢复资格。请求 URL 的查询参数同样可发送数据，权限用途需要明确说明。
-- **外部链接** 使用可选 `links:open`，由 `links` 服务提交公共 HTTPS URL 并通过系统浏览器打开；不开放任意协议、路径或系统命令。
+| 服务        | 权限                | 调用要点                                                                                     |
+| ----------- | ------------------- | -------------------------------------------------------------------------------------------- |
+| `lan`       | `messaging:lan`     | 明确监听、连接与消息 / 附件发送，本机回环使用真实 TCP；导航后连接保留，iframe 卸载只清理轮询 |
+| `wallpaper` | `wallpapers:manage` | 复用现有图库与设置；远程导入只接受有效 `resourceId` 和名称                                   |
+| `resources` | `network:images`    | `fetch-image` 获取，`preview` / `save` 使用，`release` 释放；不持久化句柄                    |
+| `links`     | `links:open`        | 用户请求打开公共 HTTPS 来源页                                                                |
+| `window`    | `window:control`    | 读取、切换本插件独立原生窗口的置顶状态，嵌入主界面与浏览器不支持                             |
 
-壁纸库的必应搜索 URL、HTML 解析、查询匹配及来源说明由插件 Wasm 负责；HTTP effect 使用可选 `network:https` 与清单中的 `https://cn.bing.com` GET 声明。只需要本机图库时，不授予这些网络或外链权限仍能使用。图片资源与普通 HTTP 是不同授权，图库权限不能替代它们。
+HTTP effect 与 `fetch-image` 省略 `networkMode` 时继承宿主“设置 → 网络”的选项，宿主默认 `system`（跟随系统代理）。继承 `system` 仍需独立 `network:system-proxy`，未授权回落直连，本机来源始终直连；显式传入旧 `direct` / `system` 仍受兼容协议及其授权检查约束。壁纸库省略该字段，不在局部界面或检查点维护连接偏好。协议与兼容语义见 [宿主扩展指南](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md#来源与授权)。权限不可互相替代，图片查询参数也可发送数据；网络、资源与生命周期限制见 [安全规范](./security.md#原生服务与外部来源)。
 
-HTTP 请求与 `resources` 的 `fetch-image` 可选 `networkMode: "direct" | "system"`，默认 `direct`。`system` 还需独立授予 `network:system-proxy`，不能用于本机来源；代理由系统 / 环境配置选择，插件不提交代理地址。公共 HTTPS 直连执行全部 DNS 公网校验并固定已核验地址；独立本机来源仍遵循 `network:local`。代理远端解析无法证明最终 IP，具体边界见 [安全规范](./security.md#原生服务与外部来源)。
-
-服务是受控宿主能力，不是可插拔通用 IPC。新增方法或权限先完成宿主实现及边界测试，再更新插件；独立 CI 必须能获取对应宿主提交。具体用户操作见 [信使说明](../plugins/lan-chat/README.md) 和 [壁纸说明](../plugins/wallpaper-browser/README.md)，信任与许可见 [安全规范](./security.md#原生服务与外部来源)。
+服务是受控宿主能力，不是可插拔通用 IPC。新增方法或权限先完成宿主实现及边界测试，再更新插件；独立 CI 必须能获取对应宿主提交。具体用户操作见 [内网通信说明](../plugins/lan-chat/README.md) 和 [壁纸说明](../plugins/wallpaper-browser/README.md)，信任与许可见 [安全规范](./security.md#原生服务与外部来源)。
 
 状态轮询与标记已读应使用独立在途状态，不把每轮查询当作手动业务忙碌；等待期间昵称、草稿和连接操作保持可用。手动动作后丢弃早先发出的旧查询回执，更新服务状态时保留用户新输入、焦点与选区。实现不应通过整页重建或周期禁用控件来保证互斥。
 
