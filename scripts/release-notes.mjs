@@ -20,7 +20,7 @@ const headings = new Map([
 const markdown = (value) =>
   String(value)
     .replace(/\s+/g, " ")
-    .replace(/[\\`*_{}\[\]()<>|]/g, "\\$&");
+    .replace(/[\\`*_{}[\]()<>|]/g, "\\$&");
 
 export const runGit = (args) =>
   execFileSync("git", args, {
