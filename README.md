@@ -1,6 +1,6 @@
 # Tauri Starter 扩展市场
 
-由维护者审核、构建和发布的 Extism Wasm 插件目录，配套 [Tauri Desktop Starter](https://github.com/YanChao001/tauri-desktop-starter)。应用读取本仓库 Release 中已签名的 `catalog.json`，核验并下载扩展包；安装、启用与权限由用户确认。源码分支和本地构建不会自动更新线上市场。
+由维护者审核、构建和发布的 Extism Wasm 插件目录，配套 [Tauri Desktop Starter](https://github.com/YanChao001/tauri-desktop-starter)。应用读取本仓库 Release 中已签名的 `catalog.json`，核验并下载扩展包；安装、启用与权限由用户确认。发布相关改动经 PR 合入 `main` 后自动构建、签名并发布为 latest；纯文档不触发，功能分支和本地构建不会更新线上目录。触发范围与手动续签见 [发布与管理](./docs/publishing.md#actions-生产发布)。
 
 **当前源码中的壁纸库 1.0.3 需要 0.1.6 宿主，其他三款仍要求 0.1.5。** 本地源码和构建包不表示线上 latest 已更新，也不表示已提供相应宿主安装包。0.1.5 及更旧宿主的闭集权限 / 图标枚举无法识别新目录值时可能返回 `MARKET_INVALID`，包内 `minHostVersion` 不能修补这些旧程序。0.1.6 起可隔离要求更高宿主的未来条目，具体限制与配套发布顺序见 [固定配套宿主](./docs/publishing.md#固定配套宿主)；必须启动包含新能力的 Rust 宿主，单纯刷新前端无效。
 

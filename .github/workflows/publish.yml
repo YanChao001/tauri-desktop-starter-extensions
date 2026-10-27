@@ -1,5 +1,17 @@
 name: 发布市场
 on:
+  push:
+    branches: [main]
+    paths:
+      - plugins/**
+      - scripts/**
+      - listings.json
+      - public-key.txt
+      - package.json
+      - rust-toolchain.toml
+      - .github/actions/**
+      - .github/workflows/publish.yml
+      - "!**/*.md"
   workflow_dispatch:
     inputs:
       revision:
