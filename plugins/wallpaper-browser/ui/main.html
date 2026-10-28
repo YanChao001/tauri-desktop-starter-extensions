@@ -282,7 +282,7 @@
         white-space: normal;
         border: 1px solid var(--border);
         border-radius: calc(var(--radius, 0.625rem) * 1.2);
-        background: var(--card);
+        background: var(--surface-card, var(--card));
         color: var(--foreground);
         transition:
           transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -531,7 +531,7 @@
         border: 1px solid var(--border);
         border-radius: calc(var(--radius, 0.625rem) * 1.2);
         overflow: hidden;
-        background: var(--card);
+        background: var(--surface-card, var(--card));
       }
       button.card-image {
         position: relative;
