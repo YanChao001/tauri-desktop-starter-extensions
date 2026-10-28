@@ -99,14 +99,14 @@ $env:MARKET_REVISION = "<高于已发布目录的正整数>"
 $env:MARKET_SOURCE_SHA = (git rev-parse HEAD).Trim()
 node scripts/build.mjs
 $env:MARKET_KEY_FILE = "E:\protected-market-keys\release.pem"
-node scripts/sign-release.mjs "dist/market-$env:MARKET_REVISION"
-node scripts/verify.mjs "dist/market-$env:MARKET_REVISION"
-node scripts/publish.mjs "dist/market-$env:MARKET_REVISION"
+node scripts/sign-release.mjs "artifacts/market-$env:MARKET_REVISION"
+node scripts/verify.mjs "artifacts/market-$env:MARKET_REVISION"
+node scripts/publish.mjs "artifacts/market-$env:MARKET_REVISION"
 ```
 
 每步成功后再执行下一步。`STARTER_EXTENSION_TOOL` 必须是宿主工具的绝对路径；本地发布缺少 `MARKET_SOURCE_SHA` 或其不是完整 40 位 SHA 时会拒绝。若环境中已有 `GITHUB_SHA`，它优先于 `MARKET_SOURCE_SHA`，执行前应检查这两个变量，确保标签指向本次包的已审核源码，而不是残留 CI 提交。
 
-生成目录不覆盖已有 `dist/market-<revision>`；发布时使用本次新目录，保留上一已发布目录作核对。私钥不得放入仓库、构建产物、日志或命令行字面量，使用结束后清除当前会话中不再需要的密钥路径和发布环境变量。
+生成目录不覆盖已有 `artifacts/market-<revision>`；发布时使用本次新目录，保留上一已发布目录作核对。私钥不得放入仓库、构建产物、日志或命令行字面量，使用结束后清除当前会话中不再需要的密钥路径和发布环境变量。
 
 ## 有效期与续签
 

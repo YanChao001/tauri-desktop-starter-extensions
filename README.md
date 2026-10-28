@@ -34,7 +34,7 @@ $env:MARKET_REVISION = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds().ToString()
 node scripts/check.mjs
 ```
 
-`check` 编译全部收录插件、真实运行手写 fixture，并用一次性测试密钥核对目录及包；不使用生产签名密钥，也不发布线上目录。产物位于 `dist/market-<revision>/`，同一修订目录不能覆盖。其他 shell、单插件迭代与验证范围见 [开发指南](./docs/development.md) 和 [测试规范](./docs/testing.md)。
+`check` 编译全部收录插件、真实运行手写 fixture，并用一次性测试密钥核对目录及包；不使用生产签名密钥，也不发布线上目录。产物位于 `artifacts/market-<revision>/`，同一修订目录不能覆盖。其他 shell、单插件迭代与验证范围见 [开发指南](./docs/development.md) 和 [测试规范](./docs/testing.md)。
 
 四款插件均使用独立 Rust / Cargo 项目和自包含 HTML / CSS / JavaScript，没有 React / Vite 构建依赖。Wasm、界面与原生服务的分工，以及宿主 JS / TS 示例的适用范围见 [架构说明](./docs/architecture.md)。
 

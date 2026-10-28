@@ -138,6 +138,7 @@ cargo build --locked --release --target wasm32-unknown-unknown --manifest-path e
 ```javascript
 import { writeFile } from "node:fs/promises";
 import { packagePlugin } from "../../scripts/build.mjs";
+import { ensureDirectory } from "../../scripts/files.mjs";
 import { resolveHostTool, validatePlugin } from "../../scripts/host-tool.mjs";
 
 const checked = await validatePlugin({
@@ -152,15 +153,16 @@ const packaged = packagePlugin(
   checked.wasm,
   checked.uiDocuments,
 );
+await ensureDirectory("artifacts/author-text");
 await writeFile(
-  "target/author-text-build/example.author-text-1.0.0.starter-extension.json",
+  "artifacts/author-text/example.author-text-1.0.0.starter-extension.json",
   packaged.content,
   { flag: "wx" },
 );
 console.log("真实 Wasm 用例通过，已生成本地安装包。");
 ```
 
-该入口使用权威工具验证同一份清单 / Wasm 字节快照，再将已检查字节交给市场现有打包函数。输出文件已存在时拒绝覆盖；重新练习时选择新输出文件名或先检查并移走自己的旧练习包。脚本不签名市场目录、不发布 Release。
+该入口使用权威工具验证同一份清单 / Wasm 字节快照，再将已检查字节交给市场现有打包函数。安装包位于 `artifacts/author-text/`，Cargo 缓存仍在 `target/author-text-build/`。输出文件已存在时拒绝覆盖；重新练习时选择新输出文件名或先检查并移走自己的旧练习包。脚本不签名市场目录、不发布 Release。
 
 在配套原生宿主中导入生成的 `.starter-extension.json`，审阅插件与文本权限后启用，输入中英文并执行“转换为大写”。安装、授权、真实输入与结果展示属于单独的交互验收，本页离线命令不代替它。实际业务插件还需补齐原生规则单测、错误处理和适用的[验收范围](./testing.md#按改动选择检查)。
 

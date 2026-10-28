@@ -109,7 +109,7 @@ Web Audio 需用户点击解锁，检查静音和系统音量；无音频支持�
 
 ### 已存在相同修订目录
 
-`Release directory already exists` 表示 `dist/market-<revision>` 已存在。保留旧产物，换未使用的修订重新构建。正式发布还须高于历史及客户端已见修订；改目录名不会改变签名 payload。
+`Release directory already exists` 表示 `artifacts/market-<revision>` 已存在。保留旧产物，换未使用的修订重新构建。正式发布还须高于历史及客户端已见修订；改目录名不会改变签名 payload。
 
 ## CI 与生产发布
 
