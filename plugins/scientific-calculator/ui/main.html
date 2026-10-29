@@ -1187,6 +1187,8 @@ No provider rate snapshot is bundled with this document.
       .converter-value output {
         display: block;
         min-width: 0;
+        padding: 0;
+        border-radius: 0;
         overflow: hidden;
         font-size: 40px;
         font-weight: inherit;
@@ -1967,7 +1969,9 @@ No provider rate snapshot is bundled with this document.
               class="converter-symbol"
               aria-hidden="true"
             ></span>
-            <output id="converter-output-from">0</output>
+            <output id="converter-output-from" data-surface="transparent"
+              >0</output
+            >
           </button>
           <label class="converter-unit">
             <span class="sr-only" data-i18n="converterUnitFrom"
@@ -1988,6 +1992,7 @@ No provider rate snapshot is bundled with this document.
             ></span>
             <output
               id="converter-output-to"
+              data-surface="transparent"
               aria-live="polite"
               aria-atomic="true"
               >0</output
