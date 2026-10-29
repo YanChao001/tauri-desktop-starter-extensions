@@ -2,7 +2,7 @@
 
 由维护者审核、构建和发布的 Extism Wasm 插件目录，配套 [Tauri Desktop Starter](https://github.com/YanChao001/tauri-desktop-starter)。应用读取本仓库 Release 中已签名的 `catalog.json`，核验并下载扩展包；安装、启用与权限由用户确认。发布相关改动经 PR 合入 `main` 后自动构建、签名并发布为 latest；纯文档不触发，功能分支和本地构建不会更新线上目录。触发范围与手动续签见 [发布与管理](./docs/publishing.md#actions-生产发布)。
 
-**当前四款插件最低要求均为 0.1.7 原生宿主。** 开发阶段按当前配套宿主验证，不承诺历史版本兼容；本地源码和构建包不代表线上市场或宿主安装包已更新。版本选择与发布顺序见 [固定配套宿主](./docs/publishing.md#固定配套宿主)。
+**当前四款插件最低要求均为 0.1.8 原生宿主。** 开发阶段按当前配套宿主验证，不承诺历史版本兼容；本地源码和构建包不代表线上市场或宿主安装包已更新。版本选择与发布顺序见 [固定配套宿主](./docs/publishing.md#固定配套宿主)。
 
 ## 已收录插件
 
@@ -34,7 +34,7 @@ $env:MARKET_REVISION = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds().ToString()
 node scripts/check.mjs
 ```
 
-`check` 编译全部收录插件、真实运行手写 fixture，并用一次性测试密钥核对目录及包；不使用生产签名密钥，也不发布线上目录。产物位于 `dist/market-<revision>/`，同一修订目录不能覆盖。其他 shell、单插件迭代与验证范围见 [开发指南](./docs/development.md) 和 [测试规范](./docs/testing.md)。
+`check` 编译全部收录插件、真实运行手写 fixture，并用一次性测试密钥核对目录及包；不使用生产签名密钥，也不发布线上目录。产物位于 `artifacts/market-<revision>/`，同一修订目录不能覆盖。其他 shell、单插件迭代与验证范围见 [开发指南](./docs/development.md) 和 [测试规范](./docs/testing.md)。
 
 四款插件均使用独立 Rust / Cargo 项目和自包含 HTML / CSS / JavaScript，没有 React / Vite 构建依赖。Wasm、界面与原生服务的分工，以及宿主 JS / TS 示例的适用范围见 [架构说明](./docs/architecture.md)。
 

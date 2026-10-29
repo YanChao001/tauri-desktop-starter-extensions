@@ -68,7 +68,7 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: market-packages
-          path: dist/market-${{ steps.metadata.outputs.revision }}/
+          path: artifacts/market-${{ steps.metadata.outputs.revision }}/
           if-no-files-found: error
           retention-days: 3
   publish:
@@ -90,14 +90,14 @@ jobs:
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: market-packages
-          path: dist/market-${{ needs.build.outputs.revision }}/
+          path: artifacts/market-${{ needs.build.outputs.revision }}/
       - name: 签名并核对附件（不执行插件构建）
         env:
           MARKET_SIGNING_PRIVATE_KEY: ${{ secrets.MARKET_SIGNING_PRIVATE_KEY }}
         run: |
-          node scripts/sign-release.mjs "dist/market-$MARKET_REVISION"
-          node scripts/verify.mjs "dist/market-$MARKET_REVISION"
+          node scripts/sign-release.mjs "artifacts/market-$MARKET_REVISION"
+          node scripts/verify.mjs "artifacts/market-$MARKET_REVISION"
       - name: 发布已验证的附件
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/publish.mjs "dist/market-$MARKET_REVISION"
+        run: node scripts/publish.mjs "artifacts/market-$MARKET_REVISION"

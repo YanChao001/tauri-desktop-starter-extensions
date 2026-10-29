@@ -87,17 +87,13 @@
       }
       .tabs {
         display: inline-flex;
-        gap: 20px;
+        gap: 0.25rem;
         min-width: 0;
       }
       .tabs button {
         position: relative;
-        border: 0;
-        border-radius: 0;
-        background: transparent;
-        height: 2.75rem;
-        padding: 0 2px;
-        color: var(--muted-foreground);
+        height: 2rem;
+        padding: 0 0.375rem;
       }
       .tabs button::after {
         content: "";
@@ -106,18 +102,11 @@
         right: 0;
         bottom: 0;
         height: 2px;
-        background: var(--primary);
         transform: scaleX(0);
         transition: transform 0.2s ease;
       }
-      .tabs button[aria-selected="true"] {
-        color: var(--foreground);
-      }
       .tabs button[aria-selected="true"]::after {
         transform: scaleX(1);
-      }
-      .tabs button:hover {
-        color: var(--foreground);
       }
       .library-bar > button {
         flex: none;
@@ -184,27 +173,11 @@
       #provider {
         width: 12rem;
       }
-      button.help-trigger {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        min-height: 1.5rem;
-        flex: 0 0 1.5rem;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        border-radius: calc(var(--radius, 0.625rem) * 0.8);
-        color: var(--muted-foreground);
-      }
       .help-trigger svg {
         width: 0.875rem;
         height: 0.875rem;
         flex: none;
-      }
-      button.help-trigger:hover {
-        background: var(--starter-ghost-hover, var(--muted));
+        color: var(--muted-foreground);
       }
       .help {
         position: static;
@@ -220,15 +193,8 @@
         width: min(18rem, calc(100vw - 40px));
         max-height: 18rem;
         overflow: auto;
-        padding: 0.65rem 0.8rem;
-        border: 1px solid var(--border);
-        border-radius: calc(var(--radius, 0.625rem) * 0.8);
-        background: var(--popover, var(--card));
-        color: var(--popover-foreground, var(--foreground));
-        font-size: 0.75rem;
-        line-height: 1.65;
+        line-height: 1.625;
         white-space: normal;
-        box-shadow: 0 4px 12px #0002;
       }
       .help::after {
         content: "";
@@ -247,7 +213,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        min-height: 2.75rem;
+        min-height: 2rem;
       }
       #result-summary,
       #local-summary {
@@ -264,8 +230,8 @@
       .results,
       .gallery {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 218px), 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
+        gap: 12px;
       }
       button.result {
         display: flex;
@@ -282,7 +248,7 @@
         white-space: normal;
         border: 1px solid var(--border);
         border-radius: calc(var(--radius, 0.625rem) * 1.2);
-        background: var(--card);
+        background: var(--surface-card, var(--card));
         color: var(--foreground);
         transition:
           transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -324,6 +290,7 @@
       }
       .result-copy {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 4px;
         padding: 10px 12px;
         min-width: 0;
@@ -397,7 +364,7 @@
         display: grid;
         justify-items: center;
         gap: 12px;
-        padding: 64px 20px;
+        padding: 32px 16px;
         border: 1px dashed var(--border);
         border-radius: calc(var(--radius, 0.625rem) * 1.2);
         color: var(--muted-foreground);
@@ -424,12 +391,6 @@
         white-space: nowrap;
         font-size: 0.875rem;
         line-height: 1.35;
-      }
-      .preview-head button {
-        flex: none;
-        width: 2rem;
-        height: 2rem;
-        padding: 0;
       }
       .preview-head svg,
       .preview-actions svg {
@@ -505,18 +466,6 @@
         padding: 12px;
         border-top: 1px solid var(--border);
       }
-      .preview-actions > button {
-        flex: none;
-        width: auto;
-        max-width: none;
-        height: 2rem;
-        padding: 0 0.625rem;
-        white-space: nowrap;
-        border-radius: calc(var(--radius, 0.625rem) * 0.8);
-      }
-      .preview-actions .action-label {
-        white-space: nowrap;
-      }
       .actions {
         display: flex;
         gap: 8px;
@@ -524,14 +473,14 @@
         margin-top: 16px;
       }
       .gallery {
-        margin-top: 20px;
+        margin-top: 16px;
       }
       .card {
         min-width: 0;
         border: 1px solid var(--border);
         border-radius: calc(var(--radius, 0.625rem) * 1.2);
         overflow: hidden;
-        background: var(--card);
+        background: var(--surface-card, var(--card));
       }
       button.card-image {
         position: relative;
@@ -594,36 +543,9 @@
       .card.active {
         border-color: var(--primary);
       }
-      .card-icon-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.75rem;
-        height: 1.75rem;
-        min-height: 1.75rem;
-        padding: 0;
-        border: 0;
-        border-radius: calc(var(--radius, 0.625rem) * 0.8);
-        background: transparent;
-        color: var(--foreground);
-        flex: none;
-      }
       .card-icon-button svg {
         width: 0.875rem;
         height: 0.875rem;
-      }
-      .card-icon-button:hover,
-      .card-icon-button:focus-visible {
-        background: var(--accent);
-        color: var(--accent-foreground);
-      }
-      .card-icon-button[data-action="remove"] {
-        color: var(--destructive);
-        background: color-mix(in oklab, var(--destructive) 8%, transparent);
-      }
-      .card-icon-button[data-action="remove"]:hover,
-      .card-icon-button[data-action="remove"]:focus-visible {
-        background: color-mix(in oklab, var(--destructive) 16%, transparent);
       }
       #permission {
         margin-bottom: 12px;
@@ -648,14 +570,7 @@
         max-width: calc(100vw - 32px);
         max-height: calc(100dvh - 32px);
         overflow: auto;
-        border: 1px solid var(--border);
-        border-radius: calc(var(--radius, 0.625rem) * 1.2);
-        padding: 22px;
-        background: var(--card);
-        color: var(--foreground);
-      }
-      dialog::backdrop {
-        background: #0008;
+        padding: 1rem;
       }
       dialog[open] {
         animation: dialog-enter 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -729,9 +644,6 @@
         header {
           align-items: start;
         }
-        header > button {
-          padding-inline: 10px;
-        }
         .source-toolbar {
           align-items: stretch;
         }
@@ -742,22 +654,11 @@
         #category {
           width: 8rem;
         }
-        .tabs {
-          gap: 14px;
-        }
         .library-bar {
           gap: 8px;
         }
         #provider {
           width: 10rem;
-        }
-        .results,
-        .gallery {
-          gap: 12px;
-          grid-template-columns: repeat(
-            auto-fill,
-            minmax(min(100%, 160px), 1fr)
-          );
         }
         .result-copy {
           padding: 12px;
@@ -789,11 +690,18 @@
       </header>
       <p id="permission" class="muted" role="status" hidden></p>
       <div class="library-bar">
-        <div class="tabs" role="tablist" aria-label="Wallpaper collections">
+        <div
+          class="tabs"
+          data-slot="tabs-list"
+          data-variant="line"
+          role="tablist"
+          aria-label="Wallpaper collections"
+        >
           <button
             id="remote-tab"
             type="button"
             role="tab"
+            data-slot="tabs-trigger"
             aria-controls="remote-panel"
             aria-selected="true"
             data-variant="ghost"
@@ -802,93 +710,106 @@
             id="local-tab"
             type="button"
             role="tab"
+            data-slot="tabs-trigger"
             aria-controls="local-panel"
             aria-selected="false"
             tabindex="-1"
             data-variant="ghost"
           ></button>
         </div>
-        <button id="settings" type="button" data-variant="ghost"></button>
+        <button
+          id="settings"
+          class="ui-button"
+          type="button"
+          data-variant="ghost"
+        ></button>
       </div>
       <section id="remote-panel" role="tabpanel" aria-labelledby="remote-tab">
-        <form id="search-form" class="source-toolbar" role="search">
-          <div class="source-row">
-            <label id="source-name" class="sr-only" for="provider"></label>
-            <select id="provider" aria-describedby="source-note">
-              <option value="upx8">UPX8</option>
-              <option value="wallhaven">Wallhaven</option>
-              <option value="commons">Wikimedia Commons</option>
-              <option value="nekosbest">Nekos.best</option>
-            </select>
-            <span class="help">
-              <button
-                id="source-help-button"
-                class="help-trigger"
-                type="button"
-                aria-describedby="source-note"
-                data-variant="ghost"
-              >
-                <svg
+        <fieldset class="collection-group">
+          <legend id="remote-legend"></legend>
+          <form id="search-form" class="source-toolbar" role="search">
+            <div class="source-row">
+              <label id="source-name" class="sr-only" for="provider"></label>
+              <select id="provider" aria-describedby="source-note">
+                <option value="upx8">UPX8</option>
+                <option value="wallhaven">Wallhaven</option>
+                <option value="commons">Wikimedia Commons</option>
+                <option value="nekosbest">Nekos.best</option>
+              </select>
+              <span class="help">
+                <button
+                  id="source-help-button"
+                  class="help-trigger ui-button ui-button-size-icon-xs"
+                  data-size="icon-xs"
+                  type="button"
+                  aria-describedby="source-note"
+                  data-variant="ghost"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                </button>
+                <span id="source-note" class="help-text" role="tooltip"></span>
+              </span>
+            </div>
+            <label class="filter-field" id="category-field"
+              ><span id="category-label" class="sr-only"></span
+              ><select id="category" aria-labelledby="category-label"></select
+            ></label>
+            <div class="query-controls">
+              <label class="query-field"
+                ><span id="query-label" class="sr-only"></span
+                ><svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
                   aria-hidden="true"
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4M12 8h.01" />
-                </svg>
-              </button>
-              <span id="source-note" class="help-text" role="tooltip"></span>
-            </span>
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <path d="m16 16 4 4" /></svg
+                ><input
+                  id="query"
+                  maxlength="100"
+                  aria-labelledby="query-label"
+                  autocomplete="off"
+              /></label>
+              <button id="search" type="button" class="ui-button"></button>
+            </div>
+          </form>
+          <div class="collection-heading">
+            <p id="result-summary" class="muted" aria-live="polite"></p>
+            <button
+              id="retry-failed"
+              class="ui-button"
+              type="button"
+              data-variant="ghost"
+              hidden
+            ></button>
           </div>
-          <label class="filter-field" id="category-field"
-            ><span id="category-label" class="sr-only"></span
-            ><select id="category" aria-labelledby="category-label"></select
-          ></label>
-          <div class="query-controls">
-            <label class="query-field"
-              ><span id="query-label" class="sr-only"></span
-              ><svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="m16 16 4 4" /></svg
-              ><input
-                id="query"
-                maxlength="100"
-                aria-labelledby="query-label"
-                autocomplete="off"
-            /></label>
-            <button id="search" type="button" class="primary"></button>
-          </div>
-        </form>
-        <div class="collection-heading">
-          <p id="result-summary" class="muted" aria-live="polite"></p>
-          <button
-            id="retry-failed"
-            type="button"
-            data-variant="ghost"
-            hidden
-          ></button>
-        </div>
-        <div id="results" class="results"></div>
+          <div id="results" class="results"></div>
+        </fieldset>
       </section>
       <dialog id="preview-dialog" aria-labelledby="preview-title">
         <div class="preview-head">
           <h2 id="preview-title"></h2>
           <button
             id="preview-info"
+            class="ui-button ui-button-size-icon"
+            data-size="icon"
             type="button"
             data-variant="ghost"
             aria-haspopup="dialog"
@@ -907,7 +828,13 @@
               <path d="M12 11v6M12 7h.01" />
             </svg>
           </button>
-          <button id="preview-close" type="button" data-variant="ghost">
+          <button
+            id="preview-close"
+            class="ui-button ui-button-size-icon"
+            data-size="icon"
+            type="button"
+            data-variant="ghost"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -928,7 +855,13 @@
       <dialog id="image-info-dialog" aria-labelledby="image-info-title">
         <div class="preview-head">
           <h2 id="image-info-title"></h2>
-          <button id="image-info-close" type="button" data-variant="ghost">
+          <button
+            id="image-info-close"
+            class="ui-button ui-button-size-icon"
+            data-size="icon"
+            type="button"
+            data-variant="ghost"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -950,27 +883,31 @@
         aria-labelledby="local-tab"
         hidden
       >
-        <div class="toolbar local-toolbar">
-          <p id="local-summary" class="muted"></p>
-          <div class="gallery-controls">
-            <label class="inline-field"
-              ><span id="fit-label"></span>
-              <select id="fit">
-                <option value="cover">覆盖</option>
-                <option value="contain">完整显示</option>
-              </select></label
-            >
-            <div class="gallery-actions">
-              <button
-                id="refresh"
-                type="button"
-                data-variant="outline"
-              ></button>
-              <button id="import" type="button" class="primary"></button>
+        <fieldset class="collection-group">
+          <legend id="local-legend"></legend>
+          <div class="toolbar local-toolbar">
+            <p id="local-summary" class="muted"></p>
+            <div class="gallery-controls">
+              <label class="inline-field"
+                ><span id="fit-label"></span>
+                <select id="fit">
+                  <option value="cover">覆盖</option>
+                  <option value="contain">完整显示</option>
+                </select></label
+              >
+              <div class="gallery-actions">
+                <button
+                  id="refresh"
+                  class="ui-button"
+                  type="button"
+                  data-variant="outline"
+                ></button>
+                <button id="import" type="button" class="ui-button"></button>
+              </div>
             </div>
           </div>
-        </div>
-        <div id="gallery" class="gallery"></div>
+          <div id="gallery" class="gallery"></div>
+        </fieldset>
       </section>
       <dialog
         id="confirm-dialog"
@@ -986,10 +923,11 @@
         <div class="actions">
           <button
             id="dialog-cancel"
+            class="ui-button"
             type="button"
             data-variant="outline"
           ></button
-          ><button id="dialog-confirm" type="button" class="primary"></button>
+          ><button id="dialog-confirm" type="button" class="ui-button"></button>
         </div>
       </dialog>
     </main>
@@ -1239,8 +1177,8 @@
             )
               element.id = actionName;
           }
-          if (primary) element.className = "primary";
-          else element.dataset.variant = "outline";
+          element.className = "ui-button";
+          element.dataset.variant = primary ? "default" : "outline";
           element.disabled = busy || snapshot?.busy || !granted(capability);
           element.onclick = () => void work(action);
           return element;
@@ -1996,6 +1934,8 @@
           $("rename-caption").textContent = tr("图片名称", "Image name");
           $("dialog-cancel").textContent = tr("取消", "Cancel");
           $("dialog-confirm").textContent = tr("确认", "Confirm");
+          $("dialog-confirm").dataset.variant =
+            kind === "remove" ? "destructive" : "default";
         }
         async function confirm(kind, item) {
           const dialog = $("confirm-dialog");
@@ -2064,6 +2004,8 @@
           $("settings").textContent = tr("图库设置", "Gallery settings");
           $("remote-tab").textContent = tr("发现壁纸", "Discover");
           $("local-tab").textContent = tr("本机图库", "Local gallery");
+          $("remote-legend").textContent = tr("发现壁纸", "Discover");
+          $("local-legend").textContent = tr("本机图库", "Local gallery");
           $("source-name").textContent = tr("壁纸图源", "Wallpaper source");
           $("source-help-button").setAttribute(
             "aria-label",
@@ -2398,7 +2340,9 @@
                   library = await request("rename", { id: item.id, name });
               },
             );
-            rename.className = "card-icon-button";
+            rename.className =
+              "card-icon-button ui-button ui-button-size-icon-sm";
+            rename.dataset.size = "icon-sm";
             rename.append(
               icon("m16 3 5 5M4 20l4-1L21 6a2.12 2.12 0 0 0-3-3L5 16Z"),
             );
@@ -2414,7 +2358,10 @@
                   });
               },
             );
-            remove.className = "card-icon-button";
+            remove.className =
+              "card-icon-button ui-button ui-button-size-icon-sm";
+            remove.dataset.size = "icon-sm";
+            remove.dataset.variant = "destructive";
             remove.append(
               icon("M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"),
             );

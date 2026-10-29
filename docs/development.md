@@ -34,7 +34,10 @@ node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs
 | `plugins/<directory>/smoke.json`               | 由真实宿主 worker 执行的手写验收                  |
 | `listings.json`                                | 收录目录、分类和推荐标记                          |
 | `scripts/`                                     | 构建、校验、签名与发布工具                        |
-| `target/`、`dist/`                             | 忽略的编译和打包输出，不手工修改或提交            |
+| `target/`                                      | Cargo 编译缓存与 Wasm 模块，不手工修改或提交      |
+| `artifacts/market-<revision>/`                 | 本次修订的完整插件包与目录，不手工修改或提交      |
+
+构建、离线检查和生产发布共用市场仓库内的 `artifacts/market-<revision>/`，不再写入 `dist/`，也不向宿主的 `artifacts/` 复制发布包。独立检出与作为子模块检出保持同一布局；宿主运行测试时创建的临时 fixture、报告和截图由宿主测试流程管理。编译缓存保留在 `target/`，清理打包结果无需删除它。最小作者示例的本地包使用 `artifacts/author-text/`，见[独立作者入口](./plugin-authoring.md)。
 
 ## 准备宿主校验工具
 
@@ -102,7 +105,7 @@ export MARKET_REVISION="$(date -u +%s)"
 node scripts/check.mjs
 ```
 
-`MARKET_REVISION` 必须为正 u32。Unix 秒适合日常生成不重复的本地目录；同一秒重复执行仍会冲突，请生成一个未使用的值。工具不覆盖已有 `dist/market-<revision>`，也不会把本地修订号自动登记为线上最新版本。生产目录必须满足比线上已发布修订更高的要求，见 [发布指南](./publishing.md)。
+`MARKET_REVISION` 必须为正 u32。Unix 秒适合日常生成不重复的本地目录；同一秒重复执行仍会冲突，请生成一个未使用的值。工具不覆盖已有 `artifacts/market-<revision>`，也不会把本地修订号自动登记为线上最新版本。生产目录必须满足比线上已发布修订更高的要求，见 [发布指南](./publishing.md)。
 
 `check` 检查 Rust 格式、按锁文件编译全部 Wasm，通过宿主 `test` 后打包并用一次性内存密钥离线验签。输出为 `catalog-unsigned.json` 和可本地导入的 `.starter-extension.json`，不生成生产 `catalog.json` 或使用生产私钥。具体检查与未覆盖范围见 [测试规范](./testing.md#真实-wasm-与手写-fixture)。
 
@@ -112,7 +115,7 @@ node scripts/check.mjs
 
 当前四个市场插件都使用官方 Extism Rust PDK，分别独立维护 Cargo 清单和锁文件。按业务参考 [计算器](../plugins/scientific-calculator/) 的计算与工作区、[贪吃蛇](../plugins/snake/) 的本地高频循环和日志校验，或 [内网通信](../plugins/lan-chat/) / [壁纸库](../plugins/wallpaper-browser/) 的固定服务调用。复制后先修改身份和说明，不要为不相关的功能顺带复制存储、监听或下载能力。
 
-1. 建立 `plugins/<directory>/`。目录名使用小写字母开头的小写字母、数字和连字符，最长 64 字符；不要复制 `target/` 或 `dist/`。
+1. 建立 `plugins/<directory>/`。目录名使用小写字母开头的小写字母、数字和连字符，最长 64 字符；不要复制 `target/` 或 `artifacts/`。
 2. 修改 `Cargo.toml` 的包名、版本与许可。保留 `cdylib` 产物类型，新增依赖时审阅 Wasm 支持、许可、体积和维护情况。只为新插件生成或更新自身的 `Cargo.lock`，不要顺带升级其他插件。
 3. 修改 `extension.json`。使用独立稳定 ID，版本为数字 `major.minor.patch`；为每条命令选择输入、输出、导出函数和需要的权限，视图命令按需要设置侧栏 / 窗口入口。必需权限与可选权限按实际工作流拆分，不为无关能力申请授权。
 4. 修改 `build.json` 的 `artifact`，使其等于 Cargo 输出的 Wasm 基名。例如包名 `starter-extism-my-plugin` 默认对应 `starter_extism_my_plugin.wasm`。这里只允许文件名，不能填写任意路径。

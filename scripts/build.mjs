@@ -117,10 +117,10 @@ export async function build({ revision, runBuild = true }) {
   );
   validateListings(listings);
   const executable = await resolveHostTool();
-  const dist = join(root, "dist");
-  const output = join(root, "dist", `market-${revision}`);
-  await ensureDirectory(dist);
-  const lock = join(dist, `.market-${revision}.lock`);
+  const artifacts = join(root, "artifacts");
+  const output = join(artifacts, `market-${revision}`);
+  await ensureDirectory(artifacts);
+  const lock = join(artifacts, `.market-${revision}.lock`);
   await mkdir(lock);
   let staging;
   let finished = false;
@@ -131,7 +131,7 @@ export async function build({ revision, runBuild = true }) {
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
     }
-    staging = await mkdtemp(join(dist, `.market-${revision}-`));
+    staging = await mkdtemp(join(artifacts, `.market-${revision}-`));
     const entries = [],
       ids = new Set();
     for (const listing of listings.plugins) {
@@ -244,7 +244,7 @@ export async function build({ revision, runBuild = true }) {
     try {
       if (!finished && staging) {
         if (
-          dirname(resolve(staging)) !== resolve(dist) ||
+          dirname(resolve(staging)) !== resolve(artifacts) ||
           !basename(staging).startsWith(`.market-${revision}-`)
         )
           throw new Error("Unexpected staging directory");

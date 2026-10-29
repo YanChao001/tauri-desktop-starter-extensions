@@ -490,10 +490,15 @@ test("publication requires a complete source SHA before contacting GitHub", () =
   ]) {
     assert.throws(
       () =>
-        publishCatalog(emptyCatalog(), "dist/market-1", sourceSha, (args) => {
-          calls.push(args);
-          return "[]";
-        }),
+        publishCatalog(
+          emptyCatalog(),
+          "artifacts/market-1",
+          sourceSha,
+          (args) => {
+            calls.push(args);
+            return "[]";
+          },
+        ),
       /complete 40-character commit SHA/,
     );
   }
@@ -502,10 +507,15 @@ test("publication requires a complete source SHA before contacting GitHub", () =
 
 test("publication binds the release tag to the exact reviewed source commit", () => {
   const calls = [];
-  publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
-    calls.push(args);
-    return args[0] === "api" ? "[]" : "";
-  });
+  publishCatalog(
+    emptyCatalog(2),
+    "artifacts/market-2",
+    releaseSourceSha,
+    (args) => {
+      calls.push(args);
+      return args[0] === "api" ? "[]" : "";
+    },
+  );
   const create = calls.find((args) => args[1] === "create");
   assert.equal(create[create.indexOf("--target") + 1], releaseSourceSha);
   assert.equal(create.includes("--draft"), true);
@@ -523,7 +533,7 @@ test("publication creates complete release notes before mutation and removes its
   const calls = [];
   publishCatalogWithHistory(
     emptyCatalog(2),
-    "dist/market-2",
+    "artifacts/market-2",
     releaseSourceSha,
     (args) => {
       calls.push(args);
@@ -552,7 +562,7 @@ test("publication creates complete release notes before mutation and removes its
     () =>
       publishCatalogWithHistory(
         emptyCatalog(2),
-        "dist/market-2",
+        "artifacts/market-2",
         releaseSourceSha,
         (args) => {
           failedCalls.push(args);
@@ -584,7 +594,7 @@ test("failed uploads stay draft and older catalog revisions are not republished"
     return "";
   };
   assert.throws(
-    () => publishCatalog(catalog, "dist/market-2", releaseSourceSha, run),
+    () => publishCatalog(catalog, "artifacts/market-2", releaseSourceSha, run),
     /Upload failed/,
   );
   assert.equal(
@@ -599,7 +609,7 @@ test("failed uploads stay draft and older catalog revisions are not republished"
     () =>
       publishCatalog(
         { ...catalog, revision: 1 },
-        "dist/market-1",
+        "artifacts/market-1",
         releaseSourceSha,
         run,
       ),
@@ -614,28 +624,38 @@ const tagReference = (type, sha, tag = "market-2") => ({
 
 test("publication accepts an existing lightweight tag only at the reviewed commit", () => {
   const calls = [];
-  publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
-    calls.push(args);
-    if (isHistory(args)) return "[]";
-    if (args[0] === "api")
-      return JSON.stringify([tagReference("commit", releaseSourceSha)]);
-    return args[1] === "list" ? "[]" : "";
-  });
+  publishCatalog(
+    emptyCatalog(2),
+    "artifacts/market-2",
+    releaseSourceSha,
+    (args) => {
+      calls.push(args);
+      if (isHistory(args)) return "[]";
+      if (args[0] === "api")
+        return JSON.stringify([tagReference("commit", releaseSourceSha)]);
+      return args[1] === "list" ? "[]" : "";
+    },
+  );
   assert.equal(calls.filter((args) => args[0] === "api").length, 3);
   assert.equal(calls.at(-1)[1], "edit");
 });
 
 test("a similarly prefixed tag does not occupy the intended release tag", () => {
   const calls = [];
-  publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
-    calls.push(args);
-    if (isHistory(args)) return "[]";
-    if (args[0] === "api")
-      return JSON.stringify([
-        tagReference("commit", "a".repeat(40), "market-20"),
-      ]);
-    return args[1] === "list" ? "[]" : "";
-  });
+  publishCatalog(
+    emptyCatalog(2),
+    "artifacts/market-2",
+    releaseSourceSha,
+    (args) => {
+      calls.push(args);
+      if (isHistory(args)) return "[]";
+      if (args[0] === "api")
+        return JSON.stringify([
+          tagReference("commit", "a".repeat(40), "market-20"),
+        ]);
+      return args[1] === "list" ? "[]" : "";
+    },
+  );
   assert.equal(calls.at(-1)[1], "edit");
 });
 
@@ -645,7 +665,7 @@ test("an existing tag at another commit is rejected before any release mutation"
     () =>
       publishCatalog(
         emptyCatalog(2),
-        "dist/market-2",
+        "artifacts/market-2",
         releaseSourceSha,
         (args) => {
           calls.push(args);
@@ -668,26 +688,31 @@ test("annotated release tags are dereferenced through nested tags to the reviewe
   const outerSha = "a".repeat(40),
     innerSha = "b".repeat(40);
   const calls = [];
-  publishCatalog(emptyCatalog(2), "dist/market-2", releaseSourceSha, (args) => {
-    calls.push(args);
-    if (isHistory(args)) return "[]";
-    if (args[0] === "api") {
-      if (args[1].includes("/matching-refs/"))
-        return JSON.stringify([tagReference("tag", outerSha)]);
-      if (args[1].endsWith(`/${outerSha}`))
-        return JSON.stringify({
-          sha: outerSha,
-          object: { type: "tag", sha: innerSha },
-        });
-      if (args[1].endsWith(`/${innerSha}`))
-        return JSON.stringify({
-          sha: innerSha,
-          object: { type: "commit", sha: releaseSourceSha },
-        });
-      assert.fail("Unexpected tag lookup");
-    }
-    return args[1] === "list" ? "[]" : "";
-  });
+  publishCatalog(
+    emptyCatalog(2),
+    "artifacts/market-2",
+    releaseSourceSha,
+    (args) => {
+      calls.push(args);
+      if (isHistory(args)) return "[]";
+      if (args[0] === "api") {
+        if (args[1].includes("/matching-refs/"))
+          return JSON.stringify([tagReference("tag", outerSha)]);
+        if (args[1].endsWith(`/${outerSha}`))
+          return JSON.stringify({
+            sha: outerSha,
+            object: { type: "tag", sha: innerSha },
+          });
+        if (args[1].endsWith(`/${innerSha}`))
+          return JSON.stringify({
+            sha: innerSha,
+            object: { type: "commit", sha: releaseSourceSha },
+          });
+        assert.fail("Unexpected tag lookup");
+      }
+      return args[1] === "list" ? "[]" : "";
+    },
+  );
   assert.equal(calls.filter((args) => args[0] === "api").length, 7);
   assert.equal(calls.at(-1)[1], "edit");
 });
@@ -708,7 +733,7 @@ test("failed or malformed tag reads are never treated as an absent release tag",
     assert.throws(() =>
       publishCatalog(
         emptyCatalog(2),
-        "dist/market-2",
+        "artifacts/market-2",
         releaseSourceSha,
         (args) => {
           calls.push(args);
@@ -740,7 +765,7 @@ test("incorrect, cyclic or unreadable annotated tags fail before release creatio
     assert.throws(() =>
       publishCatalog(
         emptyCatalog(2),
-        "dist/market-2",
+        "artifacts/market-2",
         releaseSourceSha,
         (args) => {
           calls.push(args);
@@ -773,7 +798,7 @@ test("tag movement or read failure during upload prevents publication as latest"
     assert.throws(() =>
       publishCatalog(
         emptyCatalog(2),
-        "dist/market-2",
+        "artifacts/market-2",
         releaseSourceSha,
         (args) => {
           calls.push(args);
