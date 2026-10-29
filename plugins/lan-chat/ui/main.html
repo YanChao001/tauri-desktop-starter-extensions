@@ -809,10 +809,15 @@
       .settings-section {
         display: grid;
         gap: 10px;
+      }
+      fieldset.settings-section {
+        margin: 0 0 0.75rem;
+      }
+      section.settings-section {
         padding: 15px 0;
         border-top: 1px solid var(--border);
       }
-      .settings-section:first-of-type {
+      section.settings-section:first-of-type {
         padding-top: 0;
         border-top: 0;
       }
@@ -1556,8 +1561,8 @@
           </button>
         </div>
         <div id="settings-scroll">
-          <section class="settings-section">
-            <h3>我的设备</h3>
+          <fieldset class="settings-section">
+            <legend>我的设备</legend>
             <div class="settings-row">
               <label
                 >聊天昵称<input
@@ -1569,10 +1574,11 @@
                 保存昵称
               </button>
             </div>
-          </section>
+          </fieldset>
           <div id="mode-settings">
             <div id="lan-settings">
-              <section class="settings-section">
+              <fieldset class="settings-section">
+                <legend>本机监听</legend>
                 <div class="settings-row">
                   <label
                     >监听端口<input
@@ -1584,9 +1590,9 @@
                   ><button id="start" type="button">开启监听</button>
                 </div>
                 <div id="addresses" tabindex="0">尚未监听</div>
-              </section>
-              <section class="settings-section">
-                <h3>连接朋友</h3>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>连接朋友</legend>
                 <div class="settings-row">
                   <label
                     >对方 IP<input
@@ -1604,7 +1610,7 @@
                   /></label>
                 </div>
                 <button id="connect" type="button" disabled>连接设备</button>
-              </section>
+              </fieldset>
             </div>
             <section id="loopback-settings" class="settings-section" hidden>
               <h3>本机回环测试</h3>
@@ -1818,6 +1824,7 @@
           我的设备: "My device",
           聊天昵称: "Chat nickname",
           取一个昵称: "Choose a nickname",
+          本机监听: "Local listener",
           监听端口: "Listening port",
           开启监听: "Start listening",
           停止监听与连接: "Stop listener and connections",
