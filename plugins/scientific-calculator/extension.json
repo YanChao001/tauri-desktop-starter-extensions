@@ -3,10 +3,10 @@
   "apiVersion": 2,
   "minHostVersion": "0.1.8",
   "id": "market.scientific-calculator",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "name": "计算器",
   "author": "Tauri Desktop Starter",
-  "description": "Windows 风格的五种计算模式和全部十三类转换器，精确十进制、多条记忆与历史；十二类单位离线换算，货币汇率按需联网更新并保留本机缓存。",
+  "description": "提供五种计算模式与十三类转换器，支持函数绘图、日期计算和单位换算。",
   "icon": "calculator",
   "commands": [
     {
