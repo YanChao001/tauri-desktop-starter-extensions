@@ -11,7 +11,7 @@
 | Rust 插件、HTML 界面、手写 fixture、许可和权限示例 | 本仓库 `plugins/` 与[开发指南](./development.md)            | 按实际业务参考，避免复制无关权限与功能                                                                                                                 |
 | 编译插件 Wasm、原生业务单测                        | 本仓库 Rust 工具链与各插件锁文件                            | 安装 Rust 和 Wasm 目标，不需要编译宿主界面                                                                                                             |
 | 清单、输入输出、视图、effects 与服务的完整公共约定 | 下表链接的宿主文档与 SDK                                    | 对照与工具一致的宿主提交；不要根据内部实现猜协议                                                                                                       |
-| UI 类型声明                                        | 宿主 `sdk/extension-ui.d.ts` 及其 `generated/protocol.d.ts` | 按[宿主 SDK 说明](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/sdk/README.md)一并取得；市场尚未提供版本化快照                       |
+| UI 类型声明                                        | 宿主 `sdk/extension-ui.d.ts` 及其 `generated/protocol.d.ts` | 按[宿主 SDK 说明](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/sdk/README.md)一并取得；市场尚未提供版本化快照                       |
 | 清单 / ABI / 视图校验、真实 Wasm fixture           | 配套 `extension-tool` 二进制                                | 当前按[准备宿主校验工具](./development.md#准备宿主校验工具)检出并构建宿主，或由维护者提供同一提交构建的可信工具；尚无本页可指向的预编译 CLI 下载发行物 |
 | 本地包安装、授权、真实网络 / 存储 / 原生窗口       | 配套已构建或已安装的原生宿主                                | 从生成包进行交互验收；CLI 和浏览器替身不能证明这些操作成功                                                                                             |
 
@@ -19,16 +19,16 @@
 
 ## 作者需要的公开契约
 
-本页公开协议、SDK 和类型链接固定到宿主 `v0.1.7` 标签，以该标签的源码契约为基线，不要求阅读实现文件。源码标签不表示安装包已经公开，下载与安装状态以实际 [Release](https://github.com/YanChao001/tauri-desktop-starter/releases/tag/v0.1.7) 为准。测试更新的宿主源码时，先确认完整 40 位提交 SHA，再同步取得该提交的文档、SDK 和 `extension-tool`，保存材料来源；本地未提交源码不能冒充该 SHA 的已发布内容。最低宿主版本与源码 SHA 的不同职责见[固定配套宿主](./publishing.md#固定配套宿主)。
+本页公开协议、SDK 和类型链接固定到宿主 `v0.1.8` 标签，以该标签的源码契约为基线，不要求阅读实现文件。源码标签不表示安装包已经公开，下载与安装状态以实际 [Release](https://github.com/YanChao001/tauri-desktop-starter/releases/tag/v0.1.8) 为准。测试更新的宿主源码时，先确认完整 40 位提交 SHA，再同步取得该提交的文档、SDK 和 `extension-tool`，保存材料来源；本地未提交源码不能冒充该 SHA 的已发布内容。最低宿主版本与源码 SHA 的不同职责见[固定配套宿主](./publishing.md#固定配套宿主)。
 
 | 开发问题                       | 公开契约入口                                                                                                                                                                                                                               | 需要核对的内容                                                                                                   |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| 如何声明与调用文本 / JSON 命令 | [包与输入契约](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/docs/extensions.md#包与输入契约)                                                                                                                            | 清单字段、导出名、输入 / 结果格式、必需与可选权限、用户主动提交的数据                                            |
-| 如何返回标准界面并处理动作     | [应用插件协议](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/docs/extensions.md#开发带界面的应用插件)                                                                                                                    | `version`、`action`、`state`、`fields`、`locale`、视图字段 / 动作 / 块 / 产物、额度和未知状态拒写                |
-| 如何请求网络与存储             | [网络、凭据与私有数据](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/docs/extensions.md#网络凭据与私有数据)                                                                                                              | HTTP 来源 / 方法 / 代理授权、凭据引用、storage revision、effect ID、`host-result` 回执与失败保留草稿             |
-| 如何编写自定义 HTML            | [界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/sdk/README.md)、[公共类型](https://github.com/YanChao001/tauri-desktop-starter/tree/v0.1.7/sdk)                                                                 | `starter` 方法、snapshot、主题 / 语言 / active、检查点、失败与取消；运行时由宿主注入，无需复制 JS 或访问原生 IPC |
-| 如何使用桌面能力               | [受控桌面服务](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/docs/extensions.md#受控桌面服务)                                                                                                                            | `lan`、`wallpaper`、`resources`、`links`、`window` 的操作、请求 / 响应、权限、窗口归属与资源释放                 |
-| 执行有什么限制                 | [执行、存储与生命周期](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/docs/extensions.md#执行存储与生命周期)、[自定义界面](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.7/docs/extensions.md#自定义界面) | 每次新 Wasm 实例、预算 / 队列 / 取消、界面隐藏与卸载、在途副作用和安装代次                                       |
+| 如何声明与调用文本 / JSON 命令 | [包与输入契约](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/docs/extensions.md#包与输入契约)                                                                                                                            | 清单字段、导出名、输入 / 结果格式、必需与可选权限、用户主动提交的数据                                            |
+| 如何返回标准界面并处理动作     | [应用插件协议](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/docs/extensions.md#开发带界面的应用插件)                                                                                                                    | `version`、`action`、`state`、`fields`、`locale`、视图字段 / 动作 / 块 / 产物、额度和未知状态拒写                |
+| 如何请求网络与存储             | [网络、凭据与私有数据](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/docs/extensions.md#网络凭据与私有数据)                                                                                                              | HTTP 来源 / 方法 / 代理授权、凭据引用、storage revision、effect ID、`host-result` 回执与失败保留草稿             |
+| 如何编写自定义 HTML            | [界面 SDK](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/sdk/README.md)、[公共类型](https://github.com/YanChao001/tauri-desktop-starter/tree/v0.1.8/sdk)                                                                 | `starter` 方法、snapshot、主题 / 语言 / active、检查点、失败与取消；运行时由宿主注入，无需复制 JS 或访问原生 IPC |
+| 如何使用桌面能力               | [受控桌面服务](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/docs/extensions.md#受控桌面服务)                                                                                                                            | `lan`、`wallpaper`、`resources`、`links`、`window` 的操作、请求 / 响应、权限、窗口归属与资源释放                 |
+| 执行有什么限制                 | [执行、存储与生命周期](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/docs/extensions.md#执行存储与生命周期)、[自定义界面](https://github.com/YanChao001/tauri-desktop-starter/blob/v0.1.8/docs/extensions.md#自定义界面) | 每次新 Wasm 实例、预算 / 队列 / 取消、界面隐藏与卸载、在途副作用和安装代次                                       |
 | 如何证明输出符合约定           | 本仓库[真实 Wasm 与手写 fixture](./testing.md#真实-wasm-与手写-fixture)                                                                                                                                                                    | 断言格式、逐条显式输入、真实 worker 校验；合成 host 上下文不会执行真实服务                                       |
 
 公开资料目前仍有缺口：市场没有本地完整协议快照；宿主 UI 类型主要覆盖视图等依赖，`lan` / `wallpaper` 服务仍以未知响应暴露，不能当作完整字段参考。新业务需要的字段、错误码或取消语义在公开资料中不明确时，由维护者补齐权威契约后再开发，不能凭 `unknown`、现有插件偶然使用的字段或内部命令字符串推断支持范围。增加服务操作或权限需要配套宿主实现，不能仅修改插件清单。
@@ -86,7 +86,7 @@ pub fn uppercase(input: String) -> FnResult<String> {
 {
   "formatVersion": 3,
   "apiVersion": 2,
-  "minHostVersion": "0.1.7",
+  "minHostVersion": "0.1.8",
   "id": "example.author-text",
   "version": "1.0.0",
   "name": "文本大写",

@@ -1,7 +1,7 @@
 {
   "formatVersion": 3,
   "apiVersion": 2,
-  "minHostVersion": "0.1.7",
+  "minHostVersion": "0.1.8",
   "id": "market.wallpaper-browser",
   "version": "1.2.4",
   "name": "壁纸库",
