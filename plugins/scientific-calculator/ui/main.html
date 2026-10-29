@@ -1591,7 +1591,7 @@ No provider rate snapshot is bundled with this document.
             </div>
             <section id="analysis-panel" class="analysis-panel" hidden>
               <label
-                ><span data-i18n="selectedCurve">选择函数</span
+                ><span data-i18n="selectedCurve">函数</span
                 ><select id="curve">
                   <option value="0">f1</option>
                   <option value="1">f2</option>
@@ -1851,7 +1851,7 @@ No provider rate snapshot is bundled with this document.
                 >日期计算方式</span
               ><select id="date-operation">
                 <option value="difference" data-i18n="dateDifference">
-                  日期之间的差值
+                  日期差值
                 </option>
                 <option value="add" data-i18n="dateOffset">
                   添加或减去天数
@@ -2110,7 +2110,7 @@ No provider rate snapshot is bundled with this document.
             aria-labelledby="history-tab"
           >
             <ol id="history"></ol>
-            <p id="history-empty" data-i18n="emptyHistory">尚无历史记录</p>
+            <p id="history-empty" data-i18n="emptyHistory">暂无记录</p>
           </section>
           <section
             id="memory-content"
@@ -2120,7 +2120,7 @@ No provider rate snapshot is bundled with this document.
             hidden
           >
             <p id="memory-empty" data-i18n="emptyMemory">
-              内存中未保存任何内容
+              尚未存储数值
             </p>
             <ol id="memory-list"></ol>
             <output id="memory" class="sr-only"></output>
@@ -2409,7 +2409,7 @@ No provider rate snapshot is bundled with this document.
           <details>
             <summary data-i18n="workspace">工作区</summary>
             <div class="row">
-              <button data-action="save" data-i18n="save">保存工作区</button
+              <button data-action="save" data-i18n="save">保存</button
               ><button id="load" data-i18n="load">载入</button
               ><button data-action="export" data-i18n="export">导出记录</button>
             </div>
@@ -2424,7 +2424,7 @@ No provider rate snapshot is bundled with this document.
           aria-labelledby="load-confirm-title"
         >
           <h2 id="load-confirm-title" data-i18n="loadTitle">
-            载入保存的工作区？
+            载入工作区？
           </h2>
           <p data-i18n="loadConfirm"></p>
           <div class="row">
@@ -2434,7 +2434,7 @@ No provider rate snapshot is bundled with this document.
               class="primary"
               data-i18n="confirmLoad"
             >
-              确认载入
+              载入
             </button>
           </div>
         </section>
@@ -2533,7 +2533,7 @@ No provider rate snapshot is bundled with this document.
             "换算结果过长，无法作为新输入。当前输入已保留。",
             "This result is too long to reuse as input. Your current input was kept.",
           ],
-          currencyCached: ["使用已缓存汇率", "Using cached rates"],
+          currencyCached: ["使用缓存汇率", "Using cached rates"],
           currencyAsOf: ["汇率更新于", "Rates updated"],
           currencyPermission: [
             "请在扩展管理中授予网络权限",
@@ -2555,7 +2555,7 @@ No provider rate snapshot is bundled with this document.
           pressure: ["压强", "Pressure"],
           angleConverter: ["角度", "Angle"],
           title: ["计算器", "Calculator"],
-          save: ["保存工作区", "Save workspace"],
+          save: ["保存", "Save"],
           load: ["载入", "Load"],
           calculate: ["计算", "Calculate"],
           angle: ["角度制", "Angle mode"],
@@ -2570,8 +2570,8 @@ No provider rate snapshot is bundled with this document.
           clearAllHistory: ["清空历史记录", "Clear history"],
           clearAllMemory: ["清空记忆", "Clear memory"],
           emptyHistory: ["暂无记录", "No history yet"],
-          export: ["导出计算记录", "Export history"],
-          reference: ["函数速查", "Function reference"],
+          export: ["导出记录", "Export history"],
+          reference: ["函数与快捷键", "Functions and shortcuts"],
           constants: [
             "常量 pi、e、tau；变量 ans、mem、x。log(x) 为十进制对数，ln(x) 为自然对数。科学计数示例 1.2e-3。",
             "Constants: pi, e, tau. Variables: ans, mem, x. log(x) is base 10; ln(x) is natural logarithm. Scientific notation: 1.2e-3.",
@@ -2579,15 +2579,15 @@ No provider rate snapshot is bundled with this document.
           graph: ["函数曲线", "Function graphs"],
           fit: ["适配 Y 轴", "Fit Y axis"],
           reset: ["重置坐标", "Reset axes"],
-          plot: ["绘制曲线", "Plot"],
+          plot: ["绘制", "Plot"],
           graphHelp: [
             "拖动平移，滚轮缩放。聚焦图像后方向键平移，+ / − 缩放。采样仅为近似。",
             "Drag to pan; scroll to zoom. Focus the graph to pan with arrows or zoom with + / −. Samples are approximate.",
           ],
           functions: ["函数", "Functions"],
           functionsHint: [
-            "每行一条函数，最多 3 条。",
-            "One function per line, up to 3.",
+            "每行一条函数，最多 8 条。",
+            "One function per line, up to 8.",
           ],
           expressionPlaceholder: [
             "例如 sin(pi / 6)^2 + cos(pi / 6)^2",
@@ -2597,7 +2597,7 @@ No provider rate snapshot is bundled with this document.
           storageHelp: ["保存权限说明", "Storage permission help"],
           graphHelpLabel: ["曲线操作帮助", "Graph controls help"],
           analysisHelp: ["数值分析说明", "Numerical analysis help"],
-          selectedCurve: ["数值分析曲线", "Analysis curve"],
+          selectedCurve: ["函数", "Function"],
           root: ["区间求根", "Find root"],
           integrate: ["定积分", "Integrate"],
           analysisHint: [
@@ -2605,7 +2605,7 @@ No provider rate snapshot is bundled with this document.
             "Find one bracketed root in the interval. Integration is numerical and cannot guarantee detection of every singularity.",
           ],
           clearExpression: ["清空表达式", "Clear expression"],
-          backspace: ["删除一个字符", "Delete one character"],
+          backspace: ["退格", "Backspace"],
           loadConfirm: [
             "载入保存的工作区将替换当前会话，是否继续？",
             "Loading will replace this session with the saved workspace. Continue?",
@@ -2636,15 +2636,15 @@ No provider rate snapshot is bundled with this document.
           analysis: ["分析", "Analyze"],
           graphView: ["显示图表", "Show graph"],
           graphInput: ["显示输入面板", "Show input panel"],
-          graphSettings: ["图形选项", "Graph options"],
+          graphSettings: ["坐标范围", "Axis limits"],
           addEquation: ["添加表达式", "Add equation"],
           removeEquation: ["删除表达式", "Remove equation"],
           curveVisibility: ["显示或隐藏函数", "Show or hide function"],
-          curveStyle: ["切换线条样式", "Change line style"],
-          alwaysOnTop: ["保持置顶", "Keep on top"],
+          curveStyle: ["切换线型", "Change line style"],
+          alwaysOnTop: ["置顶", "Keep on top"],
           topUnavailable: [
-            "保持置顶需要独立桌面窗口与窗口控制授权。",
-            "Keeping on top requires a native extension window and window control permission.",
+            "置顶需独立桌面窗口与窗口控制权限。",
+            "Requires a native extension window and window control permission.",
           ],
           clearAll: ["清除全部 (Esc)", "Clear all (Esc)"],
           percentLabel: ["百分比", "Percent"],
@@ -2657,7 +2657,7 @@ No provider rate snapshot is bundled with this document.
           "shift-rotate": ["循环移位", "Rotate"],
           "shift-carry": ["带进位循环移位", "Rotate through carry"],
           dateOperation: ["日期计算方式", "Date calculation operation"],
-          dateDifference: ["日期之间的差值", "Difference between dates"],
+          dateDifference: ["日期差值", "Date difference"],
           dateOffset: ["添加或减去天数", "Add or subtract days"],
           from: ["从", "From"],
           to: ["到", "To"],
@@ -2678,12 +2678,9 @@ No provider rate snapshot is bundled with this document.
           functionMenu: ["函数", "Function"],
           memoryTitle: ["记忆", "Memory"],
           historyMemory: ["历史记录与记忆", "History and memory"],
-          emptyMemory: [
-            "内存中未保存任何内容",
-            "There's nothing saved in memory",
-          ],
+          emptyMemory: ["尚未存储数值", "No saved values"],
           keypad: ["计算器键盘", "Calculator keypad"],
-          close: ["关闭面板", "Close panel"],
+          close: ["关闭", "Close"],
           notation: [
             "切换浮点与科学计数法",
             "Toggle floating point and scientific notation",
@@ -2721,13 +2718,13 @@ No provider rate snapshot is bundled with this document.
             "Enter / = 计算；Esc 清除；Delete 清除当前输入；F9 正负号；F3 / F4 / F5 角度制；Ctrl+H 历史；Ctrl+M / P / Q / R / L 记忆操作。",
             "Enter / = calculate; Esc clear; Delete clear entry; F9 change sign; F3 / F4 / F5 angle mode; Ctrl+H history; Ctrl+M / P / Q / R / L memory operations.",
           ],
-          loadTitle: ["载入保存的工作区？", "Load the saved workspace?"],
+          loadTitle: ["载入工作区？", "Load workspace?"],
           loadConfirm: [
             "载入会替换当前输入、记忆和历史，请先导出需要保留的记录。",
             "Loading replaces your current input, memory and history. Export anything you want to keep first.",
           ],
           cancel: ["取消", "Cancel"],
-          confirmLoad: ["确认载入", "Load workspace"],
+          confirmLoad: ["载入", "Load"],
           xmin: ["X 最小值", "X minimum"],
           xmax: ["X 最大值", "X maximum"],
           ymin: ["Y 最小值", "Y minimum"],
@@ -2740,18 +2737,15 @@ No provider rate snapshot is bundled with this document.
             "Viewport preview; resampling after interaction",
           ],
           noStorage: [
-            "未授权私有存储：计算、绘图和导出仍可使用；保存或载入工作区需在扩展中心授权。",
-            "Storage is optional. Calculate, graph and export offline; grant storage in Extensions to save or load a workspace.",
+            "保存或载入需在扩展管理中授予存储权限；计算、绘图与导出仍可用。",
+            "Grant storage in Extensions to save or load; calculation, graphing and export remain available.",
           ],
-          approximation: [
-            "数值近似 · 641 个采样点/曲线",
-            "Numerical approximation · 641 samples per curve",
-          ],
+          approximation: ["数值近似", "Numerical approximation"],
           noSamples: [
             "当前范围内没有可绘制的采样点。请检查函数与坐标范围。",
             "No drawable samples in this range. Check the functions and axis limits.",
           ],
-          saveFile: ["保存生成的记录", "Save generated history"],
+          saveFile: ["保存记录", "Save history"],
           memoryStore: [
             "存储当前显示的数值",
             "Store the displayed value in memory",
@@ -2764,8 +2758,8 @@ No provider rate snapshot is bundled with this document.
             "从记忆减去当前数值",
             "Subtract the displayed value from memory",
           ],
-          memoryRecall: ["调用记忆数值", "Recall memory"],
-          memoryClear: ["清空记忆寄存器", "Clear the memory register"],
+          memoryRecall: ["取回记忆", "Recall memory"],
+          memoryClear: ["清空记忆", "Clear memory"],
         });
         let current,
           state,

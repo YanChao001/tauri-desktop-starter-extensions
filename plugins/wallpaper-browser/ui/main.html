@@ -1041,12 +1041,12 @@
               : tr("图片分类", "Image category");
           $("query-label").textContent =
             provider === "nekosbest"
-              ? tr("搜索作者或作品信息", "Search creator or artwork details")
+              ? tr("搜索作者或作品", "Search creators or artwork")
               : tr("搜索壁纸", "Search wallpapers");
           $("query").placeholder =
             provider === "nekosbest"
-              ? tr("搜索作者或作品信息", "Search creator or artwork details")
-              : tr("搜索关键词…", "Search wallpapers…");
+              ? tr("搜索作者或作品", "Search creators or artwork")
+              : tr("关键词…", "Keywords…");
           if (provider === "upx8" && $("query").value.trim())
             $("category").value = "all";
           $("category").disabled =
@@ -1096,7 +1096,7 @@
         function dimensions(item) {
           return item.width > 0 && item.height > 0
             ? `${item.width} × ${item.height}`
-            : tr("尺寸未知", "Dimensions unavailable");
+            : tr("尺寸未知", "Unknown dimensions");
         }
         function message(value, error = false) {
           if (!value) return;
@@ -1115,48 +1115,45 @@
             case "INVALID_ARGUMENT":
               return tr(
                 "图片、名称或图源不可用，请重试。",
-                "The image, name or source is unavailable. Please retry.",
+                "Image, name or source unavailable. Retry.",
               );
             case "SETTINGS_CONFLICT":
               return tr(
                 "设置已在其他窗口改变，请刷新图库后重试。",
-                "Settings changed in another window. Refresh the gallery and retry.",
+                "Settings changed elsewhere. Refresh the gallery and retry.",
               );
             case "EXTENSION_UNAVAILABLE":
               return tr(
-                "扩展已停用或权限已改变，请重新打开并检查授权。",
-                "The extension was disabled or its permissions changed. Reopen it and review its permissions.",
+                "扩展已停用或授权已变更，请重新打开并检查权限。",
+                "Extension disabled or permissions changed. Reopen and check permissions.",
               );
             case "NOT_FOUND":
               return tr(
-                "图片已不可用，请换一批或刷新图库。",
-                "This image is no longer available. Refresh the collection or local gallery.",
+                "图片不可用，请换一批或刷新图库。",
+                "Image unavailable. Refresh the collection or local gallery.",
               );
             case "EXTENSION_TIMEOUT":
               return searching
                 ? tr(
-                    "图源请求超时，请检查网络连接后重试。",
-                    "Source request timed out. Check your connection and retry.",
+                    "图源超时，请检查网络后重试。",
+                    "Source timed out. Check your connection and retry.",
                   )
                 : tr(
                     "操作超时，请稍后重试。",
-                    "The operation timed out. Try again shortly.",
+                    "Operation timed out. Retry shortly.",
                   );
             case "EXTENSION_BUSY":
               return tr(
-                "壁纸服务正忙，请稍后重试。",
-                "The wallpaper service is busy. Try again shortly.",
+                "壁纸服务繁忙，请稍后重试。",
+                "Wallpaper service busy. Retry shortly.",
               );
             default:
               return searching
                 ? tr(
-                    "图源暂不可用，请重试或切换其他图源。",
-                    "This source is unavailable. Retry or choose another source.",
+                    "图源不可用，请重试或切换图源。",
+                    "Source unavailable. Retry or switch sources.",
                   )
-                : tr(
-                    "操作失败，请重试。",
-                    "The operation failed. Please retry.",
-                  );
+                : tr("操作失败，请重试。", "Operation failed. Please retry.");
           }
         }
         function button(
@@ -1501,8 +1498,8 @@
           } catch {
             message(
               tr(
-                "界面草稿未保存，请稍后再试。",
-                "The interface draft was not saved. Try again shortly.",
+                "界面状态未保存，请稍后重试。",
+                "View state not saved. Retry shortly.",
               ),
               true,
             );
@@ -1520,8 +1517,8 @@
           if (!validQuery(filters.query)) {
             message(
               tr(
-                "关键词最多 100 个字符，且不能包含控制字符。",
-                "Use up to 100 characters without control characters.",
+                "关键词限 100 个字符，不含控制字符。",
+                "Limit: 100 characters; no control characters.",
               ),
               true,
             );
@@ -1550,8 +1547,8 @@
             else if (!entries.length)
               message(
                 tr(
-                  "图源暂未返回图片，请换一批或切换图源。",
-                  "No images returned. Refresh or choose another source.",
+                  "暂无图片，可换一批或切换图源。",
+                  "No images. Refresh or switch sources.",
                 ),
               );
           } catch (error) {
@@ -1623,44 +1620,44 @@
             EXTENSION_NETWORK_BLOCKED: [
               "网络访问受限",
               "Network blocked",
-              "图片地址未能解析到允许的公网地址。请检查宿主网络设置或代理后重试。",
-              "The image could not resolve to an allowed public address. Review host network or proxy settings and retry.",
+              "图片未解析到允许的公网地址，请检查宿主网络或代理设置后重试。",
+              "No allowed public address for this image. Check host network or proxy settings and retry.",
             ],
             EXTENSION_IMAGE_REDIRECT: [
               "图片地址已跳转",
               "Image address moved",
-              "图源返回了需要跳转的图片地址，请换一批更新地址。",
-              "The source returned a redirected image address. Refresh the collection to update it.",
+              "图片地址需要跳转，请换一批更新地址。",
+              "Image address redirects. Refresh the collection to update it.",
             ],
             EXTENSION_IMAGE_SOURCE_REJECTED: [
               "图源暂不可用",
               "Source unavailable",
-              "图片服务器拒绝了请求或暂时不可用，请稍后重试或换一批。",
-              "The image server rejected the request or is temporarily unavailable. Retry later or refresh the collection.",
+              "图片服务器拒绝请求或暂不可用，请稍后重试或换一批。",
+              "Image server rejected the request or is unavailable. Retry later or refresh.",
             ],
             EXTENSION_IMAGE_INVALID: [
               "图片格式无效",
               "Invalid image",
-              "图源没有返回可解码的 JPEG、PNG 或 WebP 图片。",
-              "The source did not return a decodable JPEG, PNG or WebP image.",
+              "图源未返回有效的 JPEG、PNG 或 WebP 图片。",
+              "Source returned no valid JPEG, PNG or WebP image.",
             ],
             EXTENSION_IMAGE_TOO_LARGE: [
-              "图片超出大小限制",
+              "图片超限",
               "Image exceeds limits",
-              "此图片超过了 16 MiB、8192 像素边长或 1600 万像素的处理上限。",
-              "This image exceeds the 16 MiB, 8192-pixel edge or 16-million-pixel processing limit.",
+              "图片超过 16 MiB、8192 像素边长或 1600 万像素上限。",
+              "Image exceeds 16 MiB, an 8192-pixel edge or 16 million pixels.",
             ],
             EXTENSION_TIMEOUT: [
               "载入超时",
               "Image timed out",
               "图片下载超时，请检查网络后重试。",
-              "The image download timed out. Check your connection and retry.",
+              "Image download timed out. Check your connection and retry.",
             ],
             EXTENSION_BUSY: [
               "图片服务繁忙",
               "Image service busy",
-              "图片处理服务暂时繁忙，请稍后重试。",
-              "Image processing is temporarily busy. Retry shortly.",
+              "图片处理繁忙，请稍后重试。",
+              "Image processing busy. Retry shortly.",
             ],
           };
           const entry = messages[code];
@@ -1668,10 +1665,10 @@
             ? tr(entry[detail ? 2 : 0], entry[detail ? 3 : 1])
             : detail
               ? tr(
-                  "图片载入失败，请检查网络后重试，或切换图源。",
-                  "The image could not load. Check your connection and retry, or choose another source.",
+                  "图片加载失败，请检查网络后重试或切换图源。",
+                  "Image failed to load. Check your network, retry or switch sources.",
                 )
-              : tr("图片载入失败", "Could not load image");
+              : tr("图片加载失败", "Image load failed");
         }
         function updateRetryControl() {
           const failed = entries.filter(
@@ -1785,7 +1782,7 @@
                   : record?.status === "error"
                     ? imageFailure(record.errorCode) +
                       tr(" · 查看详情", " · View details")
-                    : tr("正在载入图片", "Loading image"),
+                    : tr("正在加载图片", "Loading image"),
               ),
             );
             media.append(state);
@@ -1816,16 +1813,13 @@
             .filter(Boolean)
             .join(" · ");
           $("result-summary").textContent = loadingCollection
-            ? tr("正在载入壁纸…", "Loading wallpapers…")
+            ? tr("加载壁纸…", "Loading wallpapers…")
             : entriesProvider
               ? tr(
                   `${entries.length} 张 · ${filters}`,
                   `${entries.length} images · ${filters}`,
                 )
-              : tr(
-                  "选择图源，发现壁纸",
-                  "Choose a source to discover wallpapers",
-                );
+              : tr("选择图源", "Choose a source");
           updateRetryControl();
           $("results").setAttribute("aria-busy", String(loadingCollection));
           const key = JSON.stringify([
@@ -1846,10 +1840,10 @@
                 text(
                   "p",
                   loadingCollection
-                    ? tr("正在载入图片", "Loading images")
+                    ? tr("正在加载图片", "Loading images")
                     : tr(
-                        "暂无匹配图片，试试其他关键词或分类。",
-                        "No matching images. Try another query or category.",
+                        "无匹配图片，请更换关键词或分类。",
+                        "No matches. Try another query or category.",
                       ),
                 ),
               );
@@ -1877,7 +1871,7 @@
                   "span",
                   item.width && item.height
                     ? dimensions(item)
-                    : tr("查看大图 ↗", "Preview ↗"),
+                    : tr("预览 ↗", "Preview ↗"),
                 ),
               );
               copy.append(text("strong", item.title), meta);
@@ -1920,14 +1914,14 @@
         function renderDialog(kind, item) {
           $("dialog-title").textContent =
             kind === "rename"
-              ? tr("重命名壁纸", "Rename wallpaper")
-              : tr("移出本机图库？", "Remove from local gallery?");
+              ? tr("重命名", "Rename")
+              : tr("移出图库？", "Remove from gallery?");
           $("dialog-description").textContent =
             kind === "rename"
               ? item.name
               : tr(
-                  "这不会删除原始图片文件；如果当前正在使用它，应用背景会恢复为纯色。",
-                  "The original image file remains. If active, the application returns to a plain background.",
+                  "原始文件会保留。若正用作应用背景，将恢复纯色。",
+                  "Keeps the original file. If used as the app background, restores a plain background.",
                 );
           $("dialog-description").title = $("dialog-description").textContent;
           $("rename-label").hidden = kind !== "rename";
@@ -1965,8 +1959,8 @@
               if (kind === "rename" && !validText(field.value.trim(), 120)) {
                 field.setCustomValidity(
                   tr(
-                    "名称需为 1–120 个字符，且不含控制字符。",
-                    "Enter 1–120 name characters without control characters.",
+                    "名称限 1–120 个字符，不含控制字符。",
+                    "Use 1–120 characters; no control characters.",
                   ),
                 );
                 field.reportValidity();
@@ -2002,18 +1996,18 @@
             );
           $("title").textContent = tr("壁纸库", "Wallpaper Library");
           $("settings").textContent = tr("图库设置", "Gallery settings");
-          $("remote-tab").textContent = tr("发现壁纸", "Discover");
+          $("remote-tab").textContent = tr("发现", "Discover");
           $("local-tab").textContent = tr("本机图库", "Local gallery");
-          $("remote-legend").textContent = tr("发现壁纸", "Discover");
+          $("remote-legend").textContent = tr("发现", "Discover");
           $("local-legend").textContent = tr("本机图库", "Local gallery");
-          $("source-name").textContent = tr("壁纸图源", "Wallpaper source");
+          $("source-name").textContent = tr("图源", "Image source");
           $("source-help-button").setAttribute(
             "aria-label",
-            tr("图源与使用说明", "Image source and usage help"),
+            tr("图源说明", "Source help"),
           );
           $("source-note").textContent = tr(
-            "免费图源每批提供最多 24 张图片。图片经宿主安全加载；原图下载上限为 16 MiB / 1600 万像素，加入图库时会压缩。各图源不保证完整许可，请在使用前查看来源。连接跟随宿主网络设置，背景仅作用于本应用。",
-            "Free sources provide up to 24 images per collection, loaded securely by the host. Originals are limited to 16 MiB / 16 million pixels; gallery copies are compressed. Review source usage rights before use. Connections follow host network settings; backgrounds apply to this app.",
+            "每批最多 24 张图片。保存原图上限为 16 MiB / 1600 万像素，图库副本会压缩。使用前核对来源许可。网络跟随宿主设置，背景仅用于本应用，不改变系统桌面。",
+            "Up to 24 images per batch. Originals: up to 16 MiB / 16 million pixels. Gallery copies are compressed. Check source licenses before use. Uses host network settings; backgrounds affect this app only, not your desktop.",
           );
           $("preview-close").setAttribute(
             "aria-label",
@@ -2034,30 +2028,30 @@
           if (!allowed())
             missing.push(
               tr(
-                "本机图库需要壁纸管理权限。",
-                "The local gallery needs wallpaper management.",
+                "本机图库需壁纸管理权限。",
+                "Local gallery requires wallpaper management permission.",
               ),
             );
           else {
             if (!granted("network:https"))
               missing.push(
                 tr(
-                  "获取图源需 HTTPS 网络权限；本机图库仍可使用。",
-                  "Sources need HTTPS network access; the local gallery remains available.",
+                  "图源需 HTTPS 权限，本机图库不受影响。",
+                  "Sources require HTTPS permission. Local gallery is still available.",
                 ),
               );
             if (!granted("network:images"))
               missing.push(
                 tr(
-                  "远程图片需单独授权。",
-                  "Remote images need their own grant.",
+                  "远程图片需授权。",
+                  "Remote image access requires permission.",
                 ),
               );
             if (!granted("links:open"))
               missing.push(
                 tr(
-                  "来源链接需单独授权。",
-                  "Source links need their own grant.",
+                  "打开来源需授权。",
+                  "Opening source links requires permission.",
                 ),
               );
           }
@@ -2071,7 +2065,7 @@
             $(id).disabled =
               busy || snapshot?.busy || !granted("network:https");
           $("refresh").textContent = tr("刷新", "Refresh");
-          $("import").textContent = tr("导入图片", "Import image");
+          $("import").textContent = tr("导入", "Import");
           $("fit-label").textContent = tr("显示方式", "Fit");
           $("fit").options[0].text = tr("覆盖", "Cover");
           $("fit").options[1].text = tr("完整显示", "Contain");
@@ -2106,13 +2100,10 @@
                 text(
                   "p",
                   granted("network:images")
-                    ? tr(
-                        "正在载入图片，请稍候。",
-                        "Loading this image. Please wait.",
-                      )
+                    ? tr("正在加载图片…", "Loading image…")
                     : tr(
-                        "远程图片未授权，仍可查看来源信息。",
-                        "Remote images are not granted. Source details remain available.",
+                        "预览远程图片需授权，仍可查看来源信息。",
+                        "Preview needs remote image permission. Source details remain available.",
                       ),
                   "placeholder",
                 ),
@@ -2127,7 +2118,7 @@
                   true,
                 );
               const retry = button(
-                tr("重试此图片", "Retry image"),
+                tr("重试", "Retry"),
                 async () => {
                   const record = thumbnails.get(selected.resultId);
                   if (record?.status === "error") record.status = "idle";
@@ -2158,8 +2149,8 @@
                 selected.license
                   ? tr("许可：", "License: ") + selected.license
                   : tr(
-                      "未提供许可信息，请在来源页面核对使用许可。",
-                      "License information is unavailable. Review usage rights on the source page.",
+                      "许可未知，请到来源页核对。",
+                      "License unknown. Check the source page.",
                     ),
               ),
             );
@@ -2176,7 +2167,7 @@
             actions.className = "preview-actions";
             actions.append(
               button(
-                tr("加入本机图库", "Add to gallery"),
+                tr("加入图库", "Add to gallery"),
                 async () => {
                   const item = selected;
                   await withImage(item.originalUrl, async ({ resourceId }) => {
@@ -2189,8 +2180,8 @@
                   });
                   message(
                     tr(
-                      "已导入压缩图库版本；原图可单独下载。",
-                      "Added a compressed gallery version. Download the original separately.",
+                      "压缩副本已加入图库，原图可另存。",
+                      "Compressed copy added to gallery. Save the original separately.",
                     ),
                   );
                 },
@@ -2199,7 +2190,7 @@
                 "network:images",
               ),
               button(
-                tr("下载原图", "Save original"),
+                tr("保存原图", "Save original"),
                 async () => {
                   const item = selected;
                   await withImage(item.originalUrl, async (resource) => {
@@ -2225,10 +2216,7 @@
                     message(
                       response.cancelled
                         ? tr("已取消保存。", "Save cancelled.")
-                        : tr(
-                            "原图已保存至所选位置。",
-                            "Original saved to the chosen location.",
-                          ),
+                        : tr("原图已保存。", "Original saved."),
                     );
                   });
                 },
@@ -2237,7 +2225,7 @@
                 "network:images",
               ),
               button(
-                tr("查看来源与许可", "View source & license"),
+                tr("来源与许可", "Source & license"),
                 () =>
                   starter.services.request("links", {
                     url: selected.sourceUrl,
@@ -2255,7 +2243,7 @@
               ],
               [
                 "download-original",
-                tr("下载原图", "Save original"),
+                tr("保存原图", "Save original"),
                 "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
               ],
               [
@@ -2277,7 +2265,7 @@
           $("local-summary").textContent = tr(
             libraryLoaded
               ? `${library.items.length} / ${library.limit} 张`
-              : "尚未载入图库",
+              : "图库未加载",
             libraryLoaded
               ? `${library.items.length} / ${library.limit} images`
               : "Gallery not loaded",
@@ -2297,9 +2285,7 @@
                   expectedRevision: library.revision,
                   fit: $("fit").value,
                 });
-                message(
-                  tr("已设置应用背景。", "Application background updated."),
-                );
+                message(tr("已设置应用背景。", "App background updated."));
               },
             );
             apply.className = "card-image";
@@ -2314,7 +2300,7 @@
               apply.append(
                 text(
                   "span",
-                  tr("无法预览此图片", "Preview unavailable"),
+                  tr("无法预览", "Preview unavailable"),
                   "placeholder",
                 ),
               );
@@ -2376,10 +2362,7 @@
                 "p",
                 libraryLoaded
                   ? tr("暂无图片", "No images yet")
-                  : tr(
-                      "点击刷新载入本机图库。",
-                      "Refresh to load the local gallery.",
-                    ),
+                  : tr("刷新以加载图库。", "Refresh to load the gallery."),
                 "muted",
               ),
             );
@@ -2449,9 +2432,7 @@
             else {
               library = response.library;
               libraryLoaded = true;
-              message(
-                tr("图片已加入本机图库。", "Image added to the local gallery."),
-              );
+              message(tr("已加入本机图库。", "Added to local gallery."));
             }
           });
         for (const name of ["remote", "local"]) {

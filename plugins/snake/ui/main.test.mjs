@@ -1817,7 +1817,7 @@ test("spectating a completed player run still offers to continue spectating", as
   app.click("overlay-menu");
   app.click("spectate");
   app.click("pause");
-  assert.match(app.$("start").textContent, /continue/i);
+  assert.match(app.$("start").textContent, /resume/i);
   assert.equal(app.$("results").hidden, true);
   app.click("start");
   assert.equal(app.$("confirm").hidden, true);

@@ -211,9 +211,9 @@ async function setup({
   }
   const fixedText = [];
   for (const [id, text] of [
-    ["confirm-action", "确认操作"],
+    ["confirm-action", "确认"],
     ["cancel-action", "取消"],
-    ["send", "发送消息"],
+    ["send", "发送"],
   ]) {
     nodes.get(id).textContent = text;
     fixedText.push(nodes.get(id).childNodes[0]);
@@ -344,7 +344,7 @@ test("locale changes translate fixed text, receipts and confirmations without re
   const { nodes, document } = env;
   assert.equal(nodes.get("refresh").getAttribute("aria-label"), "Refresh");
   assert.equal(nodes.get("status").textContent, "LAN online");
-  assert.match(nodes.get("messages").textContent, /Written to connection/);
+  assert.match(nodes.get("messages").textContent, /Awaiting delivery receipt/);
   assert.match(nodes.get("messages").textContent, /Literal <b>text<\/b>/);
   env.input("draft", "Unsent text");
   nodes.get("draft").focus();
@@ -352,7 +352,7 @@ test("locale changes translate fixed text, receipts and confirmations without re
   assert.equal(nodes.get("status").textContent, "局域网在线");
   assert.equal(document.activeElement, nodes.get("draft"));
   assert.equal(nodes.get("draft").value, "Unsent text");
-  assert.match(nodes.get("messages").textContent, /已写入连接/);
+  assert.match(nodes.get("messages").textContent, /等待送达回执/);
   nodes.get("clear").onclick();
   assert.equal(document.activeElement, nodes.get("confirm-action"));
   env.emit({ locale: "en" });
@@ -1470,7 +1470,7 @@ test("an oversized newer draft invalidates older queued and failed checkpoint re
   env.nodes.get("contacts").querySelectorAll("button")[9].onclick();
   env.input("draft", chunk);
   await flush();
-  assert.match(env.notices.at(-1).message, /too many unsent drafts/);
+  assert.match(env.notices.at(-1).message, /Too many unsent drafts/);
   first.reject({ code: "CONFLICT" });
   await flush();
   for (const delay of [150, 500, 1500, 5000]) await env.tick(delay);
@@ -1489,7 +1489,7 @@ test("an oversized newer draft invalidates older queued and failed checkpoint re
   assert.equal(env.checkpoints.length, 2);
   assert.equal(
     env.notices.filter((notice) =>
-      /too many unsent drafts/.test(notice.message),
+      /Too many unsent drafts/.test(notice.message),
     ).length,
     2,
   );

@@ -863,7 +863,7 @@ test("malformed service responses preserve prior gallery and reject unsafe previ
   app.$("results").children[0].click();
   await settle();
   assert.equal(app.$("preview-image"), null);
-  assert.ok(app.notifications.includes("The operation failed. Please retry."));
+  assert.ok(app.notifications.includes("Operation failed. Please retry."));
   assert.ok(
     app.calls.some(
       (call) =>
@@ -902,7 +902,7 @@ test("gallery follows the host capacity and preserves results when capacity meta
     assert.equal(app.$("gallery").children.length, 25);
     assert.equal(app.$("local-summary").textContent, "25 / 48 images");
   }
-  assert.ok(app.notifications.includes("The operation failed. Please retry."));
+  assert.ok(app.notifications.includes("Operation failed. Please retry."));
 });
 
 test("rename dialog is named, localizes without losing the draft and validates Enter", async () => {
@@ -917,7 +917,7 @@ test("rename dialog is named, localizes without losing the draft and validates E
   );
   app.$("rename-value").value = "New mountain";
   app.update({ locale: "zh-CN" });
-  assert.equal(app.$("dialog-title").textContent, "重命名壁纸");
+  assert.equal(app.$("dialog-title").textContent, "重命名");
   assert.equal(app.$("rename-value").value, "New mountain");
   app.$("rename-value").value = "bad\u0000name";
   app.$("dialog-confirm").click();
@@ -950,15 +950,12 @@ test("apply and confirmed removal retain the gallery on a settings revision conf
   const applied = app.calls.find((call) => call.action === "apply");
   assert.equal(applied.expectedRevision, library.revision);
   assert.equal(applied.id, item.id);
-  assert.equal(
-    app.notifications.includes("Application background updated."),
-    false,
-  );
+  assert.equal(app.notifications.includes("App background updated."), false);
   assert.equal(app.$("gallery").children[0].className, "card");
   action("remove").click();
   await settle();
   app.update({ locale: "zh-CN" });
-  assert.equal(app.$("dialog-title").textContent, "移出本机图库？");
+  assert.equal(app.$("dialog-title").textContent, "移出图库？");
   app.$("dialog-confirm").click();
   await settle();
   const removed = app.calls.find((call) => call.action === "remove");
@@ -1251,7 +1248,7 @@ test("typed image errors explain the failure and batch retry reloads only the fa
   app.$("results").children[0].click();
   assert.match(
     app.$("preview").querySelector(".placeholder").textContent,
-    /redirected image address/i,
+    /image address redirects/i,
   );
   app.$("preview-close").click();
   fail = false;
