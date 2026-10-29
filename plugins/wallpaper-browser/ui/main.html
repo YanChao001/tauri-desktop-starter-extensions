@@ -95,7 +95,7 @@
         border: 0;
         border-radius: 0;
         background: transparent;
-        height: 2.75rem;
+        height: 2rem;
         padding: 0 2px;
         color: var(--muted-foreground);
       }
@@ -789,11 +789,18 @@
       </header>
       <p id="permission" class="muted" role="status" hidden></p>
       <div class="library-bar">
-        <div class="tabs" role="tablist" aria-label="Wallpaper collections">
+        <div
+          class="tabs"
+          data-slot="tabs-list"
+          data-variant="line"
+          role="tablist"
+          aria-label="Wallpaper collections"
+        >
           <button
             id="remote-tab"
             type="button"
             role="tab"
+            data-slot="tabs-trigger"
             aria-controls="remote-panel"
             aria-selected="true"
             data-variant="ghost"
@@ -802,6 +809,7 @@
             id="local-tab"
             type="button"
             role="tab"
+            data-slot="tabs-trigger"
             aria-controls="local-panel"
             aria-selected="false"
             tabindex="-1"
