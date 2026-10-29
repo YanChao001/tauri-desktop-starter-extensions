@@ -536,6 +536,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         height: 18px;
         flex: none;
       }
+      /* 自绘暗色浮层保留自己的前景色，不继承宿主亮色主题的对话框配色。 */
+      .sound-panel,
+      .overlay,
+      .confirm {
+        color: var(--text);
+      }
       .sound-panel {
         position: absolute;
         right: 0;
@@ -588,6 +594,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         color: var(--subtext);
       }
       #volume-value {
+        display: inline;
+        padding: 0;
+        border-radius: 0;
+        overflow: visible;
         color: var(--text);
         font-variant-numeric: tabular-nums;
       }
@@ -1669,6 +1679,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <div
           class="overlay"
           id="overlay"
+          data-surface="artwork"
           role="dialog"
           aria-modal="true"
           aria-labelledby="overlay-title"
@@ -1864,6 +1875,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <section
             class="sound-panel"
             id="sound-panel"
+            data-surface="artwork"
             role="dialog"
             aria-labelledby="sound-title"
             hidden
@@ -1882,7 +1894,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             </div>
             <label class="sound-volume-label" for="volume"
               ><span id="volume-label">音效音量</span
-              ><output id="volume-value" for="volume">65%</output></label
+              ><output id="volume-value" for="volume" data-surface="transparent"
+                >65%</output
+              ></label
             >
             <input
               id="volume"
@@ -1898,6 +1912,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <section
         class="confirm"
         id="confirm"
+        data-surface="artwork"
         hidden
         role="dialog"
         aria-modal="true"
