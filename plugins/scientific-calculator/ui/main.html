@@ -1712,7 +1712,13 @@ No provider rate snapshot is bundled with this document.
               ＋</button
             ><button id="zoom-out" class="flat icon" data-help-label="zoomOut">
               −</button
-            ><button id="fit" class="flat icon" data-help-label="fit">⌖</button
+            ><button
+              id="fit"
+              class="flat icon"
+              data-action="fit-plot"
+              data-help-label="fit"
+            >
+              ⌖</button
             ><button
               class="flat icon"
               data-action="reset-plot"
@@ -2119,9 +2125,7 @@ No provider rate snapshot is bundled with this document.
             aria-labelledby="memory-tab"
             hidden
           >
-            <p id="memory-empty" data-i18n="emptyMemory">
-              尚未存储数值
-            </p>
+            <p id="memory-empty" data-i18n="emptyMemory">尚未存储数值</p>
             <ol id="memory-list"></ol>
             <output id="memory" class="sr-only"></output>
             <div id="memory-card" hidden></div>
@@ -2399,7 +2403,7 @@ No provider rate snapshot is bundled with this document.
           </header>
           <div class="settings-row">
             <span data-i18n="calculator">计算器</span
-            ><span class="muted">1.2.4</span>
+            ><span class="muted">1.2.5</span>
           </div>
           <details>
             <summary data-i18n="reference">函数与快捷键</summary>
@@ -2423,9 +2427,7 @@ No provider rate snapshot is bundled with this document.
           role="dialog"
           aria-labelledby="load-confirm-title"
         >
-          <h2 id="load-confirm-title" data-i18n="loadTitle">
-            载入工作区？
-          </h2>
+          <h2 id="load-confirm-title" data-i18n="loadTitle">载入工作区？</h2>
           <p data-i18n="loadConfirm"></p>
           <div class="row">
             <button id="load-cancel" data-i18n="cancel">取消</button
@@ -2741,10 +2743,6 @@ No provider rate snapshot is bundled with this document.
             "Grant storage in Extensions to save or load; calculation, graphing and export remain available.",
           ],
           approximation: ["数值近似", "Numerical approximation"],
-          noSamples: [
-            "当前范围内没有可绘制的采样点。请检查函数与坐标范围。",
-            "No drawable samples in this range. Check the functions and axis limits.",
-          ],
           saveFile: ["保存记录", "Save history"],
           memoryStore: [
             "存储当前显示的数值",
@@ -6842,31 +6840,6 @@ No provider rate snapshot is bundled with this document.
         };
         $("zoom-out").onclick = () => {
           if (!busy() && zoom(1.25)) resampleSoon();
-        };
-        $("fit").onclick = () => {
-          if (busy()) return;
-          const r = viewport ?? range(),
-            ys = (chartData?.series ?? []).flatMap((series) =>
-              series.points
-                .filter(
-                  ([x, y]) =>
-                    x >= r.xmin &&
-                    x <= r.xmax &&
-                    y !== null &&
-                    Number.isFinite(y) &&
-                    Math.abs(y) < 1e11,
-                )
-                .map(([, y]) => y),
-            );
-          if (!ys.length) {
-            report(tr("noSamples"));
-            return;
-          }
-          const low = Math.min(...ys),
-            high = Math.max(...ys),
-            margin = Math.max((high - low) * 0.1, 0.5);
-          if (setRange({ ...r, ymin: low - margin, ymax: high + margin }))
-            void act("plot");
         };
         const resize = new ResizeObserver(scheduleDraw);
         resize.observe(canvas.parentElement);

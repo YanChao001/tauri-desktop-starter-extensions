@@ -272,6 +272,7 @@ function workspace(options = {}) {
     "memory-remove",
     "history-clear",
     "plot",
+    "fit-plot",
     "reset-plot",
     "root",
     "integrate",
@@ -1743,6 +1744,44 @@ test("graph equations submit through Wasm and support independent visibility and
   const style = app.document.querySelector('[data-curve-style="0"]');
   style.click();
   assert.equal(style.textContent, "┄");
+});
+
+test("graph fitting applies Wasm axis results in one request and checkpoints the viewport", async () => {
+  for (const action of ["plot", "fit-plot"]) {
+    const app = workspace({ mode: "graph", fields: { functions: "x" } });
+    const input = app.elements
+      .get("equations")
+      .querySelector("input[data-equation]");
+    input.value = "x^2";
+    app.event(input, "input");
+    app.responses.push({
+      state: {
+        fields: {
+          ...app.snapshot.fields,
+          functions: "x^2",
+          ymin: "-10",
+          ymax: "110",
+        },
+        plot: { series: [], xmin: -10, xmax: 10, ymin: -10, ymax: 110 },
+      },
+    });
+    if (action === "plot") app.key("Enter", input);
+    else app.elements.get("fit").click();
+    await settle();
+    await app.flushTimers();
+    const runs = app.calls.filter((call) => call.method === "run");
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].action, action);
+    assert.equal(runs[0].fields.functions, "x^2");
+    assert.equal(app.elements.get("ymin").value, "-10");
+    assert.equal(app.elements.get("ymax").value, "110");
+    const saved = app.calls
+      .filter((call) => call.method === "checkpoint")
+      .at(-1);
+    assert.equal(saved.value.fields.ymin, "-10");
+    assert.equal(saved.value.fields.ymax, "110");
+    assert.equal(saved.dirty, true);
+  }
 });
 
 test("a fresh graph opens with one blank equation and stays empty across mode changes", async () => {
