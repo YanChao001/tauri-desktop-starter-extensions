@@ -157,7 +157,9 @@ fn between(from: Date, to: Date) -> DateOutput {
         years -= 1;
         pivot = start.add_years(years as i32).expect("已减少有效年份");
     }
-    let mut months = ((end.year - pivot.year) * 12 + end.month as i32 - pivot.month as i32) as u32;
+    // 闰日的年份锚点可能截为 2 月 28 日；残余月份仍须少于一年。
+    let mut months =
+        (((end.year - pivot.year) * 12 + end.month as i32 - pivot.month as i32) as u32).min(11);
     let mut month_pivot = pivot
         .add_months(months as i32)
         .expect("月份来自有效结束日期");
@@ -238,6 +240,13 @@ mod tests {
         assert_eq!(parts("2023-01-31", "2023-03-30"), (0, 1, 4, 2, 58));
         assert_eq!(parts("2023-01-31", "2023-03-31"), (0, 2, 0, 0, 59));
         assert_eq!(parts("2020-02-29", "2021-02-28"), (1, 0, 0, 0, 365));
+    }
+
+    #[test]
+    fn leap_day_difference_keeps_remaining_months_below_one_year() {
+        for (from, to) in [("2020-02-29", "2024-02-28"), ("2024-02-28", "2020-02-29")] {
+            assert_eq!(parts(from, to), (3, 11, 4, 3, 1460));
+        }
     }
 
     #[test]

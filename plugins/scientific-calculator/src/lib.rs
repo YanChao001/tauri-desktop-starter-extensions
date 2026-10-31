@@ -644,8 +644,33 @@ fn functions(state: &State) -> Result<Vec<&str>, String> {
     }
     Ok(values)
 }
-fn plot(state: &State) -> Result<Plot, String> {
-    let (xmin, xmax, ymin, ymax) = (
+fn fitted_y_range(series: &[Series]) -> Option<(f64, f64)> {
+    let mut low = f64::INFINITY;
+    let mut high = f64::NEG_INFINITY;
+    for y in series
+        .iter()
+        .flat_map(|series| &series.points)
+        .filter_map(|(_, y)| *y)
+    {
+        if y.is_finite() && y.abs() <= 1e12 {
+            low = low.min(y);
+            high = high.max(y);
+        }
+    }
+    if !low.is_finite() {
+        return None;
+    }
+    let margin = if high == low {
+        (low.abs() * 0.1).max(0.5)
+    } else {
+        ((high - low) * 0.1)
+            .max(low.abs().max(high.abs()) * f64::EPSILON * 4.0)
+            .max(1e-10)
+    };
+    Some(((low - margin).max(-1e12), (high + margin).min(1e12)))
+}
+fn plot(state: &State, fit_y: bool) -> Result<Plot, String> {
+    let (xmin, xmax, mut ymin, mut ymax) = (
         number(state, "xmin")?,
         number(state, "xmax")?,
         number(state, "ymin")?,
@@ -665,25 +690,18 @@ fn plot(state: &State) -> Result<Plot, String> {
     }
     let base = vars(state)?;
     let mut series = Vec::new();
+    let mut expressions = Vec::new();
     let sources = functions(state)?;
     let samples = SAMPLES.min(SAMPLES * 3 / sources.len());
     for source in sources {
         let expression = math::compile(&scientific_source(state, source))?;
-        let mut previous: Option<f64> = None;
         let points = (0..=samples)
             .map(|index| {
                 let x = xmin + (xmax - xmin) * index as f64 / samples as f64;
-                let mut value = expression
+                let value = expression
                     .eval(Vars { x, ..base })
                     .ok()
                     .filter(|v| v.abs() <= 1e100);
-                // Do not draw vertical bridges across sampled asymptotes.
-                if let (Some(before), Some(y)) = (previous, value)
-                    && (y - before).abs() > (ymax - ymin) * 8.0
-                {
-                    value = None;
-                }
-                previous = value;
                 (x, value)
             })
             .collect();
@@ -691,6 +709,57 @@ fn plot(state: &State) -> Result<Plot, String> {
             expression: source.into(),
             points,
         });
+        expressions.push(expression);
+    }
+    // Fit the raw samples before detecting jumps: the old, narrow viewport must
+    // not discard steep but continuous parts of a newly entered function.
+    if fit_y && let Some((low, high)) = fitted_y_range(&series) {
+        ymin = low;
+        ymax = high;
+    }
+    for (curve, expression) in series.iter_mut().zip(&expressions) {
+        // A jump across a sampled pole runs against the slopes on both sides.
+        // Confirm it with a midpoint outside the endpoint values: slope changes
+        // alone also occur in continuous oscillating curves.
+        let poles: Vec<_> = curve
+            .points
+            .windows(4)
+            .enumerate()
+            .filter_map(|(index, points)| {
+                let [(_, Some(a)), (bx, Some(b)), (cx, Some(c)), (_, Some(d))] = points else {
+                    return None;
+                };
+                let (left, jump, right) = (b - a, c - b, d - c);
+                if !(left * jump < 0.0
+                    && right * jump < 0.0
+                    && jump.abs() > left.abs()
+                    && jump.abs() > right.abs())
+                {
+                    return None;
+                }
+                expression
+                    .eval(Vars {
+                        x: bx + (cx - bx) / 2.0,
+                        ..base
+                    })
+                    .ok()
+                    .is_none_or(|middle| middle < b.min(*c) || middle > b.max(*c))
+                    .then_some(index + 2)
+            })
+            .collect();
+        for index in poles {
+            curve.points[index].1 = None;
+        }
+        let mut previous: Option<f64> = None;
+        for (_, value) in &mut curve.points {
+            // Do not draw vertical bridges across sampled asymptotes.
+            if let (Some(before), Some(y)) = (previous, *value)
+                && (y - before).abs() > (ymax - ymin) * 8.0
+            {
+                *value = None;
+            }
+            previous = *value;
+        }
     }
     Ok(Plot {
         series,
@@ -900,6 +969,20 @@ pub fn process(input: &str) -> Result<String, String> {
     state.result = decimal::normalize(&state.result)
         .map_err(|_| "Invalid calculator result; original retained")?;
     let previous_converter_category = state.fields["converterCategory"].clone();
+    // Explicit axis edits take priority over automatic fitting. Ordinary pan,
+    // zoom, repeated plots, locale refreshes and restored sessions retain them.
+    let auto_fit_plot = request.action.as_deref() == Some("plot")
+        && ["functions", "angle"].iter().any(|key| {
+            request
+                .fields
+                .get(*key)
+                .is_some_and(|value| value != &state.fields[*key])
+        })
+        && ["xmin", "xmax", "ymin", "ymax"].iter().all(|key| {
+            request.fields.get(*key).is_none_or(|value| {
+                value.trim().parse::<f64>().ok() == state.fields[*key].trim().parse::<f64>().ok()
+            })
+        });
     for (key, value) in &request.fields {
         if (!state.fields.contains_key(key)
             && !["operand", "left", "right", "operator", "memoryIndex"].contains(&key.as_str()))
@@ -945,7 +1028,7 @@ pub fn process(input: &str) -> Result<String, String> {
         return Err("A save is awaiting its matching host receipt".into());
     }
     match action {
-        None | Some("plot") | Some("converter-convert") => {}
+        None | Some("plot") | Some("fit-plot") | Some("converter-convert") => {}
         Some("currency-refresh") => {
             let granted = request.host.as_ref().is_some_and(|host| {
                 host.permissions
@@ -1430,8 +1513,23 @@ pub fn process(input: &str) -> Result<String, String> {
             errors.insert(key, error);
         }
     }
-    match plot(&state) {
-        Ok(value) => state.plot = value,
+    let fit_y = auto_fit_plot || action == Some("fit-plot");
+    match plot(&state, fit_y) {
+        Ok(value) => {
+            if fit_y {
+                state.fields.insert("ymin".into(), value.ymin.to_string());
+                state.fields.insert("ymax".into(), value.ymax.to_string());
+            }
+            if action == Some("fit-plot") && fitted_y_range(&value.series).is_none() {
+                state.notice = tr(
+                    zh,
+                    "当前范围内没有可绘制的采样点。请检查函数与坐标范围。",
+                    "No drawable samples in this range. Check the functions and axis limits.",
+                )
+                .into();
+            }
+            state.plot = value;
+        }
         Err(error) => {
             errors.insert("functions".into(), error);
             state.plot = Plot::default();
@@ -1568,6 +1666,7 @@ pub fn process(input: &str) -> Result<String, String> {
         ("memory-clear", "MC", "MC"),
         ("history-clear", "清空历史", "Clear history"),
         ("plot", "绘图", "Plot"),
+        ("fit-plot", "适配 Y 轴", "Fit Y axis"),
         ("reset-plot", "重置坐标", "Reset axes"),
         ("root", "区间求根", "Find root"),
         ("integrate", "定积分", "Integrate"),
@@ -2210,6 +2309,30 @@ mod tests {
         let refreshed = call(None, view["state"].as_str().unwrap(), json!({}));
         let state: State = serde_json::from_str(refreshed["state"].as_str().unwrap()).unwrap();
         assert_eq!(state.date.unwrap().date, "2024-03-01");
+
+        let leap_day = call(
+            Some("date-difference"),
+            "",
+            json!({"mode":"date","dateFrom":"2020-02-29","dateTo":"2024-02-28"}),
+        );
+        let refreshed: Value = serde_json::from_str(
+            &process(
+                &json!({"version":2,"action":null,"state":leap_day["state"],"fields":{},"locale":"zh-CN"})
+                    .to_string(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(refreshed["display"], "计算器");
+        assert_eq!(refreshed["errors"], json!({}));
+        let next = call(
+            Some("date-difference"),
+            refreshed["state"].as_str().unwrap(),
+            json!({"mode":"date","dateFrom":"2024-02-28","dateTo":"2024-03-01"}),
+        );
+        assert_eq!(next["errors"], json!({}));
+        let state: State = serde_json::from_str(next["state"].as_str().unwrap()).unwrap();
+        assert_eq!(state.date.unwrap().total_days, 2);
     }
     #[test]
     fn eight_graphs_accept_y_prefix_with_a_bounded_sample_budget() {
@@ -2478,16 +2601,176 @@ mod tests {
         );
     }
     #[test]
-    fn singularities_create_gaps() {
-        let v = call(Some("plot"), "", json!({"functions":"1/x"}));
-        let state: Value = serde_json::from_str(v["state"].as_str().unwrap()).unwrap();
-        assert!(
-            state["plot"]["series"][0]["points"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .any(|p| p[1].is_null())
+    fn changed_functions_fit_y_once_before_discontinuity_filtering() {
+        for (function, low, high) in [
+            ("x^2", -10.0, 110.0),
+            ("1000000*x", -12000000.0, 12000000.0),
+        ] {
+            let view = call(Some("plot"), "", json!({"functions":function}));
+            assert_eq!(view["errors"], json!({}));
+            let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+            assert_eq!(state["plot"]["xmin"], -10.0);
+            assert_eq!(state["plot"]["xmax"], 10.0);
+            assert_eq!(state["plot"]["ymin"], low);
+            assert_eq!(state["plot"]["ymax"], high);
+            assert_eq!(state["fields"]["ymin"], low.to_string());
+            assert_eq!(state["fields"]["ymax"], high.to_string());
+            assert!(
+                state["plot"]["series"][0]["points"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|p| p[1].is_number())
+            );
+        }
+    }
+    #[test]
+    fn graph_navigation_and_refresh_preserve_manual_axes_until_function_changes() {
+        let initial = call(Some("plot"), "", json!({"functions":"x^2"}));
+        let manual = call(
+            Some("plot"),
+            initial["state"].as_str().unwrap(),
+            json!({"xmin":"-2", "xmax":"2", "ymin":"-1", "ymax":"1"}),
         );
+        for action in [None, Some("plot"), Some("save")] {
+            let view = call(action, manual["state"].as_str().unwrap(), json!({}));
+            let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+            assert_eq!(state["plot"]["xmin"], -2.0);
+            assert_eq!(state["plot"]["xmax"], 2.0);
+            assert_eq!(state["plot"]["ymin"], -1.0);
+            assert_eq!(state["plot"]["ymax"], 1.0);
+        }
+        let changed = call(
+            Some("plot"),
+            manual["state"].as_str().unwrap(),
+            json!({"functions":"x^2+100"}),
+        );
+        let state: Value = serde_json::from_str(changed["state"].as_str().unwrap()).unwrap();
+        assert_eq!(state["plot"]["xmin"], -2.0);
+        assert_eq!(state["plot"]["xmax"], 2.0);
+        assert_eq!(state["plot"]["ymin"], 99.6);
+        assert_eq!(state["plot"]["ymax"], 104.4);
+    }
+    #[test]
+    fn explicit_axis_changes_take_priority_over_new_functions() {
+        for fields in [
+            json!({"functions":"x^2", "ymin":"-1", "ymax":"1"}),
+            json!({"functions":"x^2", "xmin":"2", "xmax":"4"}),
+        ] {
+            let view = call(Some("plot"), "", fields.clone());
+            let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+            assert_eq!(
+                state["fields"]["ymin"],
+                fields.get("ymin").cloned().unwrap_or(json!("-3"))
+            );
+            assert_eq!(
+                state["fields"]["ymax"],
+                fields.get("ymax").cloned().unwrap_or(json!("3"))
+            );
+        }
+        let equivalent = call(
+            Some("plot"),
+            "",
+            json!({"functions":"x^2", "ymin":"-3.0", "ymax":"3e0"}),
+        );
+        let state: Value = serde_json::from_str(equivalent["state"].as_str().unwrap()).unwrap();
+        assert_eq!(state["plot"]["ymax"], 110.0);
+    }
+    #[test]
+    fn angle_changes_and_multiple_curves_fit_the_sampled_values() {
+        let initial = call(None, "", json!({"functions":"sin(x)", "angle":"deg"}));
+        let view = call(
+            Some("plot"),
+            initial["state"].as_str().unwrap(),
+            json!({"angle":"rad"}),
+        );
+        let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+        assert!(state["plot"]["ymin"].as_f64().unwrap() < -1.0);
+        assert!(state["plot"]["ymax"].as_f64().unwrap() > 1.0);
+        let view = call(Some("plot"), "", json!({"functions":"x^2\n-100\nsqrt(-1)"}));
+        let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+        assert_eq!(state["plot"]["ymin"], -120.0);
+        assert_eq!(state["plot"]["ymax"], 120.0);
+    }
+    #[test]
+    fn fit_handles_constant_tiny_and_boundary_values_without_invalid_axes() {
+        for function in ["0", "100", "1e-9*x", "1e12", "-1e12"] {
+            let view = call(Some("plot"), "", json!({"functions":function}));
+            assert_eq!(view["errors"], json!({}));
+            let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+            let low = state["plot"]["ymin"].as_f64().unwrap();
+            let high = state["plot"]["ymax"].as_f64().unwrap();
+            assert!(low >= -1e12 && high <= 1e12 && high - low >= 1e-10);
+            for point in state["plot"]["series"][0]["points"].as_array().unwrap() {
+                let y = point[1].as_f64().unwrap();
+                assert!(y >= low && y <= high);
+            }
+            if function == "1e-9*x" {
+                assert!(high - low < 3e-8);
+            }
+        }
+    }
+    #[test]
+    fn manual_fit_resamples_current_x_and_handles_empty_or_invalid_functions() {
+        let initial = call(Some("plot"), "", json!({"functions":"x^2"}));
+        let view = call(
+            Some("fit-plot"),
+            initial["state"].as_str().unwrap(),
+            json!({"xmin":"100", "xmax":"110"}),
+        );
+        let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+        assert_eq!(state["plot"]["ymin"], 9790.0);
+        assert_eq!(state["plot"]["ymax"], 12310.0);
+        for function in ["", "sqrt(-1)", "1e13", "sin("] {
+            let view = call(Some("fit-plot"), "", json!({"functions":function}));
+            let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+            assert_eq!(state["fields"]["ymin"], "-3");
+            assert_eq!(state["fields"]["ymax"], "3");
+            if function == "sin(" {
+                assert!(view["errors"]["functions"].is_string());
+            } else {
+                assert!(
+                    state["notice"]
+                        .as_str()
+                        .unwrap()
+                        .contains("No drawable samples")
+                );
+            }
+        }
+    }
+    #[test]
+    fn continuous_oscillating_curves_do_not_create_pole_gaps() {
+        for function in ["sin(75*x)", "sin(100*x)", "sin(75*x)+1000"] {
+            let view = call(
+                Some("plot"),
+                "",
+                json!({"functions": function, "angle": "rad"}),
+            );
+            assert_eq!(view["errors"], json!({}));
+            let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+            assert!(
+                state["plot"]["series"][0]["points"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|point| point[1].is_number()),
+                "continuous curve {function} contains a gap"
+            );
+        }
+    }
+    #[test]
+    fn singularities_create_gaps() {
+        for function in ["1/x", "1/(x-0.01)", "1/(x-0.01)+100"] {
+            let v = call(Some("plot"), "", json!({"functions":function}));
+            let state: Value = serde_json::from_str(v["state"].as_str().unwrap()).unwrap();
+            assert!(
+                state["plot"]["series"][0]["points"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|p| p[1].is_null())
+            );
+        }
     }
     #[test]
     fn future_session_is_preserved() {

@@ -1231,7 +1231,7 @@
         <header class="chat-head" id="chat-header">
           <div id="peer-avatar" class="avatar" aria-hidden="true"></div>
           <div class="peer-copy">
-            <h2 id="peer-name">选择一位朋友</h2>
+            <h2 id="peer-name">选择会话</h2>
             <p id="peer-detail" class="muted">未选择会话</p>
           </div>
           <button
@@ -1379,7 +1379,7 @@
           <textarea
             id="draft"
             maxlength="8192"
-            placeholder="写点什么吧…"
+            placeholder="输入消息…"
             aria-label="消息内容"
             aria-describedby="draft-count"
           ></textarea>
@@ -1395,7 +1395,7 @@
             >
               停止传输</button
             ><button class="ui-button" id="send" type="button" disabled>
-              发送消息
+              发送
             </button>
           </div>
         </form>
@@ -1448,11 +1448,11 @@
             <legend>我的设备</legend>
             <div class="settings-row">
               <label
-                >聊天昵称<input
+                >昵称<input
                   id="nickname"
                   maxlength="40"
                   autocomplete="off"
-                  placeholder="取一个昵称" /></label
+                  placeholder="输入昵称" /></label
               ><button
                 id="rename"
                 type="button"
@@ -1481,13 +1481,13 @@
                 <div id="addresses" tabindex="0">尚未监听</div>
               </fieldset>
               <fieldset class="settings-section">
-                <legend>连接朋友</legend>
+                <legend>连接设备</legend>
                 <div class="settings-row">
                   <label
                     >对方 IP<input
                       id="address"
                       placeholder="例如 192.168.1.25"
-                      title="输入数字形式的私有或回环 IP；双方均需先开启监听。"
+                      title="填写数字形式的私有或回环 IP；双方先开启监听。"
                       autocomplete="off" /></label
                   ><label class="port-label"
                     >对方端口<input
@@ -1506,7 +1506,7 @@
             <section id="loopback-settings" class="settings-section" hidden>
               <h3>本机回环测试</h3>
               <p class="muted">
-                在本机建立真实 TCP 连接，回环助手会回复文字、图片和文件。
+                回环助手通过本机 TCP 回送文字、图片和文件，仅验证本机通信。
               </p>
               <button class="ui-button" id="loopback" type="button">
                 开始回环测试
@@ -1523,11 +1523,8 @@
               停止监听与连接
             </button>
             <details id="connection-details" class="connection-details">
-              <summary>连接与隐私说明</summary>
-              <p>
-                仅连接可信设备。局域网消息与附件通过明文 TCP
-                传输，昵称未经身份认证。
-              </p>
+              <summary>连接与隐私</summary>
+              <p>仅连接可信设备：消息和附件明文传输，昵称与身份未经认证。</p>
               <p>
                 PNG、JPEG、WebP 图片最大 8 MiB，文件最大 1 GiB。本机附件缓存最多
                 2 GiB；另存时选择目标位置。
@@ -1535,7 +1532,7 @@
               <p>
                 切换页面仍会收信。关闭最后使用的窗口、撤权或退出会停止连接。回环模式只监听本机。
               </p>
-              <p>“已写入连接”不等于对方收到；“已送达”表示对方已保存消息。</p>
+              <p>“等待回执”尚未确认送达；“已送达”表示对方已保存消息。</p>
             </details>
           </section>
           <section class="settings-section">
@@ -1544,13 +1541,13 @@
               type="button"
               class="ui-button ui-button-destructive"
             >
-              清空本机消息历史
+              清空本机历史
             </button>
           </section>
         </div>
       </section>
       <div id="permission" hidden>
-        请在扩展中心为本插件启用“局域网消息”能力，再返回此页。聊天不会自动开启监听。
+        请在扩展中心授予“局域网消息”权限；监听须手动开启。
       </div>
       <div
         id="confirmation"
@@ -1576,7 +1573,7 @@
               id="confirm-action"
               type="button"
             >
-              确认操作
+              确认
             </button>
           </div>
         </div>
@@ -1622,35 +1619,33 @@
           停止传输: "Stop transfer",
           停止传输并断开连接: "Stop transfer and disconnect",
           正在停止: "Stopping…",
-          "图片最大 8 MiB，请选择较小的图片。":
-            "Images can be up to 8 MiB. Choose a smaller image.",
-          "文件最大 1 GiB，请选择较小的文件。":
-            "Files can be up to 1 GiB. Choose a smaller file.",
-          "本机附件缓存已满（2 GiB）。请在连接与设置中清空本机消息历史后重试。":
-            "The local attachment cache is full (2 GiB). Clear local message history in Connection and settings, then retry.",
-          "传输中断或校验未通过，附件尚未确认送达。请检查连接后重试。":
-            "The transfer was interrupted or failed verification. Delivery is unconfirmed. Check the connection and retry.",
-          "等待对方响应超时，尚未确认送达。请检查连接后重试。":
-            "The peer response timed out. Delivery is unconfirmed. Check the connection and retry.",
-          "当前服务繁忙，请稍后重试。": "The service is busy. Retry shortly.",
+          "图片上限 8 MiB，请选择较小图片。":
+            "Image limit: 8 MiB. Choose a smaller image.",
+          "文件上限 1 GiB，请选择较小文件。":
+            "File limit: 1 GiB. Choose a smaller file.",
+          "附件缓存已满（2 GiB），请在“连接与设置”中清空本机历史后重试。":
+            "Attachment cache is full (2 GiB). Clear local history in Connection settings, then retry.",
+          "传输中断或校验失败，尚未确认送达，请检查连接后重试。":
+            "Transfer interrupted or failed verification; delivery is unconfirmed. Check the connection and retry.",
+          "对方响应超时，尚未确认送达，请检查连接后重试。":
+            "Peer response timed out; delivery is unconfirmed. Check the connection and retry.",
+          "服务繁忙，请稍后重试。": "The service is busy. Retry shortly.",
           "图片格式无效，请选择 PNG、JPEG 或 WebP 图片。":
             "The image is invalid. Choose a PNG, JPEG or WebP image.",
           "图片像素或解码大小超限，请缩小图片后重试。":
             "The image exceeds the pixel or decoded-size limit. Resize it and retry.",
-          "附件读取或保存失败，请检查文件访问权限与可用磁盘空间。":
-            "The attachment could not be read or saved. Check file access and available disk space.",
+          "附件读写失败，请检查文件权限和磁盘空间。":
+            "The attachment could not be read or saved. Check file permissions and disk space.",
           "附件未发送，请检查文件和连接后重试。":
             "The attachment was not sent. Check the file and connection, then retry.",
-          "传输已停止，连接已关闭。历史记录与草稿已保留。":
-            "The transfer stopped and connections closed. History and drafts have been kept.",
-          "停止请求未完成，传输结果未知。请刷新状态后重试。":
-            "The stop request did not complete. The transfer result is unknown. Refresh status and retry.",
+          "已停止传输并断开连接，历史和草稿已保留。":
+            "Transfer stopped and connections closed. History and drafts kept.",
+          "停止未完成，传输结果未知，请刷新后重试。":
+            "Stop not confirmed; the transfer result is unknown. Refresh and retry.",
           调整会话栏宽度: "Resize conversation column",
           调整输入区高度: "Resize composer",
           "会话栏宽度 {size} 像素": "Conversation width {size} pixels",
           "输入区高度 {size} 像素": "Composer height {size} pixels",
-          "文件最大 1 GiB，图片最大 8 MiB。传输失败时保留草稿，可检查连接后重试。":
-            "Files can be up to 1 GiB and images up to 8 MiB. Your draft is kept if a transfer fails; check the connection and retry.",
           应用工具: "App tools",
           我: "Me",
           聊: "Chat",
@@ -1666,17 +1661,17 @@
           本机回环测试: "Local loopback test",
           开始回环测试: "Start loopback test",
           回环助手: "Loopback assistant",
-          "在本机建立真实 TCP 连接，回环助手会回复文字、图片和文件。":
-            "Create a real TCP connection on this device. The loopback assistant echoes text, images and files.",
-          "仅连接可信设备。局域网消息与附件通过明文 TCP 传输，昵称未经身份认证。":
-            "Connect only to trusted devices. LAN messages and attachments use unencrypted TCP; nicknames are not authenticated.",
+          "回环助手通过本机 TCP 回送文字、图片和文件，仅验证本机通信。":
+            "The assistant echoes text, images and files over local TCP to test this device only.",
+          "仅连接可信设备：消息和附件明文传输，昵称与身份未经认证。":
+            "Use trusted devices only: messages and files are unencrypted, and nicknames and identities are unverified.",
           "PNG、JPEG、WebP 图片最大 8 MiB，文件最大 1 GiB。本机附件缓存最多 2 GiB；另存时选择目标位置。":
-            "PNG, JPEG and WebP images can be up to 8 MiB; files up to 1 GiB. The local attachment cache holds up to 2 GiB. You choose a destination when saving.",
+            "PNG, JPEG or WebP: up to 8 MiB; files: 1 GiB; local cache: 2 GiB. Choose where to save each attachment.",
           "切换页面仍会收信。关闭最后使用的窗口、撤权或退出会停止连接。回环模式只监听本机。":
             "Messages can arrive after navigation. Closing the last window, revoking permission or quitting stops connections. Loopback mode listens only on this device.",
-          "写点什么吧…": "Write a message…",
+          "输入消息…": "Type a message…",
           "Enter 发送 · Shift + Enter 换行":
-            "Enter to send · Shift + Enter for a new line",
+            "Enter: send · Shift + Enter: new line",
           表情与表情包: "Emoji and stickers",
           发送图片: "Send image",
           发送文件: "Send file",
@@ -1694,75 +1689,58 @@
           "[图片] {name}": "[Image] {name}",
           "[文件] {name}": "[File] {name}",
           "[大表情] {text}": "[Sticker] {text}",
-          "本机回环 · 已连接": "Local loopback · Connected",
           "本机回环 · {status}": "Local loopback · {status}",
           回环测试运行中: "Loopback test running",
-          连接一台设备: "Connect a device",
-          "添加设备或开始本机回环测试，即可开始聊天。":
-            "Connect a device or start a local loopback test to begin chatting.",
+          "连接设备，或在本机回环测试中体验聊天。":
+            "Connect a device, or try chatting in a local loopback test.",
           "附件另存失败，请重试。": "The attachment could not be saved. Retry.",
           "附件已另存。": "Attachment saved.",
-          "图片预览未完成，请重试。":
-            "The image preview could not be loaded. Retry.",
+          "图片预览失败，请重试。": "Could not load the image preview. Retry.",
           "此图片无法预览，可另存后查看。":
             "This image cannot be previewed. Save it to view locally.",
-          "未保存的草稿较多，请发送或清理部分草稿后重试。":
-            "There are too many unsent drafts. Send or clear some drafts and retry.",
-          "附件不可用，可能已被本机清理。":
-            "This attachment is unavailable. It may have been removed from the local cache.",
+          "未发送草稿过多，请发送或清理部分草稿。":
+            "Too many unsent drafts. Send or clear some drafts.",
           "正在传输…": "Transferring…",
 
           内网通信: "LAN Chat",
           刷新: "Refresh",
-          "请在扩展中心为本插件启用“局域网消息”能力，再返回此页。聊天不会自动开启监听。":
-            "Enable LAN messaging for this plugin in the extension center, then return here. Listening starts only when you request it.",
-          确认历史操作: "Confirm history operation",
-          确认操作: "Confirm",
+          "请在扩展中心授予“局域网消息”权限；监听须手动开启。":
+            "Grant LAN messaging in the extension center; start listening manually.",
+          确认历史操作: "Confirm history action",
+          确认: "Confirm",
           取消: "Cancel",
           联系人和会话: "Contacts and conversations",
           会话: "Conversations",
           搜索联系人: "Search contacts",
-          "搜索昵称或 IP": "Search nickname or IP",
           选择会话: "Select a conversation",
           当前聊天: "Current conversation",
-          选择一位朋友: "Select a friend",
           未选择会话: "No conversation selected",
           重新连接: "Reconnect",
           导出会话: "Export conversation",
           移除联系人: "Remove contact",
           消息记录: "Message history",
-          发送给当前联系人: "Send to the selected contact",
-          "写点什么吧… Enter 发送，Shift + Enter 换行":
-            "Write a message… Enter to send, Shift + Enter for a new line",
           消息内容: "Message text",
-          发送消息: "Send message",
-          连接与设置: "Connection and settings",
+          发送: "Send",
+          连接与设置: "Connection settings",
           我的设备: "My device",
-          聊天昵称: "Chat nickname",
-          取一个昵称: "Choose a nickname",
+          昵称: "Nickname",
+          输入昵称: "Enter a nickname",
           本机监听: "Local listener",
           监听端口: "Listening port",
           开启监听: "Start listening",
-          停止监听与连接: "Stop listener and connections",
+          停止监听与连接: "Stop listening and disconnect",
           保存昵称: "Save nickname",
-          连接朋友: "Connect to a friend",
           "对方 IP": "Peer IP",
-          "例如 192.168.1.25": "For example, 192.168.1.25",
-          "输入数字形式的私有或回环 IP；双方均需先开启监听。":
-            "Enter a private or loopback IP literal. Both devices must start listening first.",
+          "例如 192.168.1.25": "e.g. 192.168.1.25",
+          "填写数字形式的私有或回环 IP；双方先开启监听。":
+            "Use a numeric private or loopback IP; both devices must listen first.",
           对方端口: "Peer port",
           连接设备: "Connect device",
           历史记录: "History",
-          清空本机消息历史: "Clear local message history",
-          连接与隐私说明: "Connection and privacy",
-          "把监听 IP 与端口告诉对方，双方均需先开启监听。仅接受数字形式的私有或回环 IP，不扫描网络。连接失败时核对同一网络、端口和系统防火墙；应用不会修改防火墙。":
-            "Share your listening IP and port. Both devices must listen first. Only private or loopback IP literals are accepted; no network scanning is performed. Check the network, port and system firewall if a connection fails. The app does not change your firewall.",
-          "局域网 TCP 为明文传输，昵称由对方自行声明，未认证身份。仅连接可信设备，勿发送密码或敏感信息。本插件只收发文本，不访问或传输文件。":
-            "LAN TCP messages are unencrypted. Peers choose their own nicknames without identity verification. Connect only to trusted devices and avoid passwords or sensitive information. This plugin exchanges text only; it does not access or transfer files.",
-          "联系人来自真实连接，离线会话与最近最多 500 条消息 / 1 MiB 保存在本机。切换页面仍会收信；最后使用的应用窗口关闭、撤权或退出会停止连接。":
-            "Contacts come from real connections. Offline conversations and up to 500 recent messages / 1 MiB stay on this device. Messages can arrive after navigation. Connections stop when the last window using the service closes, permission is revoked or the app exits.",
-          "“已写入连接”不等于对方收到；“已送达”表示对方已保存消息。":
-            "Written to the connection does not confirm receipt. Delivered means the other device has saved the message.",
+          清空本机历史: "Clear local history",
+          连接与隐私: "Connection and privacy",
+          "“等待回执”尚未确认送达；“已送达”表示对方已保存消息。":
+            "Awaiting receipt means delivery is unconfirmed; Delivered means the peer saved the message.",
           尚未监听: "Not listening",
           未连接: "Disconnected",
           局域网在线: "LAN online",
@@ -1773,19 +1751,16 @@
           "本机监听地址：{addresses}": "Local listening addresses: {addresses}",
           "{count} 位联系人": "{count} contacts",
           没有匹配的联系人: "No matching contacts",
-          "连接成功后，朋友会出现在这里。":
-            "Friends appear here after a successful connection.",
+          "连接设备后，会话显示在这里。":
+            "Connect a device to add a conversation.",
           已连接: "Connected",
           离线: "Offline",
           "{count} 条未读消息": "{count} unread messages",
           友: "?",
-          "打个招呼，开启对话": "Say hello to start a conversation",
-          让同一网络里的朋友靠近一点: "Connect with a friend on your network",
-          "当前会话还没有消息。":
-            "There are no messages in this conversation yet.",
-          "先开启监听，再使用 IP 连接可信设备。":
-            "Start listening, then connect to a trusted device by IP.",
-          "已写入连接，等待回执": "Written to connection; awaiting receipt",
+          开始聊天: "Start chatting",
+          "连接设备，开始聊天": "Connect a device to chat",
+          "还没有消息。": "No messages yet.",
+          等待送达回执: "Awaiting delivery receipt",
           已送达: "Delivered",
           发送失败: "Send failed",
           已接收: "Received",
@@ -1795,31 +1770,30 @@
           "{count} / 8192 字节": "{count} / 8192 bytes",
           "消息不能包含控制字符（换行和制表符除外）。":
             "Messages cannot contain control characters other than line breaks and tabs.",
-          "草稿尚未保存，请保留此页面后重试。":
-            "The draft has not been saved. Keep this page open and retry.",
-          "检查点无法安全恢复，原始数据已保留。请先导出会话，再重新打开或处理原始会话。":
-            "The checkpoint cannot be restored safely. Original data has been preserved. Export the session before reopening or repairing it.",
-          "服务报告连接或历史写入错误，请检查连接并刷新。":
-            "The service reported a connection or history write error. Check the connection and refresh.",
-          "已发起连接，正在等待对方协议握手。":
-            "Connection requested; waiting for the peer handshake.",
+          "草稿未保存，请保持页面打开并重试。":
+            "Draft not saved. Keep this page open and retry.",
+          "会话草稿无法恢复，原始数据已保留；请先导出会话，再重新打开或修复原会话。":
+            "Session draft cannot be restored. Original data has been preserved. Export the session before reopening or repairing it.",
+          "连接或历史写入失败，请检查连接并刷新。":
+            "Connection or history write failed. Check the connection and refresh.",
+          "正在连接，等待对方响应。": "Connecting; waiting for the peer.",
           "消息已写入连接，等待送达回执。":
             "Message written to the connection; awaiting delivery receipt.",
           "操作已完成。": "Operation completed.",
-          "本机聊天存档损坏或超限，原始数据已保留，未覆盖。":
+          "本机聊天存档损坏或超限，原始数据已保留。":
             "Local chat history is damaged or exceeds its limit. Original data has been preserved.",
-          "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。":
+          "聊天存档版本不兼容，原件已保留，请使用匹配版本的应用。":
             "Local chat history uses an incompatible version. Original data has been preserved. Use a compatible app version.",
           "操作未完成，请核对权限、IP、端口和连接状态。":
-            "The operation did not complete. Check permission, IP, port and connection status.",
+            "Could not complete the action. Check permissions, IP, port and connection.",
           "端口需要是 1 到 65535 的整数。":
             "The port must be an integer from 1 to 65535.",
-          "昵称需要 1 到 40 个可见字符，且不超过 120 UTF-8 字节。":
-            "Use 1 to 40 visible characters and no more than 120 UTF-8 bytes for the nickname.",
+          "昵称限 1–40 个可见字符，最多 120 UTF-8 字节。":
+            "Nickname: 1–40 visible characters, up to 120 UTF-8 bytes.",
           "移除“{nickname}”及其本机消息历史和未发送草稿？":
             "Remove “{nickname}”, its local message history and unsent draft?",
-          "清空所有本机聊天消息？联系人与对方设备上的消息将保留。":
-            "Clear all local chat messages? Contacts and messages on the other device will be kept.",
+          "清空本机全部消息？联系人和对方消息将保留。":
+            "Clear all local messages? Contacts and the other device’s messages will stay.",
           "（我）": " (me)",
           "内网通信 · {nickname}": "LAN Chat · {nickname}",
           "导出时间：{time}": "Exported: {time}",
@@ -1828,10 +1802,9 @@
           "会话已导出。": "Conversation exported.",
           "已取消导出，消息仍保存在本机。":
             "Export cancelled. Messages remain on this device.",
-          "会话导出未完成，请重试。":
-            "Conversation export did not complete. Retry.",
-          "界面连接未完成，请重新打开本插件。":
-            "The interface did not connect. Reopen this plugin.",
+          "会话导出失败，请重试。": "Could not export the conversation. Retry.",
+          "界面连接失败，请重新打开插件。":
+            "Could not connect the interface. Reopen this plugin.",
         };
         const locale = () => (ui.snapshot?.locale === "en" ? "en" : "zh-CN");
         function t(key, values = {}) {
@@ -1995,28 +1968,24 @@
         function errorMessage(error, request) {
           const code = error?.code;
           if (code === "STORAGE_CORRUPT")
-            return t("本机聊天存档损坏或超限，原始数据已保留，未覆盖。");
+            return t("本机聊天存档损坏或超限，原始数据已保留。");
           if (code === "EXTENSION_INCOMPATIBLE")
-            return t(
-              "本机聊天存档版本不兼容，原始数据已保留，请使用匹配版本的应用。",
-            );
+            return t("聊天存档版本不兼容，原件已保留，请使用匹配版本的应用。");
           if (code === "EXTENSION_ATTACHMENT_TOO_LARGE")
             return t(
               request.kind === "image"
-                ? "图片最大 8 MiB，请选择较小的图片。"
-                : "文件最大 1 GiB，请选择较小的文件。",
+                ? "图片上限 8 MiB，请选择较小图片。"
+                : "文件上限 1 GiB，请选择较小文件。",
             );
           if (code === "EXTENSION_ATTACHMENT_CACHE_FULL")
             return t(
-              "本机附件缓存已满（2 GiB）。请在连接与设置中清空本机消息历史后重试。",
+              "附件缓存已满（2 GiB），请在“连接与设置”中清空本机历史后重试。",
             );
           if (code === "EXTENSION_TRANSFER_INTERRUPTED")
-            return t(
-              "传输中断或校验未通过，附件尚未确认送达。请检查连接后重试。",
-            );
+            return t("传输中断或校验失败，尚未确认送达，请检查连接后重试。");
           if (code === "EXTENSION_TIMEOUT")
-            return t("等待对方响应超时，尚未确认送达。请检查连接后重试。");
-          if (code === "EXTENSION_BUSY") return t("当前服务繁忙，请稍后重试。");
+            return t("对方响应超时，尚未确认送达，请检查连接后重试。");
+          if (code === "EXTENSION_BUSY") return t("服务繁忙，请稍后重试。");
           if (code === "EXTENSION_IMAGE_INVALID")
             return t("图片格式无效，请选择 PNG、JPEG 或 WebP 图片。");
           if (code === "EXTENSION_IMAGE_TOO_LARGE")
@@ -2027,11 +1996,11 @@
             "saveAttachment",
           ].includes(request.action);
           if (code === "STORAGE_IO" && attachment)
-            return t("附件读取或保存失败，请检查文件访问权限与可用磁盘空间。");
+            return t("附件读写失败，请检查文件权限和磁盘空间。");
           if (request.action === "saveAttachment")
             return t("附件另存失败，请重试。");
           if (request.action === "previewAttachment")
-            return t("图片预览未完成，请重试。");
+            return t("图片预览失败，请重试。");
           if (request.action === "sendAttachment")
             return t("附件未发送，请检查文件和连接后重试。");
           return t("操作未完成，请核对权限、IP、端口和连接状态。");
@@ -2272,7 +2241,7 @@
           clearTimeout(ui.checkpointTimer);
           ui.checkpointTimer = null;
           if (!ui.checkpointTooLarge)
-            notice(t("未保存的草稿较多，请发送或清理部分草稿后重试。"), true);
+            notice(t("未发送草稿过多，请发送或清理部分草稿。"), true);
           ui.checkpointTooLarge = true;
           ui.checkpointError = true;
         }
@@ -2303,7 +2272,7 @@
             if (queued.revision === ui.checkpointRevision)
               ui.queuedCheckpoint ??= queued;
             if (!ui.checkpointError)
-              notice(t("草稿尚未保存，请保留此页面后重试。"), true);
+              notice(t("草稿未保存，请保持页面打开并重试。"), true);
             ui.checkpointError = true;
           } finally {
             ui.checkpointPending = false;
@@ -2559,7 +2528,7 @@
                 "muted",
                 $("search").value
                   ? t("没有匹配的联系人")
-                  : t("连接成功后，朋友会出现在这里。"),
+                  : t("连接设备后，会话显示在这里。"),
               ),
             );
             return;
@@ -3092,23 +3061,21 @@
               element(
                 "strong",
                 "",
-                peer
-                  ? t("打个招呼，开启对话")
-                  : t("让同一网络里的朋友靠近一点"),
+                peer ? t("开始聊天") : t("连接设备，开始聊天"),
               ),
               element(
                 "p",
                 "muted",
                 peer
-                  ? t("当前会话还没有消息。")
-                  : t("添加设备或开始本机回环测试，即可开始聊天。"),
+                  ? t("还没有消息。")
+                  : t("连接设备，或在本机回环测试中体验聊天。"),
               ),
             );
             if (!peer) {
               const connect = element(
                 "button",
                 "ui-button ui-button-outline",
-                t("连接一台设备"),
+                t("连接设备"),
               );
               connect.type = "button";
               connect.onclick = () => openSettings("mode-lan");
@@ -3117,7 +3084,7 @@
             target.append(empty);
           }
           const delivery = {
-            sent: t("已写入连接，等待回执"),
+            sent: t("等待送达回执"),
             delivered: t("已送达"),
             failed: t("发送失败"),
             received: t("已接收"),
@@ -3240,7 +3207,7 @@
           $("status").title = ui.readError
             ? t("状态已过期，请刷新重试。")
             : $("status").textContent;
-          $("peer-name").textContent = peer?.nickname ?? t("选择一位朋友");
+          $("peer-name").textContent = peer?.nickname ?? t("选择会话");
           setAvatar(
             $("peer-avatar"),
             !peer
@@ -3357,7 +3324,7 @@
                 ? t("移除“{nickname}”及其本机消息历史和未发送草稿？", {
                     nickname: ui.confirmation.nickname,
                   })
-                : t("清空所有本机聊天消息？联系人与对方设备上的消息将保留。");
+                : t("清空本机全部消息？联系人和对方消息将保留。");
           }
           applyLayout();
           renderContacts();
@@ -3431,14 +3398,14 @@
             if (!ui.nicknameDirty && $("nickname").value !== state.nickname)
               $("nickname").value = state.nickname;
             if (state.lastError && state.lastError !== ui.lastError) {
-              notice(t("服务报告连接或历史写入错误，请检查连接并刷新。"), true);
+              notice(t("连接或历史写入失败，请检查连接并刷新。"), true);
             } else if (
               !background &&
               !["status", "send", "sendAttachment"].includes(request.action)
             )
               notice(
                 request.action === "connect"
-                  ? t("已发起连接，正在等待对方协议握手。")
+                  ? t("正在连接，等待对方响应。")
                   : request.action === "send"
                     ? t("消息已写入连接，等待送达回执。")
                     : t("操作已完成。"),
@@ -3483,10 +3450,7 @@
         function nickname() {
           const value = $("nickname").value;
           if (validName(value)) return value;
-          notice(
-            t("昵称需要 1 到 40 个可见字符，且不超过 120 UTF-8 字节。"),
-            true,
-          );
+          notice(t("昵称限 1–40 个可见字符，最多 120 UTF-8 字节。"), true);
           $("nickname").focus();
           return null;
         }
@@ -3521,15 +3485,12 @@
             ui.state = state;
             ui.pendingLoopbackPeerId = "";
             ui.readError = null;
-            notice(t("传输已停止，连接已关闭。历史记录与草稿已保留。"));
+            notice(t("已停止传输并断开连接，历史和草稿已保留。"));
           } catch (error) {
             if (!ui.disposed && permitted() && epoch === ui.actionEpoch) {
               ui.readError =
                 typeof error?.code === "string" ? error.code : "UNKNOWN";
-              notice(
-                t("停止请求未完成，传输结果未知。请刷新状态后重试。"),
-                true,
-              );
+              notice(t("停止未完成，传输结果未知，请刷新后重试。"), true);
             }
           } finally {
             ui.cancellingTransfer = false;
@@ -3860,7 +3821,7 @@
             );
           } catch {
             if (epoch === ui.actionEpoch && permitted())
-              notice(t("会话导出未完成，请重试。"), true);
+              notice(t("会话导出失败，请重试。"), true);
           } finally {
             ui.pending = false;
             if (!ui.disposed) render();
@@ -4022,7 +3983,7 @@
               ui.checkpointBlocked = true;
               notice(
                 t(
-                  "检查点无法安全恢复，原始数据已保留。请先导出会话，再重新打开或处理原始会话。",
+                  "会话草稿无法恢复，原始数据已保留；请先导出会话，再重新打开或修复原会话。",
                 ),
                 true,
               );
@@ -4059,7 +4020,7 @@
             if (!ui.snapshot) updateSnapshot(snapshot);
             poll();
           })
-          .catch(() => notice(t("界面连接未完成，请重新打开本插件。"), true));
+          .catch(() => notice(t("界面连接失败，请重新打开插件。"), true));
         closePopovers();
         closePreview(false);
         $("confirmation").hidden = true;

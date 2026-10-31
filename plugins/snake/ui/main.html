@@ -1577,7 +1577,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           </button>
           <div class="profile-row">
             <label
-              ><span id="nickname-label">你的名字</span
+              ><span id="nickname-label">昵称</span
               ><input
                 id="nickname"
                 type="text"
@@ -1596,10 +1596,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           </div>
           <div class="home-links">
             <button type="button" id="scores-button">最高纪录</button
-            ><button type="button" id="menu-new">新的一局</button>
+            ><button type="button" id="menu-new">新开局</button>
           </div>
           <p class="instructions" id="controls-help">
-            移动鼠标自由转向 · 按住鼠标或空格冲刺<br />吃光点成长，避开其他蛇的身体
+            鼠标转向 · 按住左键或空格冲刺<br />吃光点，避开其他蛇身和边界
           </p>
         </div>
       </section>
@@ -1709,9 +1709,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
                 >
               </div>
             </div>
-            <button type="button" id="start" class="primary">继续游戏 →</button>
+            <button type="button" id="start" class="primary">继续 →</button>
             <div class="overlay-actions">
-              <button type="button" id="restart">新的一局</button
+              <button type="button" id="restart">新开局</button
               ><button type="button" id="save">保存纪录</button
               ><button type="button" id="overlay-menu">返回主菜单</button>
             </div>
@@ -1724,9 +1724,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         aria-labelledby="skins-title"
         hidden
       >
-        <h2 id="skins-title">挑选你的皮肤</h2>
+        <h2 id="skins-title">挑选皮肤</h2>
         <p class="panel-description" id="skins-description">
-          原作的柔和色彩，为你的小蛇换个心情。
+          14 种原作配色与彩虹皮肤。
         </p>
         <div class="skin-viewer">
           <button
@@ -1762,9 +1762,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           role="group"
           aria-label="皮肤颜色"
         ></div>
-        <button type="button" class="primary" id="skin-select">
-          使用这款皮肤
-        </button>
+        <button type="button" class="primary" id="skin-select">使用皮肤</button>
         <p class="panel-description" id="skin-free" style="margin: 12px 0 0">
           全部皮肤离线可用
         </p>
@@ -1788,11 +1786,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             </p>
           </div>
           <div class="about-section">
-            <h3 id="keys-title">键盘与手柄</h3>
+            <h3 id="keys-title">键盘、触控与手柄</h3>
             <p id="keys-text">
-              方向键 / WASD 也能控制，组合按键可斜向移动；P 暂停，Esc
-              返回菜单，M 静音。手柄左摇杆转向，A /
-              扳机冲刺。触屏拖动摇杆，按住冲刺按钮。
+              方向键 / WASD 转向，可组合斜向；P 暂停，Esc 返回菜单，M
+              静音。手柄：左摇杆转向，A / 扳机冲刺。触屏：摇杆转向，按住冲刺。
             </p>
           </div>
           <p class="source-credit">
@@ -1812,7 +1809,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       >
         <h2 id="scores-title">你的最佳表现</h2>
         <p class="panel-description" id="scores-description">
-          Top 10 · 经 Wasm 重放核验的离线纪录
+          Top 10 · 本机纪录
         </p>
         <div class="panel-box">
           <table class="leaderboard" id="scores-table">
@@ -1922,7 +1919,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         tabindex="-1"
       >
         <div class="confirm-card">
-          <p id="confirm-text">新的一局会替换当前进度，是否继续？</p>
+          <p id="confirm-text">开始新局将替换当前进度，继续？</p>
           <div class="confirm-actions">
             <button type="button" id="cancel-restart">保留本局</button
             ><button type="button" class="primary" id="confirm-restart">
@@ -2793,8 +2790,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
                   pause();
                   reportError(
                     tr(
-                      "无法保留进度，已暂停。本页棋局仍在；请稍后点击继续或保存重试。",
-                      "The checkpoint could not be retained, so play paused. This board is still here; use Resume or Save to retry.",
+                      "进度未保存，已暂停；本局仍在，可点“继续”或“保存纪录”重试。",
+                      "Progress not saved; game paused. Your run is still here. Use Resume or Save score to retry.",
                     ),
                   );
                   paint();
@@ -3300,8 +3297,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             $("empty-scores"),
             !current?.grantedPermissions.includes("storage")
               ? tr(
-                  "授权私有存储后即可保存纪录；离线游玩不受影响。",
-                  "Grant private storage to save scores. Offline play remains available.",
+                  "保存纪录需授权私有存储；游玩无需授权。",
+                  "Grant private storage to save scores; play needs no permission.",
                 )
               : storageBlocked()
                 ? tr(
@@ -3309,8 +3306,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
                     "Original scores are preserved; their format is read-only.",
                   )
                 : tr(
-                    "还没有纪录。完成一局后，保存你的最佳表现。",
-                    "No scores yet. Play a round and save your best run.",
+                    "暂无纪录，完成一局后可保存。",
+                    "No scores yet. Finish a round and save it.",
                   ),
           );
         }
@@ -3400,16 +3397,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             "about-label": tr("关于", "About"),
             "home-label": tr("主页", "Home"),
             "skins-label": tr("皮肤", "Skins"),
-            "nickname-label": tr("你的名字", "Your name"),
+            "nickname-label": tr("昵称", "Nickname"),
             "difficulty-label": tr("AI 难度", "AI difficulty"),
             "scores-button": tr("最高纪录", "High scores"),
-            "menu-new": tr("新的一局", "New round"),
+            "menu-new": tr("新开局", "New round"),
             "mode-label": tr("离线竞技场 · 12 AI", "Offline arena · 12 AI"),
             "live-title": tr("♛ 本局领先者", "♛ Arena leaders"),
             "kills-label": tr("击败", "KOs"),
             "rank-label": tr("排名", "Rank"),
-            "score-label": tr("长度", "Score"),
-            "best-label": tr("峰值", "Best"),
+            "score-label": tr("长度", "Length"),
+            "best-label": tr("峰值", "Peak"),
             "minimap-label": tr("圆形竞技场", "Arena map"),
             "boost-label": tr("冲刺储备", "Boost reserve"),
             boost: tr("冲刺", "BOOST"),
@@ -3417,15 +3414,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             "exit-spectate": tr("返回", "Back"),
             "menu-button": tr("菜单", "Menu"),
             "overlay-menu": tr("返回主菜单", "Back to main menu"),
-            restart: tr("新的一局", "New round"),
-            "final-score-label": tr("最高长度", "Peak score"),
+            restart: tr("新开局", "New round"),
+            "final-score-label": tr("最高长度", "Peak length"),
             "final-kills-label": tr("击败", "KOs"),
             "final-foods-label": tr("糖果", "Candy"),
             "final-time-label": tr("存活", "Survived"),
-            "skins-title": tr("挑选你的皮肤", "Find your color"),
+            "skins-title": tr("挑选皮肤", "Choose a skin"),
             "skins-description": tr(
-              "原作的柔和色彩，为你的小蛇换个心情。",
-              "A little color, a little personality. Make this snake yours.",
+              "14 种原作配色与彩虹皮肤。",
+              "14 original colors and a rainbow skin.",
             ),
             "skin-free": tr("全部皮肤离线可用", "All skins available offline"),
             "about-title": tr(
@@ -3444,20 +3441,20 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             "spectate-text": tr("观战", "Spectate"),
             "scores-title": tr("你的最佳表现", "Your best runs"),
             "scores-description": tr(
-              "Top 10 · 经 Wasm 重放核验的离线纪录",
-              "Top 10 · Verified by Wasm replay",
+              "Top 10 · 本机纪录",
+              "Top 10 · Local scores",
             ),
-            "table-score": tr("峰值", "Best"),
+            "table-score": tr("峰值", "Peak"),
             "table-kills": tr("击败", "KOs"),
-            "table-mode": tr("难度", "Mode"),
+            "table-mode": tr("难度", "Difficulty"),
             "back-scores": tr("返回主页", "Back home"),
             "offline-note": tr(
               "离线移植版 · 12 个 AI 对手",
               "Desktop port · 12 AI opponents",
             ),
             "confirm-text": tr(
-              "新的一局会替换当前进度，是否继续？",
-              "A new round replaces the current run. Start again?",
+              "开始新局将替换当前进度，继续？",
+              "Replace current progress with a new round?",
             ),
             "cancel-restart": tr("保留本局", "Keep this run"),
             "confirm-restart": tr("开始新局", "Start new round"),
@@ -3470,8 +3467,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           setText(
             $("controls-help"),
             tr(
-              "移动鼠标自由转向 · 按住鼠标或空格冲刺。吃光点成长，避开其他蛇的身体",
-              "Move the mouse to steer · Hold click or Space to boost. Eat candy, grow, and outmaneuver other snakes.",
+              "鼠标转向 · 按住左键或空格冲刺 · 吃光点，避开其他蛇身和边界",
+              "Mouse to steer · Hold left-click or Space to boost · Eat candy; avoid other snakes and the arena edge.",
             ),
           );
           setText(
@@ -3484,8 +3481,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           setText(
             $("keys-text"),
             tr(
-              "方向键 / WASD 可组合成任意斜向；P 暂停，Esc 返回菜单，M 静音。手柄左摇杆转向，A / 扳机冲刺。触屏拖动摇杆，按住冲刺按钮。",
-              "Arrows / WASD combine into diagonal directions. P pauses, Esc opens the menu, M mutes. Gamepad: left stick steers, A / triggers boost. Touch: drag the joystick and hold Boost.",
+              "方向键 / WASD 转向，可组合斜向；P 暂停，Esc 返回菜单，M 静音。手柄：左摇杆转向，A / 扳机冲刺。触屏：摇杆转向，按住冲刺。",
+              "Arrows / WASD steer, including diagonals. P: pause · Esc: menu · M: mute. Gamepad: left stick to steer, A / triggers to boost. Touch: drag joystick and hold Boost.",
             ),
           );
           setText(
@@ -3519,8 +3516,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           setText(
             $("skin-select"),
             checkpoint.skin === chosenSkin
-              ? tr("正在使用 ✓", "Equipped ✓")
-              : tr("使用这款皮肤", "Equip skin"),
+              ? tr("使用中 ✓", "Equipped ✓")
+              : tr("使用皮肤", "Equip skin"),
           );
           for (let i = 0; i < 15; i++) {
             const button = $("swatch-" + i);
@@ -3534,8 +3531,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             checkpoint.inputs.length
               ? finished
                 ? tr("再来一局 →", "Play again →")
-                : tr("继续游戏 →", "Continue →")
-              : tr("开始游戏 →", "Start Playing →"),
+                : tr("继续 →", "Resume →")
+              : tr("开始游戏 →", "Play →"),
           );
           $("menu-start").disabled = blocked;
           $("menu-new").disabled = blocked;
@@ -3557,12 +3554,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           );
           $("save").title = current.grantedPermissions.includes("storage")
             ? tr(
-                "以重放核验后的峰值长度保存纪录",
-                "Save the peak score verified by replay",
+                "保存经重放核验的最高长度",
+                "Save peak length verified by replay",
               )
             : tr(
-                "需要可选的私有存储授权",
-                "Requires optional private storage permission",
+                "保存纪录需授权私有存储",
+                "Grant private storage to save scores",
               );
           $("sound").disabled = blocked || recoveryBlocked;
           $("sound-settings").disabled = blocked || recoveryBlocked;
@@ -3614,13 +3611,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           setText(
             $("start"),
             finished || recoveryBlocked
-              ? tr("新的一局 →", "New round →")
-              : tr("继续游戏 →", "Continue →"),
+              ? tr("新开局 →", "New round →")
+              : tr("继续 →", "Resume →"),
           );
           const warning = recoveryBlocked
             ? tr(
-                "导入的对局格式无效或不受支持，原始检查点已保留。可先导出会话；只有确认新的一局后才替换。",
-                "The imported run is invalid or unsupported. Its original checkpoint is preserved. Export the session first; only a confirmed new round replaces it.",
+                "对局格式无效或不受支持，原进度已保留；请先导出会话，确认新开局后才会替换。",
+                "Invalid or unsupported run; original progress preserved. Export the session before confirming a new round to replace it.",
               )
             : storageBlocked()
               ? current.view.blocks?.find((block) => block.kind === "markdown")
@@ -3631,7 +3628,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           setText(
             $("notice"),
             restoring
-              ? tr("正在重放检查点…", "Replaying checkpoint…")
+              ? tr("正在恢复进度…", "Restoring progress…")
               : working
                 ? tr("正在保存…", "Saving…")
                 : running
@@ -3788,7 +3785,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             pause(
               tr(
                 "窗口停顿，已暂停。请手动继续。",
-                "A long frame paused the arena. Resume manually.",
+                "Game paused after a delay. Resume when ready.",
               ),
             );
             return;
@@ -3829,8 +3826,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
               } catch {
                 pause(
                   tr(
-                    "本轮操作记录已达上限，请开始新的一局。",
-                    "This round reached its input limit. Start a new round.",
+                    "本局操作记录已满，请新开局。",
+                    "Input history is full. Start a new round.",
                   ),
                 );
                 break;
@@ -4039,7 +4036,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             reportError(
               tr(
                 "旧版或无效对局未载入，原始进度已保留。",
-                "The old or invalid run was not loaded. Its original checkpoint is preserved.",
+                "Old or invalid run not loaded; original progress preserved.",
               ),
             );
         }

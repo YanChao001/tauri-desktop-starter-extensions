@@ -3,10 +3,10 @@
   "apiVersion": 2,
   "minHostVersion": "0.1.8",
   "id": "market.wallpaper-browser",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "name": "壁纸库",
   "author": "Tauri Desktop Starter",
-  "description": "切换四个免费 API 图源，按关键词、分类或主题浏览每批最多 24 张壁纸，预览、下载并管理本机图库与应用背景。作者、作品及图片许可由各原站解释；可选联网能力分别授权，离线仍可管理本机图库。不改变操作系统桌面壁纸。",
+  "description": "浏览在线壁纸，管理本机图库并设置应用背景。",
   "icon": "image",
   "commands": [
     {
