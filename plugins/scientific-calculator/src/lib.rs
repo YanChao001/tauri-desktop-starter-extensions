@@ -690,6 +690,7 @@ fn plot(state: &State, fit_y: bool) -> Result<Plot, String> {
     }
     let base = vars(state)?;
     let mut series = Vec::new();
+    let mut expressions = Vec::new();
     let sources = functions(state)?;
     let samples = SAMPLES.min(SAMPLES * 3 / sources.len());
     for source in sources {
@@ -708,6 +709,7 @@ fn plot(state: &State, fit_y: bool) -> Result<Plot, String> {
             expression: source.into(),
             points,
         });
+        expressions.push(expression);
     }
     // Fit the raw samples before detecting jumps: the old, narrow viewport must
     // not discard steep but continuous parts of a newly entered function.
@@ -715,24 +717,34 @@ fn plot(state: &State, fit_y: bool) -> Result<Plot, String> {
         ymin = low;
         ymax = high;
     }
-    for curve in &mut series {
+    for (curve, expression) in series.iter_mut().zip(&expressions) {
         // A jump across a sampled pole runs against the slopes on both sides.
-        // Keep that gap even when fitting has enlarged Y enough to include it;
-        // a steep straight line must remain continuous.
+        // Confirm it with a midpoint outside the endpoint values: slope changes
+        // alone also occur in continuous oscillating curves.
         let poles: Vec<_> = curve
             .points
             .windows(4)
             .enumerate()
             .filter_map(|(index, points)| {
-                let [(_, Some(a)), (_, Some(b)), (_, Some(c)), (_, Some(d))] = points else {
+                let [(_, Some(a)), (bx, Some(b)), (cx, Some(c)), (_, Some(d))] = points else {
                     return None;
                 };
                 let (left, jump, right) = (b - a, c - b, d - c);
-                (left * jump < 0.0
+                if !(left * jump < 0.0
                     && right * jump < 0.0
                     && jump.abs() > left.abs()
                     && jump.abs() > right.abs())
-                .then_some(index + 2)
+                {
+                    return None;
+                }
+                expression
+                    .eval(Vars {
+                        x: bx + (cx - bx) / 2.0,
+                        ..base
+                    })
+                    .ok()
+                    .is_none_or(|middle| middle < b.min(*c) || middle > b.max(*c))
+                    .then_some(index + 2)
             })
             .collect();
         for index in poles {
@@ -2297,6 +2309,30 @@ mod tests {
         let refreshed = call(None, view["state"].as_str().unwrap(), json!({}));
         let state: State = serde_json::from_str(refreshed["state"].as_str().unwrap()).unwrap();
         assert_eq!(state.date.unwrap().date, "2024-03-01");
+
+        let leap_day = call(
+            Some("date-difference"),
+            "",
+            json!({"mode":"date","dateFrom":"2020-02-29","dateTo":"2024-02-28"}),
+        );
+        let refreshed: Value = serde_json::from_str(
+            &process(
+                &json!({"version":2,"action":null,"state":leap_day["state"],"fields":{},"locale":"zh-CN"})
+                    .to_string(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(refreshed["display"], "计算器");
+        assert_eq!(refreshed["errors"], json!({}));
+        let next = call(
+            Some("date-difference"),
+            refreshed["state"].as_str().unwrap(),
+            json!({"mode":"date","dateFrom":"2024-02-28","dateTo":"2024-03-01"}),
+        );
+        assert_eq!(next["errors"], json!({}));
+        let state: State = serde_json::from_str(next["state"].as_str().unwrap()).unwrap();
+        assert_eq!(state.date.unwrap().total_days, 2);
     }
     #[test]
     fn eight_graphs_accept_y_prefix_with_a_bounded_sample_budget() {
@@ -2700,6 +2736,26 @@ mod tests {
                         .contains("No drawable samples")
                 );
             }
+        }
+    }
+    #[test]
+    fn continuous_oscillating_curves_do_not_create_pole_gaps() {
+        for function in ["sin(75*x)", "sin(100*x)", "sin(75*x)+1000"] {
+            let view = call(
+                Some("plot"),
+                "",
+                json!({"functions": function, "angle": "rad"}),
+            );
+            assert_eq!(view["errors"], json!({}));
+            let state: Value = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+            assert!(
+                state["plot"]["series"][0]["points"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|point| point[1].is_number()),
+                "continuous curve {function} contains a gap"
+            );
         }
     }
     #[test]
