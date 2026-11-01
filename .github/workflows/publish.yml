@@ -24,8 +24,14 @@ on:
         description: 已推送并审核的宿主完整 40 位 SHA，留空使用 STARTER_HOST_REF 仓库变量
         required: false
         type: string
+      force_checks:
+        description: 忽略已验收产物，重新构建和检查
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: publish-market
   cancel-in-progress: false
@@ -59,13 +65,35 @@ jobs:
           appendFileSync(process.env.GITHUB_OUTPUT, `revision=${revision}\nhost_ref=${hostRef}\n`);
           appendFileSync(process.env.GITHUB_ENV, `MARKET_REVISION=${revision}\n`);
           NODE
+      - name: 查找相同市场与固定宿主已通过的完整验收
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SELECTED_HOST_REF: ${{ steps.metadata.outputs.host_ref }}
+          FORCE_MARKET_CHECKS: ${{ inputs.force_checks }}
+        run: node scripts/ci-plan.mjs
+      - name: 下载同一代码树与宿主的已验收包
+        if: steps.plan.outputs.reused_run != ''
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ${{ steps.plan.outputs.artifact }}
+          run-id: ${{ steps.plan.outputs.reused_run }}
+          github-token: ${{ github.token }}
+          path: artifacts/market-${{ steps.metadata.outputs.revision }}/
+      - name: 更新未签名目录的修订号并核对包字节
+        if: steps.plan.outputs.reused_run != ''
+        run: node scripts/ci-plan.mjs retarget "artifacts/market-$MARKET_REVISION"
       - name: 脚本与插件界面回归
+        if: steps.plan.outputs.reused_run == ''
         run: node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs
       - uses: ./.github/actions/plugin-check
+        if: steps.plan.outputs.reused_run == ''
       - uses: ./.github/actions/host-tool
+        if: steps.plan.outputs.reused_run == ''
         with:
           ref: ${{ steps.metadata.outputs.host_ref }}
       - name: 编译、真实 Wasm 回归与离线验签（无生产签名密钥）
+        if: steps.plan.outputs.reused_run == ''
         run: node scripts/check.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

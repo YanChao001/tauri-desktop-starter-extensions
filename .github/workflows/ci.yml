@@ -1,10 +1,10 @@
 name: 市场检查
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: market-check-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,17 +16,38 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
+      - name: 判断范围并查找相同市场与宿主的验收产物
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Managed by node scripts/repository-config.mjs sync.
+          SELECTED_HOST_REF: ${{ vars.STARTER_HOST_REF || 'develop' }}
+          FORCE_MARKET_CHECKS: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node scripts/ci-plan.mjs
       - name: 脚本与插件界面回归
+        if: steps.plan.outputs.reused_run == ''
         run: node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs
       - uses: ./.github/actions/plugin-check
+        if: steps.plan.outputs.full_required == 'true' && steps.plan.outputs.reused_run == ''
       - uses: ./.github/actions/host-tool
+        if: steps.plan.outputs.full_required == 'true' && steps.plan.outputs.reused_run == ''
         with:
-          # Managed by node scripts/repository-config.mjs sync.
-          ref: ${{ vars.STARTER_HOST_REF || 'develop' }}
+          ref: ${{ steps.plan.outputs.host_ref }}
       - name: 编译全部插件、真实 Wasm 回归与离线验签
+        if: steps.plan.outputs.full_required == 'true' && steps.plan.outputs.reused_run == ''
         env:
           MARKET_REVISION: 1
         run: node scripts/check.mjs
+      - name: 保留已通过完整验收的未签名包
+        if: steps.plan.outputs.full_required == 'true' && steps.plan.outputs.reused_run == ''
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ steps.plan.outputs.artifact }}
+          path: artifacts/market-1/
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 3
