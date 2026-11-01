@@ -230,8 +230,8 @@
       .results,
       .gallery {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+        gap: 16px;
       }
       button.result {
         display: flex;
@@ -250,16 +250,11 @@
         border-radius: calc(var(--radius, 0.625rem) * 1.2);
         background: var(--surface-card, var(--card));
         color: var(--foreground);
-        transition:
-          transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
-          border-color 0.2s,
-          box-shadow 0.24s;
+        transition: border-color 0.2s;
       }
       .result:hover,
       .result:focus-visible {
         border-color: var(--primary);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px #0001;
       }
       .result[aria-pressed="true"] {
         border-color: var(--primary);
@@ -280,13 +275,18 @@
         height: 100%;
         object-fit: cover;
         display: block;
-        transition:
-          transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-          opacity 0.3s;
       }
-      .result:hover img,
-      .result:focus-visible img {
-        transform: scale(1.045);
+      .result-resolution {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        padding: 3px 6px;
+        border-radius: calc(var(--radius, 0.625rem) / 2);
+        background: var(--popover);
+        color: var(--popover-foreground);
+        font-size: 0.6875rem;
+        line-height: 1.4;
+        font-variant-numeric: tabular-nums;
       }
       .result-copy {
         display: grid;
@@ -413,6 +413,22 @@
         overflow: hidden;
         background: var(--muted);
       }
+      .preview-quality {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        min-height: 2.25rem;
+        color: var(--muted-foreground);
+        font-size: 0.75rem;
+      }
+      #preview-position {
+        flex: none;
+        color: var(--muted-foreground);
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+      }
       .preview-image {
         position: absolute;
         inset: 0;
@@ -465,6 +481,12 @@
         gap: 8px;
         padding: 12px;
         border-top: 1px solid var(--border);
+      }
+      .load-more-sentinel {
+        display: grid;
+        justify-items: center;
+        gap: 0.75rem;
+        padding: 1.5rem 0;
       }
       .actions {
         display: flex;
@@ -522,6 +544,17 @@
         height: 0.875rem;
         stroke-width: 2;
       }
+      .card-progress {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        padding: 4px 8px;
+        border-radius: calc(var(--radius, 0.625rem) / 2);
+        background: var(--popover);
+        color: var(--popover-foreground);
+        font-size: 0.75rem;
+        pointer-events: none;
+      }
       .card-heading {
         display: flex;
         align-items: center;
@@ -576,8 +609,8 @@
         animation: dialog-enter 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
       #preview-dialog {
-        width: min(900px, calc(100vw - 32px));
-        height: min(80dvh, 640px);
+        width: min(1200px, calc(100vw - 32px));
+        height: min(90dvh, 900px);
         padding: 0;
         overflow: hidden;
       }
@@ -731,10 +764,10 @@
             <div class="source-row">
               <label id="source-name" class="sr-only" for="provider"></label>
               <select id="provider" aria-describedby="source-note">
-                <option value="upx8">UPX8</option>
-                <option value="wallhaven">Wallhaven</option>
-                <option value="commons">Wikimedia Commons</option>
-                <option value="nekosbest">Nekos.best</option>
+                <option value="bizhihui">壁纸汇</option>
+                <option value="wallcoo">猫猫壁纸酷</option>
+                <option value="wallpaperscraft">WallpapersCraft</option>
+                <option value="goodfon">GoodFon</option>
               </select>
               <span class="help">
                 <button
@@ -788,6 +821,12 @@
                   autocomplete="off"
               /></label>
               <button id="search" type="button" class="ui-button"></button>
+              <button
+                id="next-batch"
+                type="button"
+                class="ui-button"
+                data-variant="outline"
+              ></button>
             </div>
           </form>
           <div class="collection-heading">
@@ -801,11 +840,57 @@
             ></button>
           </div>
           <div id="results" class="results"></div>
+          <div id="load-more-sentinel" class="load-more-sentinel">
+            <p id="load-more-status" class="muted" role="status"></p>
+            <button
+              id="load-more"
+              type="button"
+              class="ui-button"
+              data-variant="outline"
+            ></button>
+          </div>
         </fieldset>
       </section>
       <dialog id="preview-dialog" aria-labelledby="preview-title">
         <div class="preview-head">
           <h2 id="preview-title"></h2>
+          <span id="preview-position" aria-live="polite"></span>
+          <button
+            id="preview-previous"
+            class="ui-button ui-button-size-icon"
+            data-size="icon"
+            type="button"
+            data-variant="ghost"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            id="preview-next"
+            class="ui-button ui-button-size-icon"
+            data-size="icon"
+            type="button"
+            data-variant="ghost"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
           <button
             id="preview-info"
             class="ui-button ui-button-size-icon"
@@ -886,7 +971,7 @@
         <fieldset class="collection-group">
           <legend id="local-legend"></legend>
           <div class="toolbar local-toolbar">
-            <p id="local-summary" class="muted"></p>
+            <p id="local-summary" class="muted" role="status"></p>
             <div class="gallery-controls">
               <label class="inline-field"
                 ><span id="fit-label"></span>
@@ -937,19 +1022,26 @@
         const $ = (id) => document.getElementById(id);
         let snapshot = null,
           busy = false,
+          applyingId = null,
           tab = "remote",
           entries = [],
           selected = null,
-          preview = null,
+          fullPreview = null,
           entriesProvider = "",
           entriesQuery = "",
           entriesCategory = "",
+          entriesPage = 0,
+          entriesHasMore = false,
           filterOptionsKey = "",
           batchErrorNotified = "",
           initialized = false,
+          unloaded = false,
           accessEpoch = 0,
           refreshPending = false,
           libraryLoaded = false,
+          loadingLibrary = false,
+          libraryRead = null,
+          libraryReadSequence = 0,
           dialogKind = null,
           dialogItem = null,
           lastResultsState = "",
@@ -959,50 +1051,59 @@
           ignoredResultsState = "",
           initializePending = true,
           collectionAttempted = false;
+        let paginationError = "",
+          moreArmed = true,
+          sentinelVisible = false;
         const providers = {
-          upx8: "UPX8",
-          wallhaven: "Wallhaven",
-          commons: "Wikimedia Commons",
-          nekosbest: "Nekos.best",
+          bizhihui: "Bizhihui",
+          wallcoo: "Wallcoo",
+          wallpaperscraft: "WallpapersCraft",
+          goodfon: "GoodFon",
         };
         const categories = {
-          upx8: [
+          bizhihui: [
             ["all", "全部分类", "All categories"],
-            ["nature", "自然风景", "Nature"],
+            ["dongman", "动漫", "Anime"],
+            ["renwu", "人物", "People"],
+            ["fengjing", "风景", "Landscapes"],
+            ["youxi", "游戏", "Games"],
+            ["mengchong", "动物", "Animals"],
+            ["yuzhou", "宇宙", "Space"],
+            ["jianyue", "简约", "Minimalism"],
+          ],
+          wallcoo: [
+            ["all", "全部分类", "All categories"],
+            ["landscape", "风景", "Landscapes"],
+            ["painting", "插画", "Illustrations"],
             ["anime", "动漫", "Anime"],
-            ["game", "游戏", "Games"],
             ["animal", "动物", "Animals"],
-            ["city", "城市", "Cities"],
-            ["abstract", "抽象", "Abstract"],
-            ["space", "星空", "Space"],
-            ["car", "汽车", "Cars"],
-            ["girl", "人物", "People"],
-            ["sport", "运动", "Sports"],
+            ["game", "游戏", "Games"],
+            ["digital-art", "数字艺术", "Digital art"],
           ],
-          wallhaven: [
+          wallpaperscraft: [
             ["all", "全部分类", "All categories"],
-            ["general", "综合", "General"],
+            ["nature", "自然", "Nature"],
+            ["animals", "动物", "Animals"],
             ["anime", "动漫", "Anime"],
-            ["people", "人物", "People"],
-          ],
-          commons: [
-            ["all", "推荐风景", "Featured landscapes"],
-            ["landscape", "风景", "Landscape"],
-            ["mountain", "山川", "Mountains"],
-            ["ocean", "海洋", "Ocean"],
-            ["forest", "森林", "Forest"],
+            ["cars", "汽车", "Cars"],
             ["city", "城市", "Cities"],
-            ["space", "星空", "Space"],
+            ["space", "宇宙", "Space"],
+            ["minimalism", "简约", "Minimalism"],
+            ["abstract", "抽象", "Abstract"],
           ],
-          nekosbest: [
-            ["neko", "猫娘", "Neko"],
-            ["kitsune", "狐娘", "Kitsune"],
-            ["waifu", "动漫女生", "Waifu"],
-            ["husbando", "动漫男生", "Husbando"],
+          goodfon: [
+            ["all", "全部分类", "All categories"],
+            ["landscapes", "风景", "Landscapes"],
+            ["nature", "自然", "Nature"],
+            ["animals", "动物", "Animals"],
+            ["city", "城市", "Cities"],
+            ["space", "宇宙", "Space"],
+            ["games", "游戏", "Games"],
+            ["abstraction", "抽象", "Abstract"],
+            ["minimalism", "简约", "Minimalism"],
           ],
         };
-        const categoryDefault = (provider) =>
-          provider === "nekosbest" ? "neko" : "all";
+        const categoryDefault = () => "all";
         const categoryName = (provider, category) => {
           const option = categories[provider]?.find(
             (item) => item[0] === category,
@@ -1035,31 +1136,35 @@
               ? previous
               : categoryDefault(provider);
           }
-          $("category-label").textContent =
-            provider === "commons"
-              ? tr("图片主题", "Image theme")
-              : tr("图片分类", "Image category");
-          $("query-label").textContent =
-            provider === "nekosbest"
-              ? tr("搜索作者或作品", "Search creators or artwork")
-              : tr("搜索壁纸", "Search wallpapers");
-          $("query").placeholder =
-            provider === "nekosbest"
-              ? tr("搜索作者或作品", "Search creators or artwork")
-              : tr("关键词…", "Keywords…");
-          if (provider === "upx8" && $("query").value.trim())
-            $("category").value = "all";
+          $("provider").options[0].text = tr("壁纸汇", "Bizhihui");
+          $("provider").options[1].text = tr("猫猫壁纸酷", "Wallcoo");
+          $("category-label").textContent = tr("图片分类", "Image category");
+          $("query-label").textContent = tr("搜索壁纸", "Search wallpapers");
+          $("query").placeholder = tr("关键词…", "Keywords…");
+          if ($("query").value.trim()) $("category").value = "all";
           $("category").disabled =
             busy ||
+            loadingCollection ||
             snapshot?.busy ||
             !granted("network:https") ||
-            (provider === "upx8" && Boolean($("query").value.trim()));
+            Boolean($("query").value.trim());
           $("query").disabled = !granted("network:https");
           $("search").textContent = loadingCollection
             ? tr("载入中…", "Loading…")
-            : $("query").value.trim()
-              ? tr("搜索", "Search")
-              : tr("换一批", "Refresh");
+            : tr("搜索", "Search");
+          $("next-batch").textContent =
+            entriesProvider && !entriesHasMore
+              ? tr("已到最后", "No more images")
+              : tr("加载更多", "Load more");
+          $("next-batch").disabled =
+            busy ||
+            loadingCollection ||
+            snapshot?.busy ||
+            !granted("network:https") ||
+            !entriesHasMore ||
+            provider !== entriesProvider ||
+            $("category").value !== entriesCategory ||
+            $("query").value.trim() !== entriesQuery;
         }
         function requestedFilters() {
           const provider = $("provider").value;
@@ -1067,16 +1172,98 @@
           return {
             provider,
             query,
-            category:
-              provider === "upx8" && query ? "all" : $("category").value,
+            category: query ? "all" : $("category").value,
           };
         }
         let thumbnails = new Map(),
           imageInFlight = 0,
+          thumbnailInFlight = 0,
+          foregroundRequest = null,
+          foregroundSequence = 0,
+          releaseInFlight = false,
+          localPreviewInFlight = false,
           collectionEpoch = 0;
+        const thumbnailCache = new Map();
+        const fullPreviewCache = new Map();
+        const localPreviews = new Map();
+        const localPreviewCache = new Map();
         const releases = new Set();
+        const releaseReservations = new Map();
+        const imageWaiters = [];
+        let imageReservations = 0;
+        const downloadWaiters = [];
+        let downloadsInFlight = 0;
+        function reserveDownload() {
+          if (downloadsInFlight < 3) {
+            downloadsInFlight++;
+            return Promise.resolve();
+          }
+          return new Promise((resolve) => downloadWaiters.push(resolve));
+        }
+        function freeDownload() {
+          const next = downloadWaiters.shift();
+          if (next) next();
+          else downloadsInFlight--;
+        }
+        function reserveImage(limit) {
+          if (imageReservations < limit) {
+            imageReservations++;
+            return Promise.resolve();
+          }
+          return new Promise((resolve) =>
+            imageWaiters.push({ limit, resolve }),
+          );
+        }
+        function freeImage(count = 1) {
+          imageReservations -= count;
+          for (let index = 0; index < imageWaiters.length;) {
+            const waiter = imageWaiters[index];
+            if (imageReservations >= waiter.limit) {
+              index++;
+              continue;
+            }
+            imageWaiters.splice(index, 1);
+            imageReservations++;
+            waiter.resolve();
+          }
+        }
+        const previewRequestPrefix =
+          "preview-" + Math.random().toString(36).slice(2) + "-";
+        const bridgeQueue = [];
+        let bridgeInFlight = 0;
+        // SDK 与宿主桥各允许四个并行请求；后台工作给交互与取消留出空间。
+        function bridgeCall(execute, priority = 1) {
+          return new Promise((resolve, reject) => {
+            bridgeQueue.push({ execute, priority, resolve, reject });
+            pumpBridge();
+          });
+        }
+        function pumpBridge() {
+          bridgeQueue.sort((left, right) => left.priority - right.priority);
+          while (bridgeQueue.length) {
+            const next = bridgeQueue[0];
+            const limit = next.priority <= 1 ? 4 : next.priority === 2 ? 3 : 2;
+            if (bridgeInFlight >= limit) return;
+            bridgeQueue.shift();
+            bridgeInFlight++;
+            Promise.resolve()
+              .then(next.execute)
+              .then(next.resolve, next.reject)
+              .finally(() => {
+                bridgeInFlight--;
+                pumpBridge();
+              });
+          }
+        }
+        const serviceCall = (service, operation, priority = 1, before) =>
+          bridgeCall(() => {
+            before?.();
+            return starter.services.request(service, operation);
+          }, priority);
         const visible = () =>
-          snapshot?.active !== false && document.visibilityState !== "hidden";
+          !unloaded &&
+          snapshot?.active !== false &&
+          document.visibilityState !== "hidden";
         const canLoadImages = () =>
           visible() && tab === "remote" && granted("network:images");
         let library = { revision: 0, items: [], limit: 0 };
@@ -1086,6 +1273,8 @@
           Boolean(starter.services?.request);
         const granted = (capability) =>
           allowed() && snapshot.grantedPermissions.includes(capability);
+        // 图源只读任务占用宿主的 Wasm 会话，本机服务仍可独立执行。
+        const hostBlocked = () => snapshot?.busy && !loadingCollection;
         function text(tag, value, className) {
           const element = document.createElement(tag);
           element.textContent = value;
@@ -1098,11 +1287,18 @@
             ? `${item.width} × ${item.height}`
             : tr("尺寸未知", "Unknown dimensions");
         }
+        function requiresHdDownload(item) {
+          return (
+            item.width > 8192 ||
+            item.height > 8192 ||
+            item.width * item.height > 16000000
+          );
+        }
         function message(value, error = false) {
           if (!value) return;
-          void starter
-            .notify(value, { tone: error ? "error" : "info" })
-            .catch(() => {});
+          void bridgeCall(() =>
+            starter.notify(value, { tone: error ? "error" : "info" }),
+          ).catch(() => {});
         }
         function failure(error, searching = false) {
           switch (error?.code) {
@@ -1129,7 +1325,7 @@
               );
             case "NOT_FOUND":
               return tr(
-                "图片不可用，请换一批或刷新图库。",
+                "图片不可用，请重新搜索或刷新图库。",
                 "Image unavailable. Refresh the collection or local gallery.",
               );
             case "EXTENSION_TIMEOUT":
@@ -1176,7 +1372,11 @@
           }
           element.className = "ui-button";
           element.dataset.variant = primary ? "default" : "outline";
-          element.disabled = busy || snapshot?.busy || !granted(capability);
+          element.disabled =
+            busy ||
+            Boolean(applyingId) ||
+            hostBlocked() ||
+            !granted(capability);
           element.onclick = () => void work(action);
           return element;
         }
@@ -1208,7 +1408,7 @@
             /^[a-f0-9]{16}$/.test(value.resultId) &&
             typeof value.title === "string" &&
             validText(value.title, 120) &&
-            ["originalUrl", "previewUrl", "sourceUrl"].every(
+            ["originalUrl", "displayUrl", "previewUrl", "sourceUrl"].every(
               (key) =>
                 typeof value[key] === "string" &&
                 value[key].length <= 4096 &&
@@ -1241,6 +1441,8 @@
                 typeof item.name === "string" &&
                 item.name.length <= 1024 &&
                 typeof item.active === "boolean" &&
+                typeof item.previewKey === "string" &&
+                /^[a-f0-9]{64}$/.test(item.previewKey) &&
                 (item.dataUrl === null || isImageData(item.dataUrl)),
             )
           );
@@ -1248,8 +1450,24 @@
         function validResponse(action, response) {
           if (!isObject(response)) return false;
           switch (action) {
-            case "list":
             case "apply":
+              return (
+                response.applied === true &&
+                typeof response.activeId === "string" &&
+                /^[a-f0-9]{64}$/.test(response.activeId) &&
+                Number.isSafeInteger(response.revision) &&
+                response.revision >= 0 &&
+                response.revision <= 2147483647
+              );
+            case "preview":
+              return (
+                typeof response.id === "string" &&
+                /^[a-f0-9]{64}$/.test(response.id) &&
+                typeof response.previewKey === "string" &&
+                /^[a-f0-9]{64}$/.test(response.previewKey) &&
+                (response.dataUrl === null || isImageData(response.dataUrl))
+              );
+            case "list":
             case "rename":
             case "remove":
               return isLibrary(response);
@@ -1266,24 +1484,71 @@
         async function request(action, extra = {}) {
           if (!allowed()) throw { code: "EXTENSION_UNAVAILABLE" };
           const epoch = accessEpoch;
-          const response = await starter.services.request("wallpaper", {
-            action,
-            ...extra,
-          });
+          const response = await serviceCall(
+            "wallpaper",
+            { action, ...extra },
+            action === "preview" ? 2 : 1,
+          );
           if (epoch !== accessEpoch || !allowed())
             throw { code: "EXTENSION_UNAVAILABLE" };
           if (!validResponse(action, response))
             throw { code: "EXTENSION_RUN_FAILED" };
+          if (
+            action === "preview" &&
+            (response.id !== extra.id ||
+              response.previewKey !== extra.previewKey)
+          )
+            throw { code: "EXTENSION_RUN_FAILED" };
+          if (
+            action === "apply" &&
+            (response.activeId !== extra.id ||
+              response.revision <= extra.expectedRevision)
+          )
+            throw { code: "EXTENSION_RUN_FAILED" };
+          if (
+            (action === "apply" && response.revision >= library.revision) ||
+            ["rename", "remove", "import-resource"].includes(action) ||
+            (action === "import" && !response.cancelled)
+          )
+            libraryReadSequence++;
           return response;
         }
-        async function withImage(url, action) {
+        async function withImage(url, action, preview, requestId) {
           if (!granted("network:images"))
             throw { code: "EXTENSION_UNAVAILABLE" };
           const epoch = accessEpoch;
-          const resource = await starter.services.request("resources", {
-            action: "fetch-image",
-            url,
-          });
+          await reserveImage(
+            preview === "thumbnail" ? 4 : preview === "large" ? 6 : 8,
+          );
+          let resource;
+          try {
+            await reserveDownload();
+            resource = await serviceCall(
+              "resources",
+              {
+                action: "fetch-image",
+                url,
+                ...(preview ? { preview } : {}),
+                ...(requestId ? { requestId } : {}),
+              },
+              preview === "thumbnail" ? 3 : preview === "large" ? 2 : 1,
+              () => {
+                if (epoch !== accessEpoch || !granted("network:images"))
+                  throw { code: "EXTENSION_UNAVAILABLE" };
+                if (requestId) {
+                  if (
+                    foregroundRequest?.requestId !== requestId ||
+                    foregroundRequest.cancelRequested
+                  )
+                    throw { code: "EXTENSION_UNAVAILABLE" };
+                  foregroundRequest.fetchStarted = true;
+                }
+              },
+            ).finally(freeDownload);
+          } catch (error) {
+            freeImage();
+            throw error;
+          }
           const resourceId =
             isObject(resource) && typeof resource.resourceId === "string"
               ? resource.resourceId
@@ -1311,9 +1576,18 @@
               !/^[a-f0-9]{64}$/.test(resource.sha256)
             )
               throw { code: "EXTENSION_RUN_FAILED" };
+            if (preview && !isImageData(resource.dataUrl))
+              throw { code: "EXTENSION_RUN_FAILED" };
             return await action(resource);
           } finally {
-            if (resourceId) await releaseImage(resourceId);
+            if (resourceId) {
+              releaseReservations.set(
+                resourceId,
+                (releaseReservations.get(resourceId) || 0) + 1,
+              );
+              releases.add(resourceId);
+              pumpReleases();
+            } else freeImage();
           }
         }
         function readResults(next) {
@@ -1332,10 +1606,22 @@
           }
           if (
             !isObject(state) ||
-            state.schema !== 3 ||
+            state.schema !== 4 ||
+            !Number.isSafeInteger(state.page) ||
+            state.page < 0 ||
+            state.page > 40 ||
+            typeof state.hasMore !== "boolean" ||
+            !Array.isArray(state.seen) ||
+            state.seen.length > 960 ||
+            !state.seen.every(
+              (id) => typeof id === "string" && /^[a-f0-9]{16}$/.test(id),
+            ) ||
+            new Set(state.seen).size !== state.seen.length ||
+            state.seen.length > state.page * 24 ||
             !Array.isArray(state.items) ||
             state.items.length > 24 ||
             !state.items.every(isImage) ||
+            state.items.some((item) => !state.seen.includes(item.resultId)) ||
             new Set(state.items.map((item) => item.resultId)).size !==
               state.items.length ||
             !Object.hasOwn(providers, state.provider) ||
@@ -1350,32 +1636,71 @@
             state.query,
             state.category,
             state.items,
+            state.hasMore,
+            state.page,
           ]);
           if (key === lastResultsState) return;
           lastResultsState = key;
-          entries = state.items;
+          const append =
+            entriesProvider === state.provider &&
+            entriesQuery === state.query &&
+            entriesCategory === state.category &&
+            state.page > entriesPage &&
+            entriesPage > 0;
+          entries = append
+            ? [
+                ...new Map(
+                  [...entries, ...state.items].map((item) => [
+                    item.resultId,
+                    item,
+                  ]),
+                ).values(),
+              ].slice(0, 960)
+            : state.items;
           entriesProvider = state.provider;
           entriesQuery = state.query;
           entriesCategory = state.category;
+          entriesPage = state.page;
+          entriesHasMore = state.hasMore;
           const previous = thumbnails;
           thumbnails = new Map(
-            entries.map((item) => [
-              item.resultId,
-              previous.get(item.resultId)?.url === item.previewUrl
-                ? previous.get(item.resultId)
-                : { url: item.previewUrl, status: "idle", dataUrl: null },
-            ]),
+            entries.map((item) => {
+              const cached = thumbnailCache.get(item.previewUrl);
+              return [
+                item.resultId,
+                previous.get(item.resultId)?.url === item.previewUrl
+                  ? previous.get(item.resultId)
+                  : {
+                      url: item.previewUrl,
+                      status: cached ? "ready" : "idle",
+                      dataUrl: cached || null,
+                    },
+              ];
+            }),
           );
           collectionEpoch++;
-          cardsKey = "";
+          if (!append) {
+            cardsKey = "";
+            moreArmed = true;
+            sentinelVisible = false;
+            loadMoreObserver?.disconnect();
+            loadMoreObserver?.observe($("load-more-sentinel"));
+          }
           if (selected) {
+            const previousUrl = selected.displayUrl;
             selected =
               entries.find((item) => item.resultId === selected.resultId) ||
               null;
             if (!selected) {
-              preview = null;
+              fullPreview = null;
               closePreview();
-            }
+            } else if (selected.displayUrl !== previousUrl)
+              fullPreview = {
+                resultId: selected.resultId,
+                url: selected.displayUrl,
+                status: "idle",
+                dataUrl: null,
+              };
           }
         }
         function focusTarget() {
@@ -1410,57 +1735,199 @@
           if (target && !target.disabled && target.getClientRects().length)
             target.focus({ preventScroll: true });
         }
-        async function work(action, returnFocus = focusTarget()) {
-          if (busy || snapshot?.busy || !allowed() || !visible()) return;
-          busy = true;
+        async function work(
+          action,
+          returnFocus = focusTarget(),
+          applyId = null,
+        ) {
+          if (busy || applyingId || hostBlocked() || !allowed() || !visible())
+            return;
+          if (applyId) applyingId = applyId;
+          else busy = true;
           render();
           try {
             await action();
           } catch (error) {
             message(failure(error), true);
           } finally {
-            busy = false;
+            if (applyId) applyingId = null;
+            else busy = false;
             render();
             restoreFocus(returnFocus);
             if (refreshPending) {
               refreshPending = false;
-              if (tab === "local" && allowed()) void work(refresh);
+              if (tab === "local" && allowed()) void refresh();
             }
             initializeContent();
           }
         }
         function initializeContent() {
-          if (
-            !initialized ||
-            !visible() ||
-            !allowed() ||
-            busy ||
-            snapshot?.busy
-          )
+          if (!initialized || !visible() || !allowed() || busy || hostBlocked())
             return;
+          if (refreshPending && (tab === "local" || !libraryLoaded)) {
+            refreshPending = false;
+            void refresh();
+          }
           if (initializePending) {
             initializePending = false;
-            void work(async () => {
-              await refresh();
-              if (
-                tab === "remote" &&
-                !entries.length &&
-                granted("network:https")
-              )
-                await loadCollection();
-            });
+            void refresh();
+            if (
+              tab === "remote" &&
+              !entries.length &&
+              !entriesPage &&
+              granted("network:https")
+            )
+              void loadCollection();
           } else if (
             tab === "remote" &&
             !entries.length &&
+            !entriesPage &&
             !collectionAttempted &&
             granted("network:https")
           ) {
-            void work(loadCollection);
+            void loadCollection();
           }
         }
         async function refresh() {
-          library = await request("list");
-          libraryLoaded = true;
+          if (libraryRead) return libraryRead;
+          if (busy || hostBlocked() || !allowed() || !visible()) {
+            refreshPending = true;
+            return;
+          }
+          const sequence = ++libraryReadSequence;
+          for (const record of localPreviews.values())
+            if (record.status === "error") record.status = "idle";
+          loadingLibrary = true;
+          render();
+          const pending = (async () => {
+            try {
+              const next = await request("list");
+              if (
+                sequence === libraryReadSequence ||
+                next.revision > library.revision
+              ) {
+                library = next;
+                libraryLoaded = true;
+              }
+            } catch (error) {
+              if (sequence === libraryReadSequence)
+                message(failure(error), true);
+            } finally {
+              if (libraryRead === pending) {
+                libraryRead = null;
+                loadingLibrary = false;
+                if (sequence !== libraryReadSequence && !libraryLoaded)
+                  refreshPending = true;
+                render();
+                initializeContent();
+              }
+            }
+          })();
+          libraryRead = pending;
+          return pending;
+        }
+        function localPreviewRecord(item) {
+          const key = item.id + ":" + item.previewKey;
+          if (!localPreviews.has(key)) {
+            const cached =
+              item.dataUrl || localPreviewCache.get(item.previewKey);
+            localPreviews.set(key, {
+              status: cached ? "ready" : "idle",
+              dataUrl: cached || null,
+            });
+          }
+          return localPreviews.get(key);
+        }
+        function updateLocalPreview(item) {
+          const card = Array.from($("gallery").children).find(
+            (node) => node.dataset.wallpaperId === item.id,
+          );
+          const apply = card?.querySelector(".card-image");
+          if (!apply) return;
+          const record = localPreviewRecord(item);
+          apply.dataset.previewState = record.status;
+          const decorations = Array.from(apply.children).filter((node) =>
+            ["card-progress", "card-check"].includes(node.className),
+          );
+          let media;
+          if (record.dataUrl) {
+            media = document.createElement("img");
+            media.src = record.dataUrl;
+            media.alt = "";
+            media.decoding = "async";
+          } else {
+            media = text(
+              "span",
+              record.status === "error"
+                ? tr("无法预览", "Preview unavailable")
+                : tr("正在加载预览…", "Loading preview…"),
+              "placeholder",
+            );
+          }
+          apply.replaceChildren(media, ...decorations);
+        }
+        function pumpLocalPreviews() {
+          if (
+            localPreviewInFlight ||
+            tab !== "local" ||
+            !visible() ||
+            !allowed() ||
+            !libraryLoaded
+          )
+            return;
+          const item = library.items.find(
+            (entry) => localPreviewRecord(entry).status === "idle",
+          );
+          if (!item) return;
+          const record = localPreviewRecord(item);
+          const epoch = accessEpoch;
+          record.status = "loading";
+          localPreviewInFlight = true;
+          updateLocalPreview(item);
+          void request("preview", { id: item.id, previewKey: item.previewKey })
+            .then((response) => {
+              if (epoch !== accessEpoch || !allowed()) return;
+              const current = library.items.find(
+                (entry) => entry.id === item.id,
+              );
+              if (current?.previewKey !== item.previewKey) return;
+              record.dataUrl = response.dataUrl;
+              record.status = response.dataUrl ? "ready" : "error";
+              if (response.dataUrl) {
+                localPreviewCache.delete(item.previewKey);
+                localPreviewCache.set(item.previewKey, response.dataUrl);
+                while (localPreviewCache.size > 48)
+                  localPreviewCache.delete(
+                    localPreviewCache.keys().next().value,
+                  );
+              }
+              updateLocalPreview(current);
+            })
+            .catch((error) => {
+              if (epoch === accessEpoch) {
+                const retry =
+                  error?.code === "EXTENSION_BUSY" && (record.retries || 0) < 2;
+                record.status = retry ? "retry" : "error";
+                const current = library.items.find(
+                  (entry) => entry.id === item.id,
+                );
+                if (current?.previewKey === item.previewKey)
+                  updateLocalPreview(current);
+                if (retry) {
+                  record.retries = (record.retries || 0) + 1;
+                  setTimeout(() => {
+                    if (epoch !== accessEpoch || !allowed() || unloaded) return;
+                    record.status = "idle";
+                    pumpLocalPreviews();
+                  }, record.retries * 150);
+                }
+              }
+            })
+            .finally(() => {
+              localPreviewInFlight = false;
+              if (epoch !== accessEpoch) record.status = "idle";
+              pumpLocalPreviews();
+            });
         }
         let checkpointTimer = null,
           checkpointRunning = false,
@@ -1488,7 +1955,9 @@
               pendingCheckpoint = null;
               if (value === lastCheckpoint) continue;
               try {
-                await starter.checkpoint(JSON.parse(value), false);
+                await bridgeCall(() =>
+                  starter.checkpoint(JSON.parse(value), false),
+                );
               } catch (error) {
                 pendingCheckpoint ??= value;
                 throw error;
@@ -1507,8 +1976,16 @@
             checkpointRunning = false;
           }
         }
-        async function loadCollection() {
+        async function loadCollection(action = "search") {
           const filters = requestedFilters();
+          if (
+            action === "next" &&
+            (!entriesHasMore ||
+              filters.provider !== entriesProvider ||
+              filters.query !== entriesQuery ||
+              filters.category !== entriesCategory)
+          )
+            return;
           if (
             !Object.hasOwn(providers, filters.provider) ||
             !granted("network:https")
@@ -1524,15 +2001,17 @@
             );
             return;
           }
-          if (snapshot?.busy || !visible()) return;
+          if (busy || loadingCollection || snapshot?.busy || !visible()) return;
           collectionAttempted = true;
           const epoch = accessEpoch;
           activeLoadEpoch = epoch;
           checkpointNavigation(true);
           loadingCollection = true;
+          paginationError = "";
+          if (action === "next") moreArmed = false;
           render();
           try {
-            const view = await starter.run("load", filters);
+            const view = await bridgeCall(() => starter.run(action, filters));
             if (epoch !== accessEpoch || !granted("network:https")) {
               if (
                 typeof view?.state === "string" &&
@@ -1543,20 +2022,25 @@
             }
             ignoredResultsState = "";
             readResults({ view });
-            if (view?.errors?.provider) message(view.errors.provider, true);
-            else if (!entries.length)
+            if (view?.errors?.provider) {
+              if (action === "next") paginationError = view.errors.provider;
+              message(view.errors.provider, true);
+            } else if (!entries.length)
               message(
                 tr(
-                  "暂无图片，可换一批或切换图源。",
-                  "No images. Refresh or switch sources.",
+                  "暂无新图片，可重新搜索或切换图源。",
+                  "No new images. Search again or switch sources.",
                 ),
               );
           } catch (error) {
+            if (action === "next") paginationError = failure(error, true);
             message(failure(error, true), true);
           } finally {
             activeLoadEpoch = null;
             loadingCollection = false;
             render();
+            initializeContent();
+            maybeLoadMore();
           }
         }
         function icon(
@@ -1583,37 +2067,91 @@
         }
         const cardObserver =
           typeof IntersectionObserver === "function"
-            ? new IntersectionObserver((changes) => {
-                for (const change of changes)
-                  change.target.dataset.onscreen = String(
-                    change.isIntersecting,
-                  );
-              })
+            ? new IntersectionObserver(
+                (changes) => {
+                  for (const change of changes)
+                    change.target.dataset.onscreen = String(
+                      change.isIntersecting,
+                    );
+                  pumpThumbnails();
+                },
+                { rootMargin: "400px 0px" },
+              )
             : null;
+        const loadMoreObserver =
+          typeof IntersectionObserver === "function"
+            ? new IntersectionObserver(
+                (changes) => {
+                  for (const change of changes) {
+                    if (!change.isIntersecting) {
+                      sentinelVisible = false;
+                      moreArmed = true;
+                    } else if (!sentinelVisible) {
+                      sentinelVisible = true;
+                      maybeLoadMore();
+                    }
+                  }
+                },
+                { rootMargin: "600px 0px" },
+              )
+            : null;
+        function maybeLoadMore() {
+          if (
+            moreArmed &&
+            sentinelVisible &&
+            entries.length &&
+            !paginationError &&
+            tab === "remote" &&
+            !$("preview-dialog").open
+          )
+            void loadCollection("next");
+        }
         async function releaseImage(resourceId) {
-          const epoch = accessEpoch;
-          releases.add(resourceId);
-          if (!visible()) return;
+          const reserved = releaseReservations.get(resourceId) || 0;
           releases.delete(resourceId);
+          let released = false;
           try {
-            await starter.services.request("resources", {
-              action: "release",
-              resourceId,
-            });
+            await serviceCall(
+              "resources",
+              {
+                action: "release",
+                resourceId,
+              },
+              3,
+            );
+            released = true;
           } catch (error) {
+            if (error?.code === "NOT_FOUND" || !granted("network:images"))
+              released = true;
             if (
-              error?.code === "NOT_FOUND" ||
-              epoch !== accessEpoch ||
-              !granted("network:images")
-            )
-              return;
-            if (
-              error?.code === "EXTENSION_BUSY" ||
-              error?.retryable === true ||
-              !visible()
+              !released &&
+              (error?.code === "EXTENSION_BUSY" ||
+                error?.retryable === true ||
+                !visible())
             )
               releases.add(resourceId);
+          } finally {
+            if (released) {
+              freeImage(reserved);
+              const remaining =
+                (releaseReservations.get(resourceId) || 0) - reserved;
+              if (remaining > 0) releaseReservations.set(resourceId, remaining);
+              else releaseReservations.delete(resourceId);
+            }
           }
+        }
+        function pumpReleases() {
+          if (!visible() || releaseInFlight || !releases.size) return;
+          const resourceId = releases.values().next().value;
+          releaseInFlight = true;
+          void releaseImage(resourceId).finally(() => {
+            releaseInFlight = false;
+            // 暂时繁忙留到下一次环境更新重试，避免失败清理形成热循环。
+            if (!releases.has(resourceId)) {
+              pumpReleases();
+              pumpThumbnails();
+            }
+          });
         }
         function imageFailure(code, detail = false) {
           const messages = {
@@ -1626,13 +2164,13 @@
             EXTENSION_IMAGE_REDIRECT: [
               "图片地址已跳转",
               "Image address moved",
-              "图片地址需要跳转，请换一批更新地址。",
+              "图片地址需要跳转，请重新搜索更新地址。",
               "Image address redirects. Refresh the collection to update it.",
             ],
             EXTENSION_IMAGE_SOURCE_REJECTED: [
               "图源暂不可用",
               "Source unavailable",
-              "图片服务器拒绝请求或暂不可用，请稍后重试或换一批。",
+              "图片服务器拒绝请求或暂不可用，请稍后重试或更换图源。",
               "Image server rejected the request or is unavailable. Retry later or refresh.",
             ],
             EXTENSION_IMAGE_INVALID: [
@@ -1698,31 +2236,46 @@
         async function loadThumbnail(item, record) {
           record.status = "loading";
           imageInFlight++;
+          thumbnailInFlight++;
           updateThumbnail(item);
           const epoch = accessEpoch;
           try {
             const dataUrl = await withImage(
               item.previewUrl,
-              async ({ resourceId }) => {
+              ({ dataUrl }) => {
                 if (!visible()) throw { code: "EXTENSION_UNAVAILABLE" };
-                const response = await starter.services.request("resources", {
-                  action: "preview",
-                  resourceId,
-                });
-                if (!isObject(response) || !isImageData(response.dataUrl))
-                  throw { code: "EXTENSION_RUN_FAILED" };
-                return response.dataUrl;
+                return dataUrl;
               },
+              "thumbnail",
             );
             if (epoch !== accessEpoch || !granted("network:images")) return;
             record.dataUrl = dataUrl;
             record.status = "ready";
+            // Native thumbnails are bounded to 24 KiB. Larger valid previews
+            // remain visible without increasing the collection cache budget.
+            if (dataUrl.length - dataUrl.indexOf(",") - 1 <= 32768) {
+              thumbnailCache.delete(item.previewUrl);
+              thumbnailCache.set(item.previewUrl, dataUrl);
+              if (thumbnailCache.size > 72)
+                thumbnailCache.delete(thumbnailCache.keys().next().value);
+            }
           } catch (error) {
             record.errorCode =
               typeof error?.code === "string" ? error.code : "";
-            record.status = visible() ? "error" : "idle";
+            const retry =
+              error?.code === "EXTENSION_BUSY" && (record.retries || 0) < 2;
+            record.status = !visible() ? "idle" : retry ? "retry" : "error";
+            if (retry && visible()) {
+              record.retries = (record.retries || 0) + 1;
+              setTimeout(() => {
+                if (epoch !== accessEpoch || unloaded) return;
+                record.status = "idle";
+                pumpThumbnails();
+              }, record.retries * 150);
+            }
           } finally {
             imageInFlight--;
+            thumbnailInFlight--;
             if (
               epoch !== accessEpoch &&
               thumbnails.get(item.resultId) === record
@@ -1737,19 +2290,29 @@
                 selected?.resultId === item.resultId &&
                 $("preview-dialog").open
               )
-                render();
+                renderPreviewStage();
             }
             pumpThumbnails();
             updateRetryControl();
           }
         }
         function pumpThumbnails() {
-          if (visible())
-            for (const resourceId of [...releases])
-              void releaseImage(resourceId);
+          pumpReleases();
           if (!canLoadImages()) return;
-          for (const item of entries) {
-            if (imageInFlight >= 2) break;
+          if ($("preview-dialog").open) {
+            if (fullPreview?.status === "idle" && !foregroundRequest)
+              void loadFullPreview(selected, fullPreview);
+            return;
+          }
+          const cards = Array.from($("results").children);
+          const available = entries.filter((item) => {
+            const card = cards.find(
+              (node) => node.dataset.resultId === item.resultId,
+            );
+            return !cardObserver || card?.dataset.onscreen === "true";
+          });
+          for (const item of available) {
+            if (thumbnailInFlight >= 2 || imageReservations >= 4) break;
             const record = thumbnails.get(item.resultId);
             if (record?.status === "idle") void loadThumbnail(item, record);
           }
@@ -1782,30 +2345,218 @@
                   : record?.status === "error"
                     ? imageFailure(record.errorCode) +
                       tr(" · 查看详情", " · View details")
-                    : tr("正在加载图片", "Loading image"),
+                    : record?.status === "loading"
+                      ? tr("正在加载图片", "Loading image")
+                      : tr("等待加载", "Waiting to load"),
               ),
             );
             media.append(state);
           }
+          if (record?.dataUrl && item.width > 0 && item.height > 0)
+            media.append(text("span", dimensions(item), "result-resolution"));
         }
         function closePreview() {
           if ($("image-info-dialog").open) $("image-info-dialog").close();
           if ($("preview-dialog").open) $("preview-dialog").close();
         }
-        function select(item) {
+        async function loadFullPreview(item, record) {
+          record.status = "loading";
+          imageInFlight++;
+          record.requestId = previewRequestPrefix + ++foregroundSequence;
+          foregroundRequest = record;
+          const epoch = accessEpoch;
+          renderPreviewStage();
+          try {
+            const dataUrl = await withImage(
+              item.displayUrl,
+              ({ dataUrl }) => {
+                if (
+                  !visible() ||
+                  fullPreview !== record ||
+                  !$("preview-dialog").open
+                )
+                  throw { code: "EXTENSION_UNAVAILABLE" };
+                return dataUrl;
+              },
+              "large",
+              record.requestId,
+            );
+            if (
+              epoch !== accessEpoch ||
+              fullPreview !== record ||
+              !granted("network:images")
+            )
+              return;
+            record.dataUrl = dataUrl;
+            record.status = "ready";
+            fullPreviewCache.delete(item.displayUrl);
+            fullPreviewCache.set(item.displayUrl, dataUrl);
+            while (fullPreviewCache.size > 6)
+              fullPreviewCache.delete(fullPreviewCache.keys().next().value);
+          } catch (error) {
+            record.errorCode =
+              typeof error?.code === "string" ? error.code : "";
+            const retry =
+              error?.code === "EXTENSION_BUSY" && (record.retries || 0) < 2;
+            record.status = !visible() ? "idle" : retry ? "retry" : "error";
+            if (retry && visible()) {
+              record.retries = (record.retries || 0) + 1;
+              setTimeout(() => {
+                if (epoch !== accessEpoch || fullPreview !== record || unloaded)
+                  return;
+                record.status = "idle";
+                pumpThumbnails();
+              }, record.retries * 150);
+            }
+          } finally {
+            imageInFlight--;
+            if (foregroundRequest === record) foregroundRequest = null;
+            if (fullPreview === record) {
+              if (epoch !== accessEpoch) record.status = "idle";
+              renderPreviewStage();
+            }
+            pumpThumbnails();
+          }
+        }
+        function cancelFullPreview() {
+          const record = foregroundRequest;
+          if (!record || record.cancelRequested) return;
+          record.cancelRequested = true;
+          if (!record.fetchStarted) return;
+          const cancel = (retry = false) => {
+            void serviceCall(
+              "resources",
+              {
+                action: "cancel-fetch",
+                requestId: record.requestId,
+              },
+              0,
+            )
+              .then((response) => {
+                // 原生授权可能让取消先于下载登记到达；仅补一次，仍等真实 fetch 退出。
+                if (
+                  !retry &&
+                  response?.cancelled === false &&
+                  foregroundRequest === record
+                )
+                  setTimeout(() => {
+                    if (foregroundRequest === record && !unloaded) cancel(true);
+                  }, 50);
+              })
+              .catch(() => {});
+          };
+          cancel();
+        }
+        function renderPreviewStage() {
+          const stage = $("preview-stage");
+          if (!stage || !selected) return;
+          const returnFocus = focusTarget();
+          const record = fullPreview;
+          const thumbnail = thumbnails.get(selected.resultId)?.dataUrl;
+          const dataUrl =
+            granted("network:images") && (record?.dataUrl || thumbnail);
+          stage.replaceChildren();
+          stage.setAttribute(
+            "aria-busy",
+            String(
+              granted("network:images") &&
+                (record?.status === "loading" || record?.status === "idle"),
+            ),
+          );
+          if (dataUrl) {
+            const image = document.createElement("img");
+            image.className = "preview-image";
+            image.id = "preview-image";
+            image.alt = selected.title;
+            image.src = dataUrl;
+            image.decoding = "async";
+            stage.append(image);
+          } else
+            stage.append(
+              text(
+                "p",
+                !granted("network:images")
+                  ? tr(
+                      "预览远程图片需授权，仍可查看来源信息。",
+                      "Preview needs remote image permission. Source details remain available.",
+                    )
+                  : record?.status === "error"
+                    ? imageFailure(record.errorCode, true)
+                    : tr("正在加载清晰预览…", "Loading full preview…"),
+                "placeholder",
+              ),
+            );
+          const quality = $("preview-quality");
+          if (quality)
+            quality.textContent = !granted("network:images")
+              ? tr("远程图片未授权", "Image access not granted")
+              : record?.status === "ready"
+                ? tr("清晰预览 · 完整显示", "Full preview · Fit to view")
+                : record?.status === "error"
+                  ? imageFailure(record.errorCode) +
+                    (thumbnail
+                      ? tr(" · 正在显示缩略图", " · Showing thumbnail")
+                      : "")
+                  : record?.status === "loading"
+                    ? tr("正在加载清晰预览…", "Loading full preview…")
+                    : tr("等待图片下载完成…", "Waiting for an image slot…");
+          if (granted("network:images") && record?.status === "error") {
+            const retry = button(
+              tr("重试清晰预览", "Retry full preview"),
+              async () => {
+                if (fullPreview !== record) return;
+                record.status = "idle";
+                pumpThumbnails();
+              },
+              false,
+              "retry-preview",
+              "network:images",
+            );
+            retry.id = "retry-preview";
+            stage.append(retry);
+          }
+          restoreFocus(returnFocus);
+        }
+        function select(item, focusClose = true) {
+          cancelFullPreview();
           if ($("image-info-dialog").open) $("image-info-dialog").close();
           $("image-info-body").scrollTop = 0;
           selected = item;
-          preview = thumbnails.get(item.resultId)?.dataUrl || null;
-          render();
+          const cached = fullPreviewCache.get(item.displayUrl);
+          fullPreview = {
+            resultId: item.resultId,
+            url: item.displayUrl,
+            status: cached ? "ready" : "idle",
+            dataUrl: cached || null,
+          };
           if (!$("preview-dialog").open) $("preview-dialog").showModal();
-          $("preview-close").focus();
+          render();
+          if (focusClose) $("preview-close").focus();
           pumpThumbnails();
+        }
+        function movePreview(offset) {
+          if (!allowed() || busy || hostBlocked() || !visible()) return;
+          const index = entries.findIndex(
+            (item) => item.resultId === selected?.resultId,
+          );
+          if (index >= 0 && entries[index + offset]) {
+            const focusId = document.activeElement?.id;
+            select(entries[index + offset], false);
+            if (
+              ["preview-previous", "preview-next"].includes(focusId) &&
+              $(focusId).disabled
+            )
+              $(
+                focusId === "preview-next"
+                  ? "preview-previous"
+                  : "preview-next",
+              ).focus();
+          }
         }
         function renderResults() {
           const filters = [
             providers[entriesProvider],
-            entriesCategory && !["all", "neko"].includes(entriesCategory)
+            entriesCategory && entriesCategory !== "all"
               ? categoryName(entriesProvider, entriesCategory)
               : "",
             entriesQuery ? `“${entriesQuery}”` : "",
@@ -1823,7 +2574,9 @@
           updateRetryControl();
           $("results").setAttribute("aria-busy", String(loadingCollection));
           const key = JSON.stringify([
-            collectionEpoch,
+            entriesProvider,
+            entriesQuery,
+            entriesCategory,
             !entries.length && loadingCollection,
             snapshot?.locale,
             granted("network:images"),
@@ -1849,39 +2602,49 @@
               );
               $("results").append(empty);
             }
-            entries.forEach((item, index) => {
-              const card = document.createElement("button");
-              card.type = "button";
-              card.className = "result fresh";
-              card.dataset.resultId = item.resultId;
-              card.style.setProperty(
-                "--entry-delay",
-                `${Math.min(index, 7) * 28}ms`,
-              );
-              card.setAttribute(
-                "aria-label",
-                tr("预览：", "Preview: ") + item.title,
-              );
-              const media = text("span", "", "result-media"),
-                copy = text("span", "", "result-copy"),
-                meta = text("span", "", "result-meta");
-              meta.append(
-                text("span", providers[entriesProvider]),
-                text(
-                  "span",
-                  item.width && item.height
-                    ? dimensions(item)
-                    : tr("预览 ↗", "Preview ↗"),
-                ),
-              );
-              copy.append(text("strong", item.title), meta);
-              card.append(media, copy);
-              card.onclick = () => select(item);
-              $("results").append(card);
-              updateThumbnail(item);
-              cardObserver?.observe(card);
-            });
           }
+          const existingCards = new Set(
+            Array.from($("results").children).map(
+              (node) => node.dataset.resultId,
+            ),
+          );
+          entries.forEach((item, index) => {
+            if (existingCards.has(item.resultId)) return;
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = "result fresh";
+            card.dataset.resultId = item.resultId;
+            card.style.setProperty(
+              "--entry-delay",
+              `${Math.min(index, 7) * 28}ms`,
+            );
+            card.setAttribute(
+              "aria-label",
+              tr("预览：", "Preview: ") + item.title,
+            );
+            const media = text("span", "", "result-media"),
+              copy = text("span", "", "result-copy"),
+              meta = text("span", "", "result-meta");
+            meta.append(
+              text("span", providers[entriesProvider]),
+              text(
+                "span",
+                item.width && item.height
+                  ? item.width > item.height
+                    ? tr("横向", "Landscape")
+                    : item.width < item.height
+                      ? tr("竖向", "Portrait")
+                      : tr("方形", "Square")
+                  : tr("预览 ↗", "Preview ↗"),
+              ),
+            );
+            copy.append(text("strong", item.title), meta);
+            card.append(media, copy);
+            card.onclick = () => select(item);
+            $("results").append(card);
+            updateThumbnail(item);
+            cardObserver?.observe(card);
+          });
           for (const card of $("results").children) {
             if (!card.dataset.resultId) continue;
             card.disabled = !allowed();
@@ -1890,6 +2653,23 @@
               String(selected?.resultId === card.dataset.resultId),
             );
           }
+          $("load-more").disabled = $("next-batch").disabled;
+          $("load-more").textContent = loadingCollection
+            ? tr("载入中…", "Loading…")
+            : paginationError
+              ? tr("重试加载", "Retry loading")
+              : entriesHasMore
+                ? tr("加载更多", "Load more")
+                : tr("已到最后", "No more images");
+          $("load-more-status").textContent =
+            paginationError ||
+            (entries.length
+              ? tr(
+                  `${entries.length} 张${entriesHasMore ? " · 向下浏览自动加载" : " · 已全部加载"}`,
+                  `${entries.length} images${entriesHasMore ? " · Scroll for more" : " · End of results"}`,
+                )
+              : "");
+          $("load-more-sentinel").hidden = !entriesProvider;
           pumpThumbnails();
         }
         function wallpaperButton(item, actionName, label, execute) {
@@ -1908,6 +2688,7 @@
                     node.dataset.action === actionName &&
                     node.closest(".card")?.dataset.wallpaperId === item.id,
                 ) || $("import"),
+              actionName === "apply" ? item.id : null,
             );
           return element;
         }
@@ -2006,9 +2787,32 @@
             tr("图源说明", "Source help"),
           );
           $("source-note").textContent = tr(
-            "每批最多 24 张图片。保存原图上限为 16 MiB / 1600 万像素，图库副本会压缩。使用前核对来源许可。网络跟随宿主设置，背景仅用于本应用，不改变系统桌面。",
-            "Up to 24 images per batch. Originals: up to 16 MiB / 16 million pixels. Gallery copies are compressed. Check source licenses before use. Uses host network settings; backgrounds affect this app only, not your desktop.",
+            "向下浏览会自动续接壁纸，每次最多 24 张并排除已见图片，也可点击加载更多。壁纸汇和猫猫壁纸酷适合中文关键词，其他图源建议英文；关键词搜索覆盖全站。猫猫壁纸酷提供高清适配图，完整尺寸可前往来源下载。WallpapersCraft 提供 1920 × 1080 版本。保存图片上限为 16 MiB / 1600 万像素，图库副本会压缩。使用前核对来源许可，网络跟随宿主设置，背景仅用于本应用。",
+            "Scroll down to load more wallpapers, up to 24 at a time with duplicates removed. You can also use Load more. Use Chinese keywords for Bizhihui and Wallcoo, and English for other sources. Keyword search covers all categories. Wallcoo provides an HD preview version. Open the source to download full resolution. WallpapersCraft supplies 1920 × 1080 versions. Images are limited to 16 MiB / 16 million pixels; gallery copies are compressed. Check source licenses. Uses host network settings; backgrounds affect this app only.",
           );
+          const selectedIndex = entries.findIndex(
+            (item) => item.resultId === selected?.resultId,
+          );
+          $("preview-position").textContent =
+            selectedIndex < 0 ? "" : `${selectedIndex + 1} / ${entries.length}`;
+          for (const [id, zh, en, unavailable] of [
+            [
+              "preview-previous",
+              "上一张",
+              "Previous image",
+              selectedIndex <= 0,
+            ],
+            [
+              "preview-next",
+              "下一张",
+              "Next image",
+              selectedIndex < 0 || selectedIndex >= entries.length - 1,
+            ],
+          ]) {
+            $(id).setAttribute("aria-label", tr(zh, en));
+            $(id).title = tr(zh, en);
+            $(id).disabled = unavailable || busy || hostBlocked() || !allowed();
+          }
           $("preview-close").setAttribute(
             "aria-label",
             tr("关闭预览", "Close preview"),
@@ -2059,12 +2863,19 @@
           $("permission").textContent = missing.join(" ");
           configureFilters();
           for (const id of ["settings", "refresh", "import"])
-            $(id).disabled = busy || snapshot?.busy || !allowed();
+            $(id).disabled = busy || hostBlocked() || !allowed();
+          $("import").disabled ||= Boolean(applyingId);
+          $("refresh").disabled ||= loadingLibrary;
           $("fit").disabled = busy || !allowed();
           for (const id of ["search", "provider"])
             $(id).disabled =
-              busy || snapshot?.busy || !granted("network:https");
-          $("refresh").textContent = tr("刷新", "Refresh");
+              busy ||
+              loadingCollection ||
+              snapshot?.busy ||
+              !granted("network:https");
+          $("refresh").textContent = loadingLibrary
+            ? tr("读取中…", "Loading…")
+            : tr("刷新", "Refresh");
           $("import").textContent = tr("导入", "Import");
           $("fit-label").textContent = tr("显示方式", "Fit");
           $("fit").options[0].text = tr("覆盖", "Cover");
@@ -2078,8 +2889,6 @@
             $(name + "-tab").tabIndex = tab === name ? 0 : -1;
           }
           renderResults();
-          if (selected)
-            preview = thumbnails.get(selected.resultId)?.dataUrl || null;
           $("preview").replaceChildren();
           $("image-info-body").replaceChildren();
           if (selected) {
@@ -2087,50 +2896,11 @@
             $("preview-title").title = selected.title;
             const stage = text("div", "", "preview-stage");
             stage.id = "preview-stage";
-            $("preview").append(stage);
-            if (preview) {
-              const image = document.createElement("img");
-              image.className = "preview-image";
-              image.id = "preview-image";
-              image.alt = selected.title;
-              image.src = preview;
-              stage.append(image);
-            } else
-              stage.append(
-                text(
-                  "p",
-                  granted("network:images")
-                    ? tr("正在加载图片…", "Loading image…")
-                    : tr(
-                        "预览远程图片需授权，仍可查看来源信息。",
-                        "Preview needs remote image permission. Source details remain available.",
-                      ),
-                  "placeholder",
-                ),
-              );
-            if (
-              granted("network:images") &&
-              thumbnails.get(selected.resultId)?.status === "error"
-            ) {
-              $("preview").querySelector(".placeholder").textContent =
-                imageFailure(
-                  thumbnails.get(selected.resultId)?.errorCode,
-                  true,
-                );
-              const retry = button(
-                tr("重试", "Retry"),
-                async () => {
-                  const record = thumbnails.get(selected.resultId);
-                  if (record?.status === "error") record.status = "idle";
-                  pumpThumbnails();
-                },
-                false,
-                "retry-preview",
-                "network:images",
-              );
-              retry.id = "retry-preview";
-              stage.append(retry);
-            }
+            const quality = text("div", "", "preview-quality");
+            quality.id = "preview-quality";
+            quality.setAttribute("role", "status");
+            $("preview").append(stage, quality);
+            renderPreviewStage();
             const meta = $("image-info-body");
             meta.append(
               text("p", tr("名称：", "Name: ") + selected.title),
@@ -2161,6 +2931,39 @@
               text("p", details.join(" · ")),
               text("p", selected.sourceUrl, "muted"),
             );
+            if (entriesProvider === "wallpaperscraft")
+              meta.append(
+                text(
+                  "p",
+                  tr(
+                    "此图源提供 1920 × 1080 高清版本，保存与加入图库使用此文件。",
+                    "This source supplies a 1920 × 1080 HD version for saving and adding to your gallery.",
+                  ),
+                  "muted",
+                ),
+              );
+            if (entriesProvider === "wallcoo")
+              meta.append(
+                text(
+                  "p",
+                  tr(
+                    "猫猫壁纸酷提供高清适配图，完整尺寸可前往来源下载。",
+                    "Wallcoo provides an HD preview version. Open the source to download full resolution.",
+                  ),
+                  "muted",
+                ),
+              );
+            if (requiresHdDownload(selected))
+              meta.append(
+                text(
+                  "p",
+                  tr(
+                    "此图下载使用高清适配版，完整尺寸可前往来源。",
+                    "Downloads use the HD version. Open the source for full resolution.",
+                  ),
+                  "muted",
+                ),
+              );
             meta.scrollTop = infoScrollTop;
             const actions = document.createElement("div");
             actions.id = "preview-actions";
@@ -2170,7 +2973,7 @@
                 tr("加入图库", "Add to gallery"),
                 async () => {
                   const item = selected;
-                  await withImage(item.originalUrl, async ({ resourceId }) => {
+                  await withImage(item.displayUrl, async ({ resourceId }) => {
                     const response = await request("import-resource", {
                       resourceId,
                       name: item.title,
@@ -2180,8 +2983,8 @@
                   });
                   message(
                     tr(
-                      "压缩副本已加入图库，原图可另存。",
-                      "Compressed copy added to gallery. Save the original separately.",
+                      "压缩副本已加入图库，高清图可另存。",
+                      "Compressed copy added to gallery. Save the HD image separately.",
                     ),
                   );
                 },
@@ -2190,35 +2993,37 @@
                 "network:images",
               ),
               button(
-                tr("保存原图", "Save original"),
+                tr("保存高清图", "Save HD image"),
                 async () => {
                   const item = selected;
-                  await withImage(item.originalUrl, async (resource) => {
-                    const extension =
-                      resource.mime === "image/png"
-                        ? "png"
-                        : resource.mime === "image/webp"
-                          ? "webp"
-                          : "jpg";
-                    const response = await starter.services.request(
-                      "resources",
-                      {
+                  await withImage(
+                    requiresHdDownload(item)
+                      ? item.displayUrl
+                      : item.originalUrl,
+                    async (resource) => {
+                      const extension =
+                        resource.mime === "image/png"
+                          ? "png"
+                          : resource.mime === "image/webp"
+                            ? "webp"
+                            : "jpg";
+                      const response = await serviceCall("resources", {
                         action: "save",
                         resourceId: resource.resourceId,
                         name: "wallpaper-" + item.resultId + "." + extension,
-                      },
-                    );
-                    if (
-                      !isObject(response) ||
-                      typeof response.cancelled !== "boolean"
-                    )
-                      throw { code: "EXTENSION_RUN_FAILED" };
-                    message(
-                      response.cancelled
-                        ? tr("已取消保存。", "Save cancelled.")
-                        : tr("原图已保存。", "Original saved."),
-                    );
-                  });
+                      });
+                      if (
+                        !isObject(response) ||
+                        typeof response.cancelled !== "boolean"
+                      )
+                        throw { code: "EXTENSION_RUN_FAILED" };
+                      message(
+                        response.cancelled
+                          ? tr("已取消保存。", "Save cancelled.")
+                          : tr("高清图已保存。", "HD image saved."),
+                      );
+                    },
+                  );
                 },
                 false,
                 "download-original",
@@ -2227,7 +3032,7 @@
               button(
                 tr("来源与许可", "Source & license"),
                 () =>
-                  starter.services.request("links", {
+                  serviceCall("links", {
                     url: selected.sourceUrl,
                   }),
                 false,
@@ -2243,7 +3048,7 @@
               ],
               [
                 "download-original",
-                tr("保存原图", "Save original"),
+                tr("保存高清图", "Save HD image"),
                 "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
               ],
               [
@@ -2264,12 +3069,17 @@
           }
           $("local-summary").textContent = tr(
             libraryLoaded
-              ? `${library.items.length} / ${library.limit} 张`
-              : "图库未加载",
+              ? `${library.items.length} / ${library.limit} 张${applyingId ? " · 正在设置背景…" : loadingLibrary ? " · 更新中…" : ""}`
+              : loadingLibrary
+                ? "正在读取图库…"
+                : "图库未加载",
             libraryLoaded
-              ? `${library.items.length} / ${library.limit} images`
-              : "Gallery not loaded",
+              ? `${library.items.length} / ${library.limit} images${applyingId ? " · Applying background…" : loadingLibrary ? " · Updating…" : ""}`
+              : loadingLibrary
+                ? "Loading gallery…"
+                : "Gallery not loaded",
           );
+          $("gallery").setAttribute("aria-busy", String(loadingLibrary));
           $("gallery").replaceChildren();
           for (const item of library.items) {
             const card = document.createElement("article");
@@ -2280,16 +3090,34 @@
               "apply",
               tr("设为背景", "Apply background"),
               async () => {
-                library = await request("apply", {
+                const result = await request("apply", {
                   id: item.id,
                   expectedRevision: library.revision,
                   fit: $("fit").value,
                 });
+                if (result.revision < library.revision) {
+                  message(
+                    tr(
+                      "背景已保存，图库已有更新。",
+                      "Background saved. The gallery has newer changes.",
+                    ),
+                  );
+                  return;
+                }
+                library = {
+                  ...library,
+                  revision: result.revision,
+                  items: library.items.map((entry) => ({
+                    ...entry,
+                    active: entry.id === result.activeId,
+                  })),
+                };
                 message(tr("已设置应用背景。", "App background updated."));
               },
             );
             apply.className = "card-image";
             apply.setAttribute("aria-pressed", String(item.active));
+            apply.setAttribute("aria-busy", String(applyingId === item.id));
             if (typeof item.dataUrl === "string") {
               const image = document.createElement("img");
               image.src = item.dataUrl;
@@ -2303,6 +3131,10 @@
                   tr("无法预览", "Preview unavailable"),
                   "placeholder",
                 ),
+              );
+            if (applyingId === item.id)
+              apply.append(
+                text("span", tr("正在设置…", "Applying…"), "card-progress"),
               );
             if (item.active) {
               const check = text("span", "", "card-check");
@@ -2355,6 +3187,7 @@
             heading.append(text("h2", item.name), rename, remove);
             card.append(apply, heading);
             $("gallery").append(card);
+            updateLocalPreview(item);
           }
           if (!library.items.length)
             $("gallery").append(
@@ -2367,16 +3200,25 @@
               ),
             );
           restoreFocus(returnFocus);
+          const currentKeys = new Set(
+            library.items.map((item) => item.id + ":" + item.previewKey),
+          );
+          for (const key of localPreviews.keys())
+            if (!currentKeys.has(key)) localPreviews.delete(key);
+          pumpLocalPreviews();
         }
-        $("search").onclick = () => void work(loadCollection);
+        $("search").onclick = () => void loadCollection();
+        $("next-batch").onclick = () => void loadCollection("next");
+        $("load-more").onclick = () => void loadCollection("next");
         $("provider").onchange = () => {
           configureFilters(true);
           checkpointNavigation(true);
-          void work(loadCollection);
+          void loadCollection();
         };
         $("category").onchange = () => {
+          $("query").value = "";
           checkpointNavigation(true);
-          void work(loadCollection);
+          void loadCollection();
         };
         $("query").oninput = () => {
           configureFilters();
@@ -2388,7 +3230,7 @@
         $("query").onkeydown = (event) => {
           if (event.key === "Enter" && !event.isComposing) {
             event.preventDefault();
-            if (!event.repeat) void work(loadCollection);
+            if (!event.repeat) void loadCollection();
           }
         };
         $("retry-failed").onclick = () => {
@@ -2401,6 +3243,18 @@
           pumpThumbnails();
         };
         $("preview-close").onclick = closePreview;
+        $("preview-previous").onclick = () => movePreview(-1);
+        $("preview-next").onclick = () => movePreview(1);
+        $("preview-dialog").onkeydown = (event) => {
+          if (
+            !$("image-info-dialog").open &&
+            !event.isComposing &&
+            ["ArrowLeft", "ArrowRight"].includes(event.key)
+          ) {
+            event.preventDefault();
+            if (!event.repeat) movePreview(event.key === "ArrowLeft" ? -1 : 1);
+          }
+        };
         $("preview-info").onclick = () => {
           if (selected && allowed() && !$("image-info-dialog").open) {
             $("image-info-dialog").showModal();
@@ -2415,15 +3269,25 @@
               : null,
           );
         $("preview-dialog").onclose = () => {
+          cancelFullPreview();
+          fullPreview = null;
           if ($("image-info-dialog").open) $("image-info-dialog").close();
           const result = Array.from($("results").children).find(
             (node) => node.dataset.resultId === selected?.resultId,
           );
           result?.focus({ preventScroll: true });
+          pumpThumbnails();
         };
-        $("refresh").onclick = () => void work(refresh);
+        $("refresh").onclick = () => void refresh();
         $("fit").onchange = () => checkpointNavigation(true);
-        $("settings").onclick = () => void work(() => request("open-settings"));
+        $("settings").onclick = async () => {
+          if (busy || hostBlocked() || !allowed() || !visible()) return;
+          try {
+            await request("open-settings");
+          } catch (error) {
+            message(failure(error), true);
+          }
+        };
         $("import").onclick = () =>
           void work(async () => {
             const response = await request("import");
@@ -2441,8 +3305,8 @@
             render();
             checkpointNavigation(true);
             if (name === "local") {
-              if (busy) refreshPending = true;
-              else void work(refresh);
+              if (busy || hostBlocked()) refreshPending = true;
+              else void refresh();
             }
             initializeContent();
           };
@@ -2503,20 +3367,31 @@
             entriesProvider = "";
             entriesQuery = "";
             entriesCategory = "";
+            entriesPage = 0;
+            entriesHasMore = false;
             thumbnails.clear();
+            thumbnailCache.clear();
+            fullPreviewCache.clear();
+            localPreviews.clear();
+            localPreviewCache.clear();
+            cancelFullPreview();
             collectionEpoch++;
             lastResultsState = "";
             cardsKey = "";
             loadingCollection = false;
             selected = null;
-            preview = null;
+            fullPreview = null;
             library = { revision: 0, items: [], limit: 0 };
             libraryLoaded = false;
+            libraryReadSequence++;
             refreshPending = false;
             if ($("confirm-dialog").open) $("confirm-dialog").close("no");
           } else if (!granted("network:images")) {
-            preview = null;
+            cancelFullPreview();
+            fullPreview = null;
             thumbnails.clear();
+            thumbnailCache.clear();
+            fullPreviewCache.clear();
             for (const item of entries)
               thumbnails.set(item.resultId, {
                 url: item.previewUrl,
@@ -2525,6 +3400,18 @@
               });
             cardsKey = "";
           }
+          if (
+            selected &&
+            granted("network:images") &&
+            !fullPreview &&
+            $("preview-dialog").open
+          )
+            fullPreview = {
+              resultId: selected.resultId,
+              url: selected.displayUrl,
+              status: "idle",
+              dataUrl: null,
+            };
           if (!allowed()) closePreview();
           if (allowed()) readResults(next);
           render();
@@ -2540,11 +3427,18 @@
         document.addEventListener("visibilitychange", () => {
           document.documentElement.dataset.galleryVisible = String(visible());
           pumpThumbnails();
+          pumpLocalPreviews();
           initializeContent();
           if (visible()) void flushCheckpoint();
         });
         window.addEventListener("pagehide", () => {
+          unloaded = true;
+          accessEpoch++;
+          thumbnailCache.clear();
+          fullPreviewCache.clear();
+          localPreviewCache.clear();
           cardObserver?.disconnect();
+          loadMoreObserver?.disconnect();
         });
         void starter.ready
           .then(async (next) => {

@@ -1,9 +1,9 @@
 {
   "formatVersion": 3,
   "apiVersion": 2,
-  "minHostVersion": "0.1.8",
+  "minHostVersion": "0.1.11",
   "id": "market.wallpaper-browser",
-  "version": "1.2.5",
+  "version": "1.5.0",
   "name": "壁纸库",
   "author": "Tauri Desktop Starter",
   "description": "浏览在线壁纸，管理本机图库并设置应用背景。",
@@ -32,19 +32,19 @@
   ],
   "network": [
     {
-      "origin": "https://wp.upx8.com",
+      "origin": "https://www.bizhihui.com",
       "methods": ["GET"]
     },
     {
-      "origin": "https://wallhaven.cc",
+      "origin": "https://www.wallcoo.com",
       "methods": ["GET"]
     },
     {
-      "origin": "https://commons.wikimedia.org",
+      "origin": "https://wallpaperscraft.com",
       "methods": ["GET"]
     },
     {
-      "origin": "https://nekos.best",
+      "origin": "https://www.goodfon.com",
       "methods": ["GET"]
     }
   ]
