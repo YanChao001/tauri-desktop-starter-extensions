@@ -334,16 +334,37 @@ impl Function {
             Self::Sinh => first.sinh(),
             Self::Cosh => first.cosh(),
             Self::Tanh => first.tanh(),
-            Self::Sech => 1.0 / first.cosh(),
-            Self::Csch | Self::Coth => {
+            Self::Sech | Self::Csch => {
+                let cosecant = matches!(self, Self::Csch);
+                if cosecant && first == 0.0 {
+                    return Err("Hyperbolic cosecant/cotangent is undefined at zero".into());
+                }
+                let denominator = if cosecant { first.sinh() } else { first.cosh() };
+                let result = if denominator.is_finite() {
+                    1.0 / denominator
+                } else {
+                    // The reciprocal can remain representable after sinh/cosh
+                    // overflows. At this magnitude the exp(-2*abs(x)) term in
+                    // the exact denominator is already below the f64 range.
+                    let magnitude = (std::f64::consts::LN_2 - first.abs()).exp();
+                    if cosecant {
+                        magnitude.copysign(first)
+                    } else {
+                        magnitude
+                    }
+                };
+                if result == 0.0 {
+                    return Err(
+                        "Hyperbolic result is below the supported floating-point range".into(),
+                    );
+                }
+                result
+            }
+            Self::Coth => {
                 if first == 0.0 {
                     return Err("Hyperbolic cosecant/cotangent is undefined at zero".into());
                 }
-                if matches!(self, Self::Csch) {
-                    1.0 / first.sinh()
-                } else {
-                    1.0 / first.tanh()
-                }
+                1.0 / first.tanh()
             }
             Self::Asinh => first.asinh(),
             Self::Acosh => {
@@ -364,13 +385,25 @@ impl Function {
                 if !(0.0..=1.0).contains(&first) || first == 0.0 {
                     return Err("Inverse hyperbolic secant requires an argument greater than 0 and at most 1".into());
                 }
-                (1.0 / first).acosh()
+                let reciprocal = 1.0 / first;
+                if reciprocal.is_finite() {
+                    reciprocal.acosh()
+                } else {
+                    // For such tiny arguments, the correction to ln(2/x)
+                    // is below f64 precision; do not overflow the reciprocal.
+                    std::f64::consts::LN_2 - first.ln()
+                }
             }
             Self::Acsch => {
                 if first == 0.0 {
                     return Err("Inverse hyperbolic cosecant is undefined at zero".into());
                 }
-                (1.0 / first).asinh()
+                let reciprocal = 1.0 / first;
+                if reciprocal.is_finite() {
+                    reciprocal.asinh()
+                } else {
+                    (std::f64::consts::LN_2 - first.abs().ln()).copysign(first)
+                }
             }
             Self::Acoth => {
                 if first.abs() <= 1.0 {
@@ -1396,6 +1429,41 @@ mod tests {
         near(value("sqrt(9)+cbrt(-8)+abs(-5)+pow(2,3)+hypot(3,4)"), 19.0);
         near(value("deg(pi)+rad(180)"), 180.0 + std::f64::consts::PI);
         near(value("sinh(0)+cosh(0)+tanh(0)"), 1.0);
+    }
+
+    #[test]
+    fn reciprocal_hyperbolic_functions_preserve_representable_small_results() {
+        for (source, expected) in [
+            ("sech(711)", 3.293467350449585e-309),
+            ("sech(-711)", 3.293467350449585e-309),
+            ("csch(711)", 3.293467350449585e-309),
+            ("csch(-711)", -3.293467350449585e-309),
+        ] {
+            let actual = value(source);
+            assert!(
+                (actual / expected - 1.0).abs() < 1e-12,
+                "{source}: {actual}"
+            );
+        }
+        assert!(root("csch(x)", 710.0, 720.0, Vars::default()).is_err());
+    }
+
+    #[test]
+    fn reciprocal_hyperbolic_underflow_does_not_create_zeroes() {
+        for source in ["sech(1000)", "csch(1000)", "csch(-1000)"] {
+            assert!(evaluate(source, Vars::default()).is_err(), "{source}");
+        }
+    }
+
+    #[test]
+    fn inverse_hyperbolic_functions_accept_representable_tiny_arguments() {
+        for (source, expected) in [
+            ("asech(1e-310)", 714.494526008714),
+            ("acsch(1e-310)", 714.494526008714),
+            ("acsch(-1e-310)", -714.494526008714),
+        ] {
+            near(value(source), expected);
+        }
     }
 
     #[test]

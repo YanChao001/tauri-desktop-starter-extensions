@@ -30,8 +30,11 @@ function workspace(options = {}) {
         textContent: "",
         className: "",
         hidden: false,
+        clientWidth: 420,
+        clientHeight: tagName.toLowerCase() === "canvas" ? 300 : 48,
         attributes: new Map(),
         listeners: new Map(),
+        capturedPointers: new Set(),
       });
       this.classList = {
         contains: (name) => this.className.split(/\s+/).includes(name),
@@ -119,6 +122,15 @@ function workspace(options = {}) {
     getContext() {
       return null;
     }
+    setPointerCapture(id) {
+      this.capturedPointers.add(id);
+    }
+    hasPointerCapture(id) {
+      return this.capturedPointers.has(id);
+    }
+    releasePointerCapture(id) {
+      this.capturedPointers.delete(id);
+    }
     get firstChild() {
       return this.children[0] ?? null;
     }
@@ -128,10 +140,10 @@ function workspace(options = {}) {
         y: 0,
         left: 0,
         top: 0,
-        right: 420,
-        bottom: 48,
-        width: 420,
-        height: 48,
+        right: this.clientWidth,
+        bottom: this.clientHeight,
+        width: this.clientWidth,
+        height: this.clientHeight,
       };
     }
   }
@@ -333,10 +345,14 @@ function workspace(options = {}) {
         value: structuredClone(value),
         dirty,
       });
+      if (options.checkpointRequest)
+        await options.checkpointRequest(value, dirty);
     },
     run: async (action, submitted) => {
       calls.push({ method: "run", action, fields: structuredClone(submitted) });
-      const response = responses.shift() ?? {};
+      const response = options.runRequest
+        ? ((await options.runRequest(action, structuredClone(submitted))) ?? {})
+        : (responses.shift() ?? {});
       currentState = {
         ...currentState,
         fields: { ...submitted, operand: "" },
@@ -609,6 +625,35 @@ test("unary evaluates only the current operand and retains the pending expressio
   assert.equal(app.expression(), "2+((3)^2)*4");
 });
 
+test("scientific function previews display only the function argument parentheses", async () => {
+  const app = workspace({ fields: { angle: "rad" } });
+  app.press("1");
+  app.responses.push({ state: { result: "0.841470984808" } });
+  app.document.querySelector('[data-trig="sin"]').click();
+  await settle();
+  const request = app.calls.find((call) => call.method === "run");
+  assert.equal(request.fields.operand, "sin(1)");
+  assert.equal(app.expression(), "sin(1)");
+  assert.equal(app.elements.get("expression-line").textContent, "sin(1)");
+  assert.equal(app.display(), "0.841470984808");
+});
+
+test("scientific function previews compose without changing pending arithmetic", async () => {
+  const app = workspace();
+  app.press("2", "add", "1");
+  app.responses.push({ state: { result: "0.841470984808" } });
+  app.document.querySelector('[data-trig="sin"]').click();
+  await settle();
+  app.responses.push({ state: { result: "0.666366745393" } });
+  app.document.querySelector('[data-trig="cos"]').click();
+  await settle();
+  const request = app.calls.filter((call) => call.method === "run").at(-1);
+  assert.equal(request.fields.operand, "cos(sin(1))");
+  assert.equal(request.fields.expression, "2+cos(sin(1))");
+  app.press("multiply", "4");
+  assert.equal(app.expression(), "2+cos(sin(1))*4");
+});
+
 test("second functions switch in place and reset after use", async () => {
   const app = workspace();
   app.press("2", "second");
@@ -689,7 +734,7 @@ test("trig inverse and hyp combine and reset after selecting a function", async 
   sine.click();
   await settle();
   const request = app.calls.find((call) => call.method === "run");
-  assert.equal(request.fields.operand, "(asinh(1))");
+  assert.equal(request.fields.operand, "asinh(1)");
   assert.equal(app.elements.get("trig-popup").hidden, true);
   assert.equal(
     app.elements.get("trig-second").getAttribute("aria-pressed"),
@@ -1121,8 +1166,8 @@ test("unary operands include function names that contain digits", async () => {
   app.press("sqrt");
   await settle();
   const request = app.calls.find((call) => call.method === "run");
-  assert.equal(request.fields.operand, "(sqrt(log2(8)))");
-  assert.equal(request.fields.expression, "2+(sqrt(log2(8)))");
+  assert.equal(request.fields.operand, "sqrt(log2(8))");
+  assert.equal(request.fields.expression, "2+sqrt(log2(8))");
 });
 
 test("repeat equals distinguishes Euler's constant from a decimal exponent", async () => {
@@ -1282,8 +1327,8 @@ test("unary operations keep whitespace-separated function names with their argum
   app.press("sqrt");
   await settle();
   const request = app.calls.find((call) => call.method === "run");
-  assert.equal(request.fields.operand, "(sqrt(sin (30)))");
-  assert.equal(request.fields.expression, "2 + (sqrt(sin (30)))");
+  assert.equal(request.fields.operand, "sqrt(sin (30))");
+  assert.equal(request.fields.expression, "2 + sqrt(sin (30))");
 });
 
 test("unary operations include signs separated from binary operators by whitespace", async () => {
@@ -1296,10 +1341,10 @@ test("unary operations include signs separated from binary operators by whitespa
     app.press("abs");
     await settle();
     const request = app.calls.find((call) => call.method === "run");
-    assert.equal(request.fields.operand, `(abs(${operand}))`);
+    assert.equal(request.fields.operand, `abs(${operand})`);
     assert.equal(
       request.fields.expression,
-      expression.slice(0, -operand.length) + `(abs(${operand}))`,
+      expression.slice(0, -operand.length) + `abs(${operand})`,
     );
   }
 });
@@ -1744,6 +1789,527 @@ test("graph equations submit through Wasm and support independent visibility and
   const style = app.document.querySelector('[data-curve-style="0"]');
   style.click();
   assert.equal(style.textContent, "┄");
+});
+
+function graphRange(app) {
+  return Object.fromEntries(
+    ["xmin", "xmax", "ymin", "ymax"].map((id) => [
+      id,
+      Number(app.elements.get(id).value),
+    ]),
+  );
+}
+
+function approximately(actual, expected) {
+  assert.ok(
+    Math.abs(actual - expected) <= 1e-9 * Math.max(1, Math.abs(expected)),
+    `${actual} must approximately equal ${expected}`,
+  );
+}
+
+function graphPointer(app, type, id, x, y, modifiers = {}) {
+  return app.event(app.elements.get("graph"), type, {
+    pointerId: id,
+    pointerType: "mouse",
+    isPrimary: id === 1,
+    button: 0,
+    clientX: x,
+    clientY: y,
+    ...modifiers,
+  });
+}
+
+test("graph touch pinch accepts the second pointer and keeps the moving midpoint anchored", async () => {
+  const app = workspace({ mode: "graph" }),
+    canvas = app.elements.get("graph"),
+    before = graphRange(app);
+  graphPointer(app, "pointerdown", 1, 120, 100, { pointerType: "touch" });
+  const second = graphPointer(app, "pointerdown", 2, 220, 100, {
+    pointerType: "touch",
+    isPrimary: false,
+  });
+  assert.equal(second.defaultPrevented, true);
+  assert.equal(canvas.hasPointerCapture(2), true);
+  graphPointer(app, "pointermove", 2, 320, 100, {
+    pointerType: "touch",
+    isPrimary: false,
+  });
+  const after = graphRange(app),
+    plotWidth = canvas.clientWidth - 48 - 14,
+    plotHeight = canvas.clientHeight - 18 - 30,
+    originalAnchorX = before.xmin + ((170 - 48) / plotWidth) * 20,
+    originalAnchorY = before.ymax - ((100 - 18) / plotHeight) * 6;
+  approximately(after.xmax - after.xmin, 10);
+  approximately(after.ymax - after.ymin, 3);
+  approximately(
+    after.xmin + ((220 - 48) / plotWidth) * (after.xmax - after.xmin),
+    originalAnchorX,
+  );
+  approximately(
+    after.ymax - ((100 - 18) / plotHeight) * (after.ymax - after.ymin),
+    originalAnchorY,
+  );
+  graphPointer(app, "pointerup", 2, 320, 100, { pointerType: "touch" });
+  graphPointer(app, "pointerup", 1, 120, 100, { pointerType: "touch" });
+  await app.flushTimers();
+  const request = app.calls.filter((call) => call.method === "run").at(-1);
+  assert.equal(request.action, "plot");
+  for (const id of Object.keys(after))
+    approximately(Number(request.fields[id]), after[id]);
+});
+
+test("Shift drag applies a graph selection only when the pointer is released", async () => {
+  const app = workspace({ mode: "graph" }),
+    before = graphRange(app);
+  graphPointer(app, "pointerdown", 1, 137.5, 81, { shiftKey: true });
+  graphPointer(app, "pointermove", 1, 316.5, 207, { shiftKey: true });
+  assert.deepEqual(graphRange(app), before);
+  assert.equal(
+    app.calls.some((call) => call.method === "run"),
+    false,
+  );
+  graphPointer(app, "pointerup", 1, 316.5, 207, { shiftKey: true });
+  const selected = graphRange(app);
+  for (const [id, expected] of Object.entries({
+    xmin: -5,
+    xmax: 5,
+    ymin: -1.5,
+    ymax: 1.5,
+  }))
+    approximately(selected[id], expected);
+  await app.flushTimers();
+  const request = app.calls.filter((call) => call.method === "run").at(-1);
+  assert.equal(request.action, "plot");
+  for (const id of Object.keys(selected))
+    approximately(Number(request.fields[id]), selected[id]);
+});
+
+test("Escape cancels a graph box selection without applying or submitting it", async () => {
+  const app = workspace({ mode: "graph", fields: { expression: "123" } }),
+    canvas = app.elements.get("graph"),
+    before = graphRange(app);
+  graphPointer(app, "pointerdown", 1, 137.5, 81, { shiftKey: true });
+  graphPointer(app, "pointermove", 1, 316.5, 207, { shiftKey: true });
+  const cancelled = app.key("Escape", canvas);
+  assert.equal(cancelled.defaultPrevented, true);
+  assert.equal(canvas.capturedPointers.size, 0);
+  graphPointer(app, "pointerup", 1, 316.5, 207);
+  await app.flushTimers();
+  assert.deepEqual(graphRange(app), before);
+  assert.equal(app.elements.get("functions").value, "x");
+  assert.equal(app.expression(), "123");
+  assert.equal(
+    app.calls.some((call) => call.method === "run"),
+    false,
+  );
+});
+
+test("Escape ends a graph pan at the current viewport and resamples the retained range", async () => {
+  const app = workspace({ mode: "graph" }),
+    canvas = app.elements.get("graph"),
+    before = graphRange(app);
+  graphPointer(app, "pointerdown", 1, 120, 100);
+  graphPointer(app, "pointermove", 1, 155.8, 100);
+  const panned = graphRange(app);
+  assert.notDeepEqual(panned, before);
+  const cancelled = app.key("Escape", canvas);
+  assert.equal(cancelled.defaultPrevented, true);
+  assert.equal(canvas.capturedPointers.size, 0);
+  graphPointer(app, "pointermove", 1, 200, 100);
+  graphPointer(app, "pointerup", 1, 200, 100);
+  assert.deepEqual(graphRange(app), panned);
+  await app.flushTimers();
+  const requests = app.calls.filter((call) => call.method === "run");
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].action, "plot");
+  for (const id of Object.keys(panned))
+    approximately(Number(requests[0].fields[id]), panned[id]);
+});
+
+test("ending a pinch leaves the remaining touch able to pan from the zoomed range", async () => {
+  const app = workspace({ mode: "graph" }),
+    canvas = app.elements.get("graph");
+  graphPointer(app, "pointerdown", 1, 120, 100, { pointerType: "touch" });
+  graphPointer(app, "pointerdown", 2, 220, 100, { pointerType: "touch" });
+  graphPointer(app, "pointermove", 2, 320, 100, { pointerType: "touch" });
+  const pinched = graphRange(app);
+  graphPointer(app, "pointerup", 2, 320, 100, { pointerType: "touch" });
+  assert.equal(canvas.hasPointerCapture(2), false);
+  assert.equal(canvas.hasPointerCapture(1), true);
+  graphPointer(app, "pointermove", 1, 155.8, 100, { pointerType: "touch" });
+  const panned = graphRange(app);
+  approximately(panned.xmin, pinched.xmin - 1);
+  approximately(panned.xmax, pinched.xmax - 1);
+  approximately(panned.ymin, pinched.ymin);
+  approximately(panned.ymax, pinched.ymax);
+  graphPointer(app, "pointerup", 1, 155.8, 100, { pointerType: "touch" });
+  assert.equal(canvas.capturedPointers.size, 0);
+  await app.flushTimers();
+  const request = app.calls.filter((call) => call.method === "run").at(-1);
+  assert.equal(request.action, "plot");
+  for (const id of Object.keys(panned))
+    approximately(Number(request.fields[id]), panned[id]);
+});
+
+test("switching calculator modes releases all graph gesture captures", () => {
+  const app = workspace({ mode: "graph" }),
+    canvas = app.elements.get("graph");
+  graphPointer(app, "pointerdown", 1, 120, 100, { pointerType: "touch" });
+  graphPointer(app, "pointerdown", 2, 220, 100, { pointerType: "touch" });
+  app.elements.get("scientific-mode").click();
+  assert.equal(canvas.capturedPointers.size, 0);
+  app.elements.get("graph-mode").click();
+  const before = graphRange(app);
+  graphPointer(app, "pointerdown", 3, 120, 100, {
+    pointerType: "touch",
+    isPrimary: true,
+  });
+  graphPointer(app, "pointermove", 3, 155.8, 100, { pointerType: "touch" });
+  const after = graphRange(app);
+  approximately(after.xmax - after.xmin, before.xmax - before.xmin);
+  approximately(after.xmin, before.xmin - (before.xmax - before.xmin) / 10);
+});
+
+test("hiding a graph session releases gesture captures before it becomes active again", () => {
+  const app = workspace({ mode: "graph" }),
+    canvas = app.elements.get("graph");
+  graphPointer(app, "pointerdown", 1, 120, 100, { pointerType: "touch" });
+  graphPointer(app, "pointerdown", 2, 220, 100, { pointerType: "touch" });
+  app.onChange({ ...app.snapshot, active: false });
+  assert.equal(canvas.capturedPointers.size, 0);
+  app.onChange(app.snapshot);
+  const before = graphRange(app);
+  graphPointer(app, "pointermove", 1, 180, 100, { pointerType: "touch" });
+  assert.deepEqual(graphRange(app), before);
+});
+
+test("replacing a graph workspace invalidates gestures from the previous session", () => {
+  const app = workspace({ mode: "graph" }),
+    canvas = app.elements.get("graph");
+  graphPointer(app, "pointerdown", 1, 120, 100, { pointerType: "touch" });
+  const fields = {
+      ...app.snapshot.fields,
+      functions: "2*x",
+      xmin: "100",
+      xmax: "120",
+    },
+    importedState = {
+      ...JSON.parse(app.snapshot.view.state),
+      fields,
+      plot: { series: [], xmin: 100, xmax: 120, ymin: -3, ymax: 3 },
+    };
+  app.onChange({
+    ...app.snapshot,
+    fields,
+    checkpoint: { schema: 1, fields, calculator: { mode: "graph" } },
+    view: { ...app.snapshot.view, state: JSON.stringify(importedState) },
+  });
+  assert.equal(canvas.capturedPointers.size, 0);
+  const importedRange = graphRange(app);
+  graphPointer(app, "pointermove", 1, 180, 100, { pointerType: "touch" });
+  assert.deepEqual(graphRange(app), importedRange);
+  assert.equal(app.elements.get("functions").value, "2*x");
+});
+
+test("the graph box zoom button exposes its mode and accepts a plain primary drag", () => {
+  const app = workspace({ mode: "graph" }),
+    button = app.elements.get("box-zoom");
+  assert.ok(button, "The graph toolbar must expose box zoom");
+  assert.equal(button.getAttribute("aria-pressed"), "false");
+  button.click();
+  assert.equal(button.getAttribute("aria-pressed"), "true");
+  graphPointer(app, "pointerdown", 1, 137.5, 81);
+  graphPointer(app, "pointermove", 1, 316.5, 207);
+  approximately(graphRange(app).xmax - graphRange(app).xmin, 20);
+  graphPointer(app, "pointerup", 1, 316.5, 207);
+  approximately(graphRange(app).xmax - graphRange(app).xmin, 10);
+  button.click();
+  assert.equal(button.getAttribute("aria-pressed"), "false");
+});
+
+test("graph wheel line and page deltas match their normalized pixel distances", () => {
+  for (const [deltaMode, pixels] of [
+    [1, 16],
+    [2, 300],
+  ]) {
+    const normalized = workspace({ mode: "graph" }),
+      pixel = workspace({ mode: "graph" });
+    for (const [app, deltaY, mode] of [
+      [normalized, -1, deltaMode],
+      [pixel, -pixels, 0],
+    ]) {
+      const event = app.event(app.elements.get("graph"), "wheel", {
+        deltaY,
+        deltaMode: mode,
+        clientX: 137.5,
+        clientY: 81,
+      });
+      assert.equal(event.defaultPrevented, true);
+    }
+    for (const id of Object.keys(graphRange(pixel)))
+      approximately(graphRange(normalized)[id], graphRange(pixel)[id]);
+  }
+});
+
+test("wheel gestures continue during graph resampling and submit the latest range while edits stay locked", async () => {
+  let finishPlot,
+    requestCount = 0;
+  const app = workspace({
+      mode: "graph",
+      fields: { functions: "x", expression: "123" },
+      runRequest: () => {
+        requestCount++;
+        return requestCount === 1
+          ? new Promise((resolve) => {
+              finishPlot = resolve;
+            })
+          : {};
+      },
+    }),
+    canvas = app.elements.get("graph"),
+    wheel = () =>
+      app.event(canvas, "wheel", {
+        deltaY: -100,
+        deltaMode: 0,
+        clientX: 227,
+        clientY: 144,
+      });
+  wheel();
+  await app.flushTimers();
+  assert.equal(requestCount, 1);
+  const firstRange = graphRange(app),
+    second = wheel(),
+    latest = graphRange(app);
+  assert.equal(second.defaultPrevented, true);
+  assert.ok(latest.xmax - latest.xmin < firstRange.xmax - firstRange.xmin);
+  app.press("7");
+  app.key("8", canvas);
+  assert.equal(app.elements.get("functions").value, "x");
+  assert.equal(app.expression(), "123");
+  assert.equal(
+    app.document.querySelector('[data-equation="0"]').readOnly,
+    true,
+  );
+  await app.flushTimers();
+  assert.equal(
+    requestCount,
+    1,
+    "A second plot must wait for the in-flight receipt",
+  );
+  finishPlot({});
+  await settle();
+  await app.flushTimers();
+  const requests = app.calls.filter((call) => call.method === "run");
+  assert.equal(requests.length, 2);
+  assert.ok(requests.every((call) => call.action === "plot"));
+  for (const id of Object.keys(latest)) {
+    approximately(Number(requests[1].fields[id]), latest[id]);
+    approximately(graphRange(app)[id], latest[id]);
+  }
+});
+
+test("wheel updates made while a plot checkpoint receipt is pending survive the completed action", async () => {
+  let finishCheckpoint,
+    checkpointCount = 0;
+  const app = workspace({
+      mode: "graph",
+      checkpointRequest: () => {
+        checkpointCount++;
+        if (checkpointCount === 2)
+          return new Promise((resolve) => {
+            finishCheckpoint = resolve;
+          });
+      },
+    }),
+    canvas = app.elements.get("graph"),
+    wheel = () =>
+      app.event(canvas, "wheel", {
+        deltaY: -100,
+        deltaMode: 0,
+        clientX: 227,
+        clientY: 144,
+      });
+  wheel();
+  await app.flushTimers();
+  assert.equal(checkpointCount, 2);
+  assert.equal(app.calls.filter((call) => call.method === "run").length, 1);
+  const first = graphRange(app);
+  wheel();
+  const latest = graphRange(app);
+  assert.ok(latest.xmax - latest.xmin < first.xmax - first.xmin);
+  finishCheckpoint();
+  await settle();
+  await app.flushTimers();
+  for (const id of Object.keys(latest))
+    approximately(graphRange(app)[id], latest[id]);
+  const requests = app.calls.filter((call) => call.method === "run");
+  assert.equal(requests.length, 2);
+  for (const id of Object.keys(latest))
+    approximately(Number(requests[1].fields[id]), latest[id]);
+});
+
+for (const operation of ["Enter", "change", "remove"])
+  test(`clearing the final graph equation with ${operation} submits an empty plot`, async () => {
+    const app = workspace({
+      mode: "graph",
+      fields: { functions: "x" },
+      state: {
+        plot: {
+          series: [
+            {
+              expression: "x",
+              points: [
+                [-1, -1],
+                [1, 1],
+              ],
+            },
+          ],
+          xmin: -10,
+          xmax: 10,
+          ymin: -3,
+          ymax: 3,
+        },
+      },
+    });
+    assert.equal(app.elements.get("legend").children.length, 1);
+    app.responses.push({
+      state: { plot: { series: [], xmin: -10, xmax: 10, ymin: -3, ymax: 3 } },
+    });
+    if (operation === "remove")
+      app.document.querySelector('[data-curve-remove="0"]').click();
+    else {
+      const input = app.document.querySelector('[data-equation="0"]');
+      input.value = "";
+      app.event(input, "input");
+      if (operation === "Enter") app.key("Enter", input);
+      else app.event(input, "change");
+    }
+    await settle();
+    await app.flushTimers();
+    const requests = app.calls.filter((call) => call.method === "run");
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].action, "plot");
+    assert.equal(requests[0].fields.functions, "");
+    assert.equal(app.elements.get("legend").children.length, 0);
+    assert.equal(
+      app.elements.get("graph-summary").textContent.includes("f1(x)"),
+      false,
+    );
+  });
+
+test("clearing an earlier graph row keeps the surviving curve visibility and line style", async () => {
+  const app = workspace({ mode: "graph", fields: { functions: "x\n2*x" } });
+  app.document.querySelector('[data-curve-toggle="0"]').click();
+  const secondStyle = app.document.querySelector('[data-curve-style="1"]');
+  secondStyle.click();
+  secondStyle.click();
+  const first = app.document.querySelector('[data-equation="0"]');
+  first.focus();
+  first.value = "";
+  app.event(first, "input");
+  app.event(first, "input");
+  app.key("Enter", first);
+  await settle();
+  await app.flushTimers();
+  const saved = app.calls.filter((call) => call.method === "checkpoint").at(-1);
+  assert.ok(saved, "The surviving curve settings must be checkpointed");
+  assert.equal(saved.value.fields.functions, "2*x");
+  assert.notEqual(saved.value.calculator.equationVisibility[0], false);
+  assert.equal(saved.value.calculator.equationStyles[0], 2);
+});
+
+test("Delete on the graph canvas clears the active equation and replots", async () => {
+  const app = workspace({
+      mode: "graph",
+      fields: { functions: "x\n2*x", expression: "123" },
+    }),
+    second = app.document.querySelector('[data-equation="1"]');
+  second.focus();
+  app.elements.get("graph").focus();
+  const event = app.key("Delete", app.elements.get("graph"));
+  assert.equal(event.defaultPrevented, true);
+  assert.equal(second.value, "");
+  assert.equal(app.elements.get("functions").value, "x");
+  assert.equal(app.expression(), "123");
+  await settle();
+  await app.flushTimers();
+  const request = app.calls.filter((call) => call.method === "run").at(-1);
+  assert.equal(request.action, "plot");
+  assert.equal(request.fields.functions, "x");
+});
+
+test("submitting a focused graph equation keeps subsequent keypad edits in that equation", async () => {
+  const app = workspace({ mode: "graph", fields: { functions: "x\n2*x" } }),
+    first = app.document.querySelector('[data-equation="0"]');
+  first.focus();
+  first.setSelectionRange(1, 1);
+  app.key("Enter", first);
+  await settle();
+  assert.equal(app.document.activeElement, first);
+  app.press("7");
+  assert.equal(first.value, "x7");
+  assert.equal(app.document.querySelector('[data-equation="1"]').value, "2*x");
+  assert.equal(app.elements.get("functions").value, "x7\n2*x");
+});
+
+test("Enter on a calculator button retains native activation without invoking global equals", async () => {
+  const app = workspace(),
+    button = app.elements
+      .get("keypad")
+      .children.find((node) => node.dataset.key === "7");
+  button.focus();
+  const event = app.key("Enter", button);
+  assert.equal(event.defaultPrevented, false);
+  await settle();
+  assert.equal(
+    app.calls.some((call) => call.method === "run"),
+    false,
+  );
+  // Model the browser's default Enter activation after the key handler returns.
+  button.click();
+  assert.equal(app.expression(), "7");
+});
+
+for (const [key, angle] of [
+  ["F3", "deg"],
+  ["F4", "rad"],
+  ["F5", "grad"],
+])
+  test(`${key} replots graph functions using ${angle}`, async () => {
+    const app = workspace({
+      mode: "graph",
+      fields: { functions: "sin(x)", angle: angle === "deg" ? "rad" : "deg" },
+    });
+    app.key(key, app.elements.get("graph"));
+    await settle();
+    await app.flushTimers();
+    const request = app.calls.filter((call) => call.method === "run").at(-1);
+    assert.ok(request, "Changing graph angle units must resample the curves");
+    assert.equal(request.action, "plot");
+    assert.equal(request.fields.angle, angle);
+    assert.equal(request.fields.functions, "sin(x)");
+  });
+
+test("graph axis settings mirror the angle unit and replot using the selected unit", async () => {
+  const app = workspace({
+      mode: "graph",
+      fields: { functions: "sin(x)", angle: "deg" },
+    }),
+    select = app.elements.get("graph-angle");
+  assert.equal(select.value, "deg");
+  select.value = "rad";
+  app.event(select, "change");
+  assert.equal(select.disabled, true);
+  await settle();
+  await app.flushTimers();
+  const requests = app.calls.filter((call) => call.method === "run");
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].action, "plot");
+  assert.equal(requests[0].fields.angle, "rad");
+  assert.equal(requests[0].fields.functions, "sin(x)");
+  assert.equal(app.elements.get("angle").value, "rad");
+  assert.equal(select.value, "rad");
+  assert.equal(select.disabled, false);
 });
 
 test("graph fitting applies Wasm axis results in one request and checkpoints the viewport", async () => {
