@@ -14,7 +14,6 @@
       body {
         margin: 0;
         padding: 0;
-        background: var(--background);
       }
       button {
         -webkit-tap-highlight-color: transparent;
@@ -56,7 +55,7 @@
       .app {
         position: relative;
         display: grid;
-        grid-template-columns: 48px var(--conversation-width, 224px) 6px minmax(
+        grid-template-columns: var(--conversation-width, 224px) 6px minmax(
             0,
             1fr
           );
@@ -65,59 +64,21 @@
         overflow: clip;
         isolation: isolate;
       }
-      .rail {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        padding: 16px 8px 12px;
-        background: color-mix(in oklab, var(--muted) 80%, var(--background));
-        border-right: 1px solid var(--border);
-      }
-      .rail .my-avatar {
-        width: 32px;
-        height: 32px;
-        flex-basis: 32px;
-        border-radius: 50%;
-        margin-bottom: 12px;
-        background: var(--primary);
-        color: var(--primary-foreground);
-      }
-      .rail .rail-selected {
-        color: var(--primary);
-        background: color-mix(in oklab, var(--primary) 12%, transparent);
-        position: relative;
-      }
-      .rail-selected:before {
-        content: "";
-        position: absolute;
-        left: -8px;
-        width: 3px;
-        top: 9px;
-        bottom: 9px;
-        background: var(--primary);
-        border-radius: 50%;
-      }
-      .rail-space {
-        flex: 1;
-      }
       .contacts {
         min-width: 0;
         min-height: 0;
         display: flex;
         flex-direction: column;
-        background: color-mix(in oklab, var(--muted) 38%, var(--background));
-        border-right: 1px solid var(--border);
       }
       .list-header {
-        padding: 23px 18px 16px;
+        padding: 12px 14px;
         display: grid;
-        gap: 15px;
+        gap: 10px;
         flex-shrink: 0;
       }
       .list-heading {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 8px;
       }
@@ -134,6 +95,8 @@
         fill: none;
         stroke: var(--muted-foreground);
         stroke-width: 1.7;
+        z-index: 1;
+        pointer-events: none;
       }
       #search {
         padding-left: 32px;
@@ -185,27 +148,22 @@
       .contact {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 13px 10px;
+        gap: 0.5rem;
+        padding: 0.375rem 0.5rem;
         width: 100%;
-        height: 74px;
+        min-height: 3.25rem;
+        height: auto;
         border: 1px solid transparent;
         border-radius: 10px;
         margin-bottom: 3px;
-        background: transparent;
         color: var(--foreground);
         text-align: left;
         justify-content: flex-start;
         position: relative;
       }
-      .contact:hover {
-        background: color-mix(in oklab, var(--accent) 60%, transparent);
-      }
       .contact[aria-pressed="true"] {
-        background: var(--accent);
-        border-color: color-mix(in oklab, var(--primary) 14%, var(--border));
-        box-shadow: 0 2px 8px
-          color-mix(in oklab, var(--foreground) 3%, transparent);
+        background: var(--surface-state-selected);
+        color: var(--accent-foreground);
       }
       .avatar {
         display: grid;
@@ -214,7 +172,6 @@
         height: 36px;
         flex: 0 0 36px;
         border-radius: 50%;
-        background: color-mix(in oklab, var(--primary) 10%, var(--background));
         color: var(--primary);
         user-select: none;
         border: 1px solid color-mix(in oklab, var(--primary) 10%, var(--border));
@@ -259,7 +216,6 @@
         position: relative;
         flex-shrink: 0;
         border: 0;
-        background: var(--background);
         outline: none;
         touch-action: none;
         user-select: none;
@@ -325,7 +281,7 @@
         flex: 1;
         min-width: 0;
         display: grid;
-        gap: 4px;
+        gap: 2px;
       }
       .contact-copy > .muted {
         overflow: hidden;
@@ -366,8 +322,9 @@
         flex: 0 0 auto;
       }
       .contact-time {
-        color: var(--muted-foreground);
+        color: var(--foreground);
         font-size: 0.63rem;
+        line-height: 1.4;
         font-variant-numeric: tabular-nums;
       }
       .badge {
@@ -389,27 +346,33 @@
         min-height: 0;
         display: flex;
         flex-direction: column;
-        background: var(--background);
       }
       .chat-head {
         position: relative;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr);
         flex-shrink: 0;
         align-items: center;
         gap: 10px;
-        padding: 6px 20px;
-        min-height: 56px;
+        padding: 4px 14px;
+        min-height: 42px;
         border-bottom: 1px solid var(--border);
       }
       .chat-head .avatar {
-        width: 32px;
-        height: 32px;
-        flex-basis: 32px;
-        border-radius: 50%;
+        display: none;
       }
       .peer-copy {
-        flex: 1;
+        display: contents;
         min-width: 0;
+      }
+      #peer-name {
+        font-size: 0.88rem;
+      }
+      #peer-detail {
+        text-align: center;
+      }
+      #conversation-more {
+        justify-self: end;
       }
       #peer-name,
       #peer-detail {
@@ -427,8 +390,30 @@
         overflow: auto;
         min-height: 0;
         padding: 24px 28px;
-        background: color-mix(in oklab, var(--muted) 24%, var(--background));
         overscroll-behavior: contain;
+      }
+      .attachment-progress {
+        display: grid;
+        gap: 0.25rem;
+        width: 100%;
+        min-width: 0;
+        font-size: 0.65rem;
+        line-height: 1.5;
+        text-align: left;
+      }
+      .attachment-progress strong {
+        font-weight: 500;
+      }
+      .attachment-progress progress {
+        width: 100%;
+        height: 4px;
+        accent-color: var(--primary);
+      }
+      .image-attachment .attachment-progress {
+        padding: 0 0.35rem 0.4rem;
+      }
+      .attachment-progress p {
+        margin: 0;
       }
       .empty {
         display: flex;
@@ -449,7 +434,6 @@
         margin-bottom: 9px;
         font-size: 2.1rem;
         border: 1px solid var(--border);
-        background: var(--background);
         color: var(--primary);
         border-radius: 25px;
         box-shadow: 0 8px 24px
@@ -506,7 +490,6 @@
         padding: 10px 13px;
         border: 1px solid var(--border);
         border-radius: 3px 12px 12px;
-        background: var(--background);
         white-space: pre-wrap;
         overflow-wrap: anywhere;
         font-size: 0.86rem;
@@ -515,7 +498,6 @@
       }
       .outgoing .bubble {
         border-radius: 12px 3px 12px 12px;
-        background: color-mix(in oklab, var(--primary) 16%, var(--background));
         border-color: color-mix(in oklab, var(--primary) 16%, var(--border));
         color: var(--foreground);
       }
@@ -534,29 +516,55 @@
         border: 0;
         border-radius: 8px;
         overflow: hidden;
-        background: var(--muted);
+        color: var(--muted-foreground);
+        cursor: zoom-in;
+      }
+      .attachment-card[data-pending="true"] .thumbnail-button {
+        cursor: default;
       }
       .image-thumbnail {
         display: block;
         width: 100%;
+        height: auto;
+      }
+      .thumbnail-placeholder {
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 8px;
         height: 150px;
-        object-fit: cover;
+      }
+      .thumbnail-placeholder svg {
+        width: 28px;
+        height: 28px;
       }
       .attachment-card {
-        width: min(270px, 100%);
+        width: 270px;
+        max-width: 100%;
         padding: 12px;
         border: 1px solid var(--border);
-        background: var(--background);
         border-radius: 12px;
         color: var(--foreground);
         display: grid;
         gap: 9px;
+        height: auto;
+        text-align: left;
+      }
+      .file-attachment {
+        cursor: context-menu;
+        font: inherit;
       }
       .attachment-info {
         display: flex;
         gap: 10px;
         align-items: center;
         min-width: 0;
+      }
+      .attachment-card.image-attachment {
+        width: 240px;
+        padding: 0;
+        border: 0;
+        background: transparent;
       }
       .file-symbol {
         display: grid;
@@ -592,13 +600,24 @@
         flex-basis: var(--composer-height, 168px);
         padding: 7px 18px 10px;
         display: grid;
-        grid-template-rows: 2rem minmax(0, 1fr) auto;
+        grid-template-rows: 1.75rem minmax(0, 1fr);
         gap: 4px;
       }
       .composer-tools {
         display: flex;
         gap: 4px;
         align-items: center;
+      }
+      .composer-editor {
+        min-height: 0;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        border: 1px solid var(--surface-control-border, var(--input));
+        border-radius: var(--radius);
+      }
+      .composer-editor:focus-within {
+        outline: 2px solid var(--ring);
+        outline-offset: 1px;
       }
       .tool-divider {
         width: 1px;
@@ -618,9 +637,10 @@
         max-height: none;
         resize: none;
         border: 0;
-        border-radius: 6px;
-        background: transparent;
-        padding: 6px 3px;
+        border-radius: var(--radius);
+        padding: 0.5rem 0.625rem;
+        box-shadow: none;
+        outline: none;
         line-height: 1.6;
       }
       .composer-footer {
@@ -628,6 +648,7 @@
         justify-content: space-between;
         gap: 10px;
         align-items: center;
+        padding: 0 0.5rem 0.375rem;
       }
       #draft-count {
         font-size: 0.65rem;
@@ -649,18 +670,16 @@
       }
       #settings-panel {
         position: fixed;
-        left: 56px;
-        bottom: 14px;
-        width: min(380px, calc(100% - 68px));
-        height: min(640px, calc(100% - 28px));
-        max-height: calc(100% - 28px);
+        left: 12px;
+        top: 54px;
+        width: min(25rem, calc(100% - 24px));
+        max-height: calc(100% - 66px);
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        padding: 16px;
+        padding: 1rem;
       }
-      #settings-panel > .panel-heading,
-      #settings-panel > .mode-switch {
+      #settings-panel > .panel-heading {
         flex-shrink: 0;
       }
       #settings-scroll {
@@ -668,19 +687,8 @@
         min-height: 0;
         overflow: auto;
         overscroll-behavior: contain;
-        padding-right: 4px;
+        padding: 4px;
         scrollbar-gutter: stable;
-      }
-      #mode-settings {
-        display: grid;
-      }
-      #mode-settings > * {
-        grid-area: 1 / 1;
-      }
-      #mode-settings > [hidden] {
-        display: block !important;
-        visibility: hidden;
-        pointer-events: none;
       }
       .panel-heading {
         display: flex;
@@ -692,43 +700,30 @@
       .panel-heading h2 {
         font-size: 0.93rem;
       }
-      .mode-switch {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 3px;
-        padding: 4px;
-        border-radius: var(--radius);
-        margin-bottom: 16px;
-      }
       .settings-section {
         display: grid;
-        gap: 10px;
-      }
-      fieldset.settings-section {
-        margin: 0 0 0.75rem;
-      }
-      section.settings-section {
-        padding: 15px 0;
-        border-top: 1px solid var(--border);
-      }
-      section.settings-section:first-of-type {
-        padding-top: 0;
-        border-top: 0;
+        gap: 8px;
       }
       .settings-row {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 7.5rem;
         gap: 8px;
         align-items: end;
       }
       .settings-row > label {
         flex: 1;
         min-width: 0;
+        display: grid;
+        gap: 4px;
       }
       .settings-row > button {
-        flex-shrink: 0;
+        width: 100%;
+      }
+      .service-toggle > button {
+        width: 100%;
       }
       .settings-row .port-label {
-        flex: 0 0 88px;
+        min-width: 0;
       }
       .settings-section label {
         display: grid;
@@ -737,10 +732,7 @@
       #addresses {
         white-space: pre-line;
         overflow-wrap: anywhere;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 9px 11px;
-        background: var(--muted);
+        padding: 4px 0;
         user-select: text;
         font-size: 0.72rem;
         line-height: 1.6;
@@ -758,10 +750,88 @@
         color: var(--foreground);
       }
       .connection-details p {
-        margin-top: 9px;
+        margin: 0;
+      }
+      .connection-copy {
+        display: grid;
+        gap: 0.625rem;
+        padding: 0.75rem 1rem 1rem;
+      }
+      #settings-scroll {
+        display: grid;
+        align-content: start;
+        gap: 0.875rem;
+      }
+      .settings-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .settings-actions > button {
+        width: 100%;
+      }
+      .manual-row {
+        grid-template-columns: minmax(0, 1fr) 7.5rem;
+      }
+      #connect {
+        grid-column: 2;
+      }
+      #settings-panel .panel-heading {
+        margin-bottom: 0.75rem;
       }
       #clear {
+        justify-self: start;
+      }
+      .contact > .avatar {
+        width: 2rem;
+        height: 2rem;
+        flex-basis: 2rem;
+      }
+      .list-actions {
+        display: flex;
+        align-items: center;
+        padding-top: 0.125rem;
+        gap: 2px;
+      }
+      .nearby {
+        padding: 0 10px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      .nearby h3 {
+        margin: 0 4px 6px;
+        font-size: 0.73rem;
+        color: var(--muted-foreground);
+      }
+      #nearby-devices {
+        display: grid;
+        gap: 4px;
+        max-height: 160px;
+        overflow: auto;
+      }
+      #nearby-devices > .muted {
+        padding: 4px;
+        font-size: 0.7rem;
+      }
+      .nearby-device {
         width: 100%;
+        justify-content: flex-start;
+        min-width: 0;
+        height: auto;
+        padding: 7px 8px;
+        text-align: left;
+      }
+      .nearby-device span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .nearby-device small {
+        margin-left: auto;
+        font-size: 0.65rem;
+        color: var(--muted-foreground);
+      }
+      .list-caption {
+        padding-top: 12px;
       }
       #conversation-menu {
         top: calc(100% + 4px);
@@ -843,27 +913,84 @@
         text-align: center;
         padding: 30px;
         color: var(--muted-foreground);
-        background: var(--background);
         line-height: 1.8;
         font-size: 0.85rem;
       }
       #attachment-preview .dialog {
-        width: min(760px, 100%);
+        width: fit-content;
+        max-width: 100%;
         max-height: 100%;
         display: flex;
         flex-direction: column;
+        gap: 0.375rem;
+        padding: 0.5rem;
+      }
+      #attachment-preview {
+        padding: 0.5rem;
+      }
+      #attachment-preview #preview-name {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #preview-viewport {
+        display: grid;
+        place-items: center;
+        align-self: center;
+        width: fit-content;
+        max-width: 100%;
+        min-height: 0;
+        overflow: hidden;
+        touch-action: none;
+        border-radius: var(--radius);
+        cursor: default;
+      }
+      #preview-viewport[data-zoomed="true"] {
+        cursor: grab;
+      }
+      #preview-viewport[data-dragging="true"] {
+        cursor: grabbing;
       }
       #preview-image {
         display: block;
-        width: 100%;
+        width: auto;
+        height: auto;
+        max-width: min(100%, calc(100dvw - 2rem));
+        max-height: calc(100dvh - 5rem);
         min-height: 0;
-        max-height: 65dvh;
         object-fit: contain;
-        border-radius: 9px;
-        background: var(--muted);
+        transform-origin: center;
+        user-select: none;
+        pointer-events: none;
       }
       #preview-name {
         overflow-wrap: anywhere;
+      }
+      .preview-tools {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+      }
+      #preview-scale {
+        min-width: 3rem;
+        text-align: center;
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted-foreground);
+      }
+      #attachment-menu {
+        position: fixed;
+        z-index: 12;
+        width: min(168px, calc(100vw - 16px));
+        padding: 4px;
+      }
+      #attachment-menu button {
+        width: 100%;
+        justify-content: flex-start;
       }
       .message[data-new="true"] {
         animation: message-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -896,11 +1023,8 @@
       @media (max-width: 900px) {
         .app {
           grid-template-columns:
-            48px var(--conversation-width, 224px)
+            var(--conversation-width, 224px)
             6px minmax(0, 1fr);
-        }
-        .rail {
-          padding-inline: 8px;
         }
         .list-header,
         .list-caption {
@@ -919,34 +1043,37 @@
           max-width: 85%;
         }
         #settings-panel {
-          left: 56px;
+          left: 12px;
         }
       }
       @media (max-width: 600px) {
+        .settings-actions {
+          grid-template-columns: 1fr;
+        }
+        #attachment-preview #preview-name {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+        }
+        .manual-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) max(104px, 5.5rem);
+        }
+        .manual-row > button {
+          grid-column: 1 / -1;
+          justify-self: end;
+        }
         .app {
-          grid-template-columns: 48px minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1fr);
           grid-template-rows: auto minmax(0, 1fr);
         }
         #conversation-resizer {
           display: none;
         }
-        .rail {
-          grid-row: 1/-1;
-          padding: 14px 6px 10px;
-          gap: 14px;
-        }
-        .rail .my-avatar {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          font-size: 0.85rem;
-          margin-bottom: 6px;
-        }
-        .rail-selected:before {
-          left: -6px;
-        }
         .contacts {
-          grid-column: 2;
+          grid-column: 1;
           grid-row: 1;
           border-right: 0;
           border-bottom: 1px solid var(--border);
@@ -961,7 +1088,7 @@
           font-size: 0.92rem;
         }
         .list-heading .icon-button {
-          display: none;
+          flex-shrink: 0;
         }
         .status {
           max-width: 140px;
@@ -1013,12 +1140,12 @@
           gap: 2px;
         }
         .chat {
-          grid-column: 2;
+          grid-column: 1;
           grid-row: 2;
         }
         .chat-head {
-          min-height: 52px;
-          padding: 6px 12px;
+          min-height: 38px;
+          padding: 2px 10px;
           gap: 8px;
         }
         .chat-head .avatar {
@@ -1064,12 +1191,11 @@
           font-size: 0.59rem;
         }
         #settings-panel {
-          left: 54px;
-          bottom: 8px;
-          width: calc(100% - 62px);
-          height: min(640px, calc(100% - 16px));
-          max-height: calc(100% - 16px);
-          padding: 15px;
+          left: 8px;
+          top: 48px;
+          width: calc(100% - 16px);
+          max-height: calc(100% - 56px);
+          padding: 12px;
         }
         .empty {
           padding: 16px 4px;
@@ -1100,8 +1226,24 @@
           grid-template-columns: repeat(6, minmax(0, 1fr));
         }
         #permission {
-          inset: 12px 12px 12px 60px;
+          inset: 12px;
           padding: 18px;
+        }
+        .nearby {
+          padding: 0 8px 6px;
+        }
+        .nearby h3 {
+          display: none;
+        }
+        #nearby-devices {
+          display: flex;
+          max-height: 52px;
+          gap: 4px;
+        }
+        .nearby-device {
+          width: auto;
+          flex-shrink: 0;
+          gap: 8px;
         }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -1112,8 +1254,7 @@
         }
       }
       @media (forced-colors: active) {
-        .contact[aria-pressed="true"],
-        .mode-switch button[aria-pressed="true"] {
+        .contact[aria-pressed="true"] {
           outline: 2px solid Highlight;
         }
         .dot {
@@ -1127,57 +1268,6 @@
   </head>
   <body>
     <main class="app" id="layout">
-      <aside class="rail" aria-label="应用工具">
-        <div
-          id="my-avatar"
-          class="avatar my-avatar"
-          role="img"
-          aria-label="我的设备"
-        ></div>
-        <button
-          id="conversations-toggle"
-          class="icon-button rail-selected ui-button ui-button-ghost ui-button-size-icon-sm"
-          type="button"
-          aria-label="会话"
-          title="会话"
-          aria-pressed="true"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M16 3H5a2 2 0 0 0-2 2v11l4-4h9a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"
-            />
-            <path d="M21 7v14l-4-4H7" />
-          </svg>
-        </button>
-        <div class="rail-space"></div>
-        <button
-          id="refresh"
-          class="icon-button ui-button ui-button-ghost ui-button-size-icon-sm"
-          type="button"
-          aria-label="刷新"
-          title="刷新"
-        >
-          <svg viewBox="0 0 24 24">
-            <path d="M20 7v5h-5M4 17v-5h5" />
-            <path d="M6.1 7a7 7 0 0 1 11.5-2L20 8M4 16l2.4 3A7 7 0 0 0 18 17" />
-          </svg></button
-        ><button
-          id="settings-toggle"
-          class="icon-button ui-button ui-button-ghost ui-button-size-icon-sm"
-          type="button"
-          aria-label="连接与设置"
-          title="连接与设置"
-          aria-expanded="false"
-          aria-controls="settings-panel"
-        >
-          <svg viewBox="0 0 24 24">
-            <path
-              d="m9 3-.6 2.2-2 .9L4.3 5.5l-2 3.5 1.6 1.6v2.8L2.3 15l2 3.5 2.1-.6 2 .9L9 21h4l.6-2.2 2-.9 2.1.6 2-3.5-1.6-1.6v-2.8L19.7 9l-2-3.5-2.1.6-2-.9L13 3Z"
-            />
-            <circle cx="11" cy="12" r="3" />
-          </svg>
-        </button>
-      </aside>
       <aside class="contacts" id="conversation-list" aria-label="联系人和会话">
         <header class="list-header">
           <div class="list-heading">
@@ -1187,15 +1277,24 @@
                 >未连接</span
               >
             </div>
-            <button
-              id="add-contact"
-              type="button"
-              class="icon-button ui-button ui-button-ghost ui-button-size-icon"
-              aria-label="连接设备"
-              title="连接设备"
-            >
-              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-            </button>
+            <div class="list-actions">
+              <button
+                id="settings-toggle"
+                class="icon-button ui-button ui-button-ghost ui-button-size-icon-sm"
+                type="button"
+                aria-label="连接与设置"
+                title="连接与设置"
+                aria-expanded="false"
+                aria-controls="settings-panel"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="m9 3-.6 2.2-2 .9L4.3 5.5l-2 3.5 1.6 1.6v2.8L2.3 15l2 3.5 2.1-.6 2 .9L9 21h4l.6-2.2 2-.9 2.1.6 2-3.5-1.6-1.6v-2.8L19.7 9l-2-3.5-2.1.6-2-.9L13 3Z"
+                  />
+                  <circle cx="11" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="search-wrap">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1209,9 +1308,12 @@
             />
           </div>
         </header>
+        <section class="nearby" aria-label="附近设备">
+          <h3>附近设备</h3>
+          <div id="nearby-devices" aria-live="polite"></div>
+        </section>
         <div class="list-caption">
-          <span class="muted">最近会话</span
-          ><span id="peer-count" class="muted">0</span>
+          <span class="muted">最近会话</span>
         </div>
         <nav id="contacts" class="contact-list" aria-label="选择会话"></nav>
       </aside>
@@ -1272,6 +1374,13 @@
             >
               导出会话</button
             ><button
+              class="ui-button ui-button-ghost"
+              id="clear-conversation"
+              type="button"
+              disabled
+            >
+              清空历史消息</button
+            ><button
               class="ui-button ui-button-destructive"
               id="forget"
               type="button"
@@ -1306,7 +1415,7 @@
           <div class="composer-tools" role="group" aria-label="消息工具">
             <button
               id="emoji-toggle"
-              class="icon-button ui-button ui-button-ghost ui-button-size-icon"
+              class="icon-button ui-button ui-button-ghost ui-button-size-icon-sm"
               type="button"
               aria-label="表情与表情包"
               title="表情与表情包"
@@ -1319,7 +1428,7 @@
               </svg></button
             ><button
               id="send-image"
-              class="icon-button ui-button ui-button-ghost ui-button-size-icon"
+              class="icon-button ui-button ui-button-ghost ui-button-size-icon-sm"
               type="button"
               aria-label="发送图片"
               title="发送图片"
@@ -1331,7 +1440,7 @@
               </svg></button
             ><button
               id="send-file"
-              class="icon-button ui-button ui-button-ghost ui-button-size-icon"
+              class="icon-button ui-button ui-button-ghost ui-button-size-icon-sm"
               type="button"
               aria-label="发送文件"
               title="发送文件"
@@ -1376,27 +1485,34 @@
             </div>
             <div id="emoji-grid" role="tabpanel" data-kind="emoji"></div>
           </div>
-          <textarea
-            id="draft"
-            maxlength="8192"
-            placeholder="输入消息…"
-            aria-label="消息内容"
-            aria-describedby="draft-count"
-          ></textarea>
-          <div class="composer-footer">
-            <span id="draft-count" class="muted">0 / 8192 字节</span
-            ><button
-              id="cancel-transfer"
-              type="button"
-              class="ui-button ui-button-outline"
-              hidden
-              aria-label="停止传输并断开连接"
-              title="停止传输并断开连接"
-            >
-              停止传输</button
-            ><button class="ui-button" id="send" type="button" disabled>
-              发送
-            </button>
+          <div
+            class="composer-editor"
+            id="composer-editor"
+            data-surface="control"
+          >
+            <textarea
+              id="draft"
+              data-surface="transparent"
+              maxlength="8192"
+              placeholder="输入消息…"
+              aria-label="消息内容"
+              aria-describedby="draft-count"
+            ></textarea>
+            <div class="composer-footer">
+              <span id="draft-count" class="muted">0 / 8192 字节</span
+              ><button
+                id="cancel-transfer"
+                type="button"
+                class="ui-button ui-button-outline"
+                hidden
+                aria-label="停止传输并断开连接"
+                title="停止传输并断开连接"
+              >
+                停止传输</button
+              ><button class="ui-button" id="send" type="button" disabled>
+                发送
+              </button>
+            </div>
           </div>
         </form>
       </section>
@@ -1421,109 +1537,97 @@
             <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
           </button>
         </div>
-        <div
-          class="mode-switch"
-          data-surface="control"
-          role="group"
-          aria-label="通信模式"
-        >
-          <button
-            class="ui-button ui-toggle"
-            id="mode-lan"
-            type="button"
-            aria-pressed="true"
-          >
-            局域网</button
-          ><button
-            class="ui-button ui-toggle"
-            id="mode-loopback"
-            type="button"
-            aria-pressed="false"
-          >
-            本机回环
-          </button>
-        </div>
         <div id="settings-scroll">
-          <fieldset class="settings-section">
-            <legend>我的设备</legend>
-            <div class="settings-row">
-              <label
-                >昵称<input
-                  id="nickname"
-                  maxlength="40"
-                  autocomplete="off"
-                  placeholder="输入昵称" /></label
-              ><button
-                id="rename"
-                type="button"
-                class="ui-button ui-button-outline"
-              >
-                保存昵称
-              </button>
-            </div>
-          </fieldset>
-          <div id="mode-settings">
-            <div id="lan-settings">
-              <fieldset class="settings-section">
-                <legend>本机监听</legend>
-                <div class="settings-row">
-                  <label
-                    >监听端口<input
-                      id="port"
-                      type="number"
-                      min="1"
-                      max="65535"
-                      value="45873" /></label
-                  ><button class="ui-button" id="start" type="button">
-                    开启监听
-                  </button>
-                </div>
-                <div id="addresses" tabindex="0">尚未监听</div>
-              </fieldset>
-              <fieldset class="settings-section">
-                <legend>连接设备</legend>
-                <div class="settings-row">
-                  <label
-                    >对方 IP<input
-                      id="address"
-                      placeholder="例如 192.168.1.25"
-                      title="填写数字形式的私有或回环 IP；双方先开启监听。"
-                      autocomplete="off" /></label
-                  ><label class="port-label"
-                    >对方端口<input
-                      id="remote-port"
-                      type="number"
-                      min="1"
-                      max="65535"
-                      value="45873"
-                  /></label>
-                </div>
-                <button class="ui-button" id="connect" type="button" disabled>
-                  连接设备
-                </button>
-              </fieldset>
-            </div>
-            <section id="loopback-settings" class="settings-section" hidden>
-              <h3>本机回环测试</h3>
-              <p class="muted">
-                回环助手通过本机 TCP 回送文字、图片和文件，仅验证本机通信。
-              </p>
-              <button class="ui-button" id="loopback" type="button">
-                开始回环测试
-              </button>
-            </section>
-          </div>
-          <section class="settings-section">
+          <div class="settings-row">
+            <label
+              >昵称<input
+                id="nickname"
+                maxlength="40"
+                autocomplete="off"
+                placeholder="输入昵称"
+            /></label>
             <button
-              id="stop"
+              id="rename"
               type="button"
               class="ui-button ui-button-outline"
-              disabled
             >
-              停止监听与连接
+              保存昵称
             </button>
-            <details id="connection-details" class="connection-details">
-              <summary>连接与隐私</summary>
+          </div>
+          <div id="lan-settings" class="settings-row">
+            <div class="settings-section">
+              <span>局域网通信</span>
+              <div id="addresses" tabindex="0">尚未监听</div>
+            </div>
+            <div class="service-toggle" role="group" aria-label="局域网通信">
+              <button class="ui-button" id="start" type="button">
+                开启通信
+              </button>
+              <button
+                class="ui-button ui-button-outline"
+                id="stop"
+                type="button"
+                hidden
+                disabled
+              >
+                停止通信
+              </button>
+            </div>
+          </div>
+          <details id="manual-connection" class="connection-details">
+            <summary>手动连接</summary>
+            <div class="connection-copy">
+              <label class="settings-section"
+                >监听端口<input
+                  id="port"
+                  type="number"
+                  min="1"
+                  max="65535"
+                  value="45873"
+              /></label>
+              <div class="settings-row manual-row">
+                <label
+                  >对方 IP<input
+                    id="address"
+                    placeholder="例如 192.168.1.25"
+                    title="填写数字形式的私有或回环 IP；双方先开启监听。"
+                    autocomplete="off"
+                /></label>
+                <label class="port-label"
+                  >对方端口<input
+                    id="remote-port"
+                    type="number"
+                    min="1"
+                    max="65535"
+                    value="45873"
+                /></label>
+                <button
+                  class="ui-button ui-button-outline"
+                  id="connect"
+                  type="button"
+                  disabled
+                >
+                  连接设备
+                </button>
+              </div>
+            </div>
+          </details>
+          <details id="loopback-settings" class="connection-details">
+            <summary>连接诊断</summary>
+            <div class="connection-copy">
+              <button
+                class="ui-button ui-button-outline"
+                id="loopback"
+                type="button"
+              >
+                开始回环测试
+              </button>
+              <p>通过本机 TCP 回送消息与附件。</p>
+            </div>
+          </details>
+          <details id="connection-details" class="connection-details">
+            <summary>连接与隐私</summary>
+            <div class="connection-copy">
               <p>仅连接可信设备：消息和附件明文传输，昵称与身份未经认证。</p>
               <p>
                 PNG、JPEG、WebP 图片最大 8 MiB，文件最大 1 GiB。本机附件缓存最多
@@ -1533,21 +1637,24 @@
                 切换页面仍会收信。关闭最后使用的窗口、撤权或退出会停止连接。回环模式只监听本机。
               </p>
               <p>“等待回执”尚未确认送达；“已送达”表示对方已保存消息。</p>
-            </details>
-          </section>
-          <section class="settings-section">
-            <button
-              id="clear"
-              type="button"
-              class="ui-button ui-button-destructive"
-            >
-              清空本机历史
-            </button>
-          </section>
+            </div>
+          </details>
+          <details id="data-management" class="connection-details">
+            <summary>数据管理</summary>
+            <div class="connection-copy">
+              <button
+                id="clear"
+                type="button"
+                class="ui-button ui-button-destructive"
+              >
+                清空本机历史
+              </button>
+            </div>
+          </details>
         </div>
       </section>
       <div id="permission" hidden>
-        请在扩展中心授予“局域网消息”权限；监听须手动开启。
+        请在扩展中心授予“局域网消息”权限；打开插件后自动发现附近设备。
       </div>
       <div
         id="confirmation"
@@ -1589,11 +1696,40 @@
         aria-labelledby="preview-name"
       >
         <div class="dialog" data-slot="dialog-content">
-          <div class="panel-heading">
-            <h2 id="preview-name"></h2>
+          <div class="preview-tools" role="group" aria-label="图片缩放">
+            <h2 id="preview-name">图片预览</h2>
+            <button
+              id="preview-zoom-out"
+              class="ui-button ui-button-ghost ui-button-size-icon-sm"
+              type="button"
+              aria-label="缩小"
+              title="缩小"
+            >
+              <svg viewBox="0 0 24 24"><path d="M6 12h12" /></svg>
+            </button>
+            <span id="preview-scale" role="status" aria-live="polite"
+              >100%</span
+            >
+            <button
+              id="preview-zoom-in"
+              class="ui-button ui-button-ghost ui-button-size-icon-sm"
+              type="button"
+              aria-label="放大"
+              title="放大"
+            >
+              <svg viewBox="0 0 24 24"><path d="M6 12h12M12 6v12" /></svg>
+            </button>
+            <button
+              id="preview-reset"
+              class="ui-button ui-button-ghost ui-button-size-sm"
+              type="button"
+              title="复位缩放与位置"
+            >
+              复位
+            </button>
             <button
               id="close-preview"
-              class="icon-button ui-button ui-button-ghost ui-button-size-icon"
+              class="icon-button ui-button ui-button-ghost ui-button-size-icon-sm"
               type="button"
               aria-label="关闭预览"
               title="关闭预览"
@@ -1601,13 +1737,44 @@
               <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
             </button>
           </div>
-          <img id="preview-image" alt="图片预览" />
-          <div class="dialog-actions">
-            <button class="ui-button" id="save-preview" type="button">
-              另存为
-            </button>
+          <div
+            id="preview-viewport"
+            tabindex="0"
+            role="region"
+            aria-label="图片预览"
+            title="滚轮或双指捏合缩放，拖动移动；按 0 复位"
+          >
+            <img id="preview-image" alt="图片预览" draggable="false" />
           </div>
         </div>
+      </div>
+      <div
+        id="attachment-menu"
+        class="popover"
+        data-surface="popover"
+        data-slot="context-menu-content"
+        hidden
+        role="menu"
+        aria-label="附件操作"
+      >
+        <button
+          id="attachment-menu-view"
+          class="ui-button ui-button-ghost ui-button-size-sm"
+          data-slot="context-menu-item"
+          type="button"
+          role="menuitem"
+        >
+          查看图片
+        </button>
+        <button
+          id="attachment-menu-save"
+          class="ui-button ui-button-ghost ui-button-size-sm"
+          data-slot="context-menu-item"
+          type="button"
+          role="menuitem"
+        >
+          另存为
+        </button>
       </div>
     </main>
     <script>
@@ -1616,6 +1783,46 @@
         const $ = (id) => document.getElementById(id);
         const encoder = new TextEncoder();
         const translations = {
+          附件操作: "Attachment actions",
+          开启通信: "Start communication",
+          停止通信: "Stop communication",
+          结束回环测试: "End loopback test",
+          局域网通信: "LAN communication",
+          手动连接: "Manual connection",
+          连接诊断: "Connection diagnostics",
+          数据管理: "Data management",
+          清空历史消息: "Clear conversation history",
+          附件传输: "Attachment transfers",
+          正在准备文件: "Preparing file",
+          正在校验文件: "Verifying file",
+          正在发送: "Sending",
+          正在接收: "Receiving",
+          接收失败: "Receive failed",
+          "正在进行的传输会继续。":
+            "Transfers already in progress will continue.",
+          等待对方保存并确认: "Waiting for the peer to save and confirm",
+          "进度暂不可用，正在重试…": "Progress unavailable; retrying…",
+          "{done} / {total} · {percent}%": "{done} / {total} · {percent}%",
+          "清空“{nickname}”的全部本机消息、图片和文件缓存？联系人、草稿、对方记录、原始文件及另存的文件会保留。":
+            "Clear all local messages, images and cached files for “{nickname}”? Contacts, drafts, the peer’s history, original and separately saved files will be kept.",
+          "清空本机全部消息、图片和文件缓存？联系人、草稿、对方记录、原始文件及另存的文件会保留。":
+            "Clear all local messages, images and cached files? Contacts, drafts, the peer’s history, original and separately saved files will be kept.",
+          "滚轮或双指捏合缩放，拖动移动；按 0 复位":
+            "Use the wheel or pinch to zoom, drag to pan; press 0 to reset",
+          "通过本机 TCP 回送消息与附件。":
+            "Echo messages and attachments through local TCP.",
+          附近设备: "Nearby devices",
+          连接: "Connect",
+          "连接 {nickname}": "Connect to {nickname}",
+          "自动发现不可用，可手动连接 IP。":
+            "Discovery unavailable. Connect manually by IP.",
+          "回环测试中，可在设置中开启局域网。":
+            "Loopback test running. Start LAN in settings.",
+          没有匹配的设备: "No matching devices",
+          "正在寻找附近设备…": "Looking for nearby devices…",
+          开启监听以发现附近设备: "Start listening to find nearby devices",
+          "状态暂不可用，将自动重试。":
+            "Status unavailable. Retrying automatically.",
           停止传输: "Stop transfer",
           停止传输并断开连接: "Stop transfer and disconnect",
           正在停止: "Stopping…",
@@ -1640,8 +1847,8 @@
             "The attachment was not sent. Check the file and connection, then retry.",
           "已停止传输并断开连接，历史和草稿已保留。":
             "Transfer stopped and connections closed. History and drafts kept.",
-          "停止未完成，传输结果未知，请刷新后重试。":
-            "Stop not confirmed; the transfer result is unknown. Refresh and retry.",
+          "停止未完成，传输结果未知，请等待状态更新后重试。":
+            "Stop not confirmed; the transfer result is unknown. Wait for the status to update, then retry.",
           调整会话栏宽度: "Resize conversation column",
           调整输入区高度: "Resize composer",
           "会话栏宽度 {size} 像素": "Conversation width {size} pixels",
@@ -1681,6 +1888,14 @@
           大表情: "Stickers",
           图片预览: "Image preview",
           关闭预览: "Close preview",
+          图片缩放: "Image zoom",
+          图片操作: "Image actions",
+          缩小: "Zoom out",
+          放大: "Zoom in",
+          复位: "Reset",
+          复位缩放与位置: "Reset zoom and position",
+          "滚轮缩放，拖动移动；按 0 复位":
+            "Scroll to zoom, drag to pan; press 0 to reset",
           查看图片: "Preview image",
           另存为: "Save as",
           图片: "Image",
@@ -1689,7 +1904,6 @@
           "[图片] {name}": "[Image] {name}",
           "[文件] {name}": "[File] {name}",
           "[大表情] {text}": "[Sticker] {text}",
-          "本机回环 · {status}": "Local loopback · {status}",
           回环测试运行中: "Loopback test running",
           "连接设备，或在本机回环测试中体验聊天。":
             "Connect a device, or try chatting in a local loopback test.",
@@ -1703,9 +1917,8 @@
           "正在传输…": "Transferring…",
 
           内网通信: "LAN Chat",
-          刷新: "Refresh",
-          "请在扩展中心授予“局域网消息”权限；监听须手动开启。":
-            "Grant LAN messaging in the extension center; start listening manually.",
+          "请在扩展中心授予“局域网消息”权限；打开插件后自动发现附近设备。":
+            "Grant LAN messaging in the extension center; discover nearby devices automatically when opened.",
           确认历史操作: "Confirm history action",
           确认: "Confirm",
           取消: "Cancel",
@@ -1745,9 +1958,7 @@
           未连接: "Disconnected",
           局域网在线: "LAN online",
           正在读取状态: "Reading status",
-          状态读取失败: "Refresh failed",
-          "状态已过期，请刷新重试。":
-            "Status is out of date. Refresh to retry.",
+          状态读取失败: "Status unavailable",
           "本机监听地址：{addresses}": "Local listening addresses: {addresses}",
           "{count} 位联系人": "{count} contacts",
           没有匹配的联系人: "No matching contacts",
@@ -1774,8 +1985,8 @@
             "Draft not saved. Keep this page open and retry.",
           "会话草稿无法恢复，原始数据已保留；请先导出会话，再重新打开或修复原会话。":
             "Session draft cannot be restored. Original data has been preserved. Export the session before reopening or repairing it.",
-          "连接或历史写入失败，请检查连接并刷新。":
-            "Connection or history write failed. Check the connection and refresh.",
+          "连接或历史写入失败，请检查连接后重试。":
+            "Connection or history write failed. Check the connection, then retry.",
           "正在连接，等待对方响应。": "Connecting; waiting for the peer.",
           "消息已写入连接，等待送达回执。":
             "Message written to the connection; awaiting delivery receipt.",
@@ -1858,8 +2069,14 @@
           disposed: false,
           contactsKey: "",
           messagesKey: "",
+          messageRows: new Map(),
           restored: false,
           pollTimer: null,
+          transferTimer: null,
+          transferPolling: false,
+          transferGeneration: 0,
+          transfers: [],
+          transferReadError: false,
           readTimer: null,
           polling: false,
           lastError: null,
@@ -1883,16 +2100,23 @@
           renderedIds: new Set(),
           preview: null,
           previewTrigger: null,
+          previewEpoch: 0,
+          previewScale: 1,
+          previewOffset: { x: 0, y: 0 },
+          previewDrag: null,
+          attachmentMenu: null,
           attachmentBusy: false,
           wasActive: false,
           thumbnailGeneration: 0,
           thumbnails: new Map(),
           thumbnailTasks: new Set(),
-          thumbnailWindow: new Set(),
           pendingLoopbackPeerId: "",
           pendingAction: "",
           pendingEpoch: 0,
           cancellingTransfer: false,
+          autoStartAttempted: false,
+          nearbyKey: "",
+          pendingPeerAddress: "",
           layout: { conversationWidth: 224, composerHeight: 168 },
           resize: null,
         };
@@ -2023,7 +2247,6 @@
           ui.selected = id;
           $("draft").value = ui.drafts[id] ?? initial;
           rememberDraft();
-          clearThumbnails();
           closePreview(false);
           ui.draftRevision++;
           ui.messagesKey = "";
@@ -2317,6 +2540,192 @@
                 ? (size / 1024).toFixed(1) + " KiB"
                 : size + " B";
         }
+        const terminalTransfer = (entry) =>
+          entry.phase === "completed" || entry.phase === "failed";
+        function validatedTransfers(value) {
+          if (
+            !value ||
+            !Array.isArray(value.transfers) ||
+            value.transfers.length > 80
+          )
+            throw new Error("Invalid LAN transfer status");
+          const ids = new Set();
+          for (const entry of value.transfers) {
+            if (
+              !entry ||
+              !token(entry.id) ||
+              !token(entry.peerId) ||
+              !["outgoing", "incoming"].includes(entry.direction) ||
+              !["image", "file"].includes(entry.kind) ||
+              typeof entry.name !== "string" ||
+              !entry.name.trim() ||
+              bytes(entry.name) > 240 ||
+              /[\\/\u0000-\u001f\u007f-\u009f]/u.test(entry.name) ||
+              !Number.isSafeInteger(entry.bytes) ||
+              entry.bytes < 1 ||
+              entry.bytes >
+                (entry.kind === "image"
+                  ? 8 * 1024 * 1024
+                  : 1024 * 1024 * 1024) ||
+              ![
+                "preparing",
+                "verifying",
+                "sending",
+                "receiving",
+                "awaitingReceipt",
+                "completed",
+                "failed",
+              ].includes(entry.phase) ||
+              entry.totalBytes !== entry.bytes ||
+              !Number.isSafeInteger(entry.completedBytes) ||
+              entry.completedBytes < 0 ||
+              entry.completedBytes > entry.totalBytes ||
+              !validTime(entry.startedAt) ||
+              ids.has(`${entry.direction}:${entry.id}`)
+            )
+              throw new Error("Invalid LAN transfer");
+            ids.add(`${entry.direction}:${entry.id}`);
+          }
+          return value.transfers;
+        }
+        function updateAttachmentProgress(view, entry) {
+          const transferring = entry && !terminalTransfer(entry);
+          view.receipt.hidden = Boolean(transferring);
+          view.bubble.setAttribute("aria-busy", String(Boolean(transferring)));
+          if (!transferring) {
+            const root = view.progress?.root;
+            if (root?.parentElement) root.parentElement.removeChild(root);
+            return;
+          }
+          if (!view.progress) {
+            const root = element("div", "attachment-progress");
+            root.dataset.transfer = entry.id;
+            root.setAttribute("aria-live", "off");
+            const phase = element("strong");
+            phase.setAttribute("role", "status");
+            const detail = element("span", "muted");
+            const progress = element("progress");
+            const error = element("p", "muted");
+            error.setAttribute("role", "status");
+            root.append(phase, detail, progress, error);
+            view.progress = { root, phase, detail, progress, error };
+          }
+          const { root, phase, detail, progress, error } = view.progress;
+          const label = t(
+            {
+              preparing: "正在准备文件",
+              verifying: "正在校验文件",
+              sending: "正在发送",
+              receiving: "正在接收",
+              awaitingReceipt: "等待对方保存并确认",
+            }[entry.phase],
+          );
+          root.dataset.phase = entry.phase;
+          if (phase.textContent !== label) phase.textContent = label;
+          detail.textContent = t("{done} / {total} · {percent}%", {
+            done: fileSize(entry.completedBytes),
+            total: fileSize(entry.totalBytes),
+            percent: Math.floor(
+              (entry.completedBytes / entry.totalBytes) * 100,
+            ),
+          });
+          detail.hidden = entry.phase === "awaitingReceipt";
+          progress.hidden = detail.hidden;
+          progress.max = entry.totalBytes;
+          progress.value = entry.completedBytes;
+          progress.setAttribute("aria-label", label + " · " + entry.name);
+          error.textContent = ui.transferReadError
+            ? t("进度暂不可用，正在重试…")
+            : "";
+          error.hidden = !ui.transferReadError;
+          if (root.parentElement !== view.bubble) view.bubble.append(root);
+        }
+        function stopTransferPolling(clear = false) {
+          clearTimeout(ui.transferTimer);
+          ui.transferTimer = null;
+          ui.transferGeneration++;
+          if (clear) {
+            ui.transfers = [];
+            ui.transferReadError = false;
+            renderMessages();
+          }
+        }
+        function scheduleTransfers(sooner = false) {
+          if (sooner) {
+            clearTimeout(ui.transferTimer);
+            ui.transferTimer = null;
+          }
+          if (
+            ui.transferTimer !== null ||
+            ui.transferPolling ||
+            !active() ||
+            !permitted() ||
+            !ui.state?.running
+          )
+            return;
+          const transferring =
+            ui.pendingAction === "sendAttachment" ||
+            ui.transfers.some((entry) => !terminalTransfer(entry));
+          ui.transferTimer = setTimeout(
+            pollTransfers,
+            transferring ? 500 : 2000,
+          );
+        }
+        async function pollTransfers() {
+          ui.transferTimer = null;
+          if (
+            ui.transferPolling ||
+            !active() ||
+            !permitted() ||
+            !ui.state?.running
+          )
+            return;
+          const generation = ui.transferGeneration,
+            epoch = ui.actionEpoch;
+          ui.transferPolling = true;
+          try {
+            if (ui.normalRequests >= 2 || ui.snapshot?.busy) return;
+            // 进度走独立只读请求，长时间发送不会暂停它；仍为停止与草稿各留一个 SDK 槽位。
+            const entries = validatedTransfers(
+              await normalService({ action: "transferStatus" }),
+            );
+            if (
+              generation !== ui.transferGeneration ||
+              epoch !== ui.actionEpoch ||
+              !active() ||
+              !permitted()
+            )
+              return;
+            const previous = new Map(
+              ui.transfers.map((entry) => [
+                `${entry.direction}:${entry.id}`,
+                entry.phase,
+              ]),
+            );
+            const finished = entries.some(
+              (entry) =>
+                terminalTransfer(entry) &&
+                previous.get(`${entry.direction}:${entry.id}`) !== entry.phase,
+            );
+            ui.transfers = entries;
+            ui.transferReadError = false;
+            renderMessages();
+            if (finished && !ui.pending) void poll();
+          } catch {
+            if (
+              generation === ui.transferGeneration &&
+              epoch === ui.actionEpoch &&
+              active() &&
+              permitted()
+            ) {
+              ui.transferReadError = true;
+              renderMessages();
+            }
+          } finally {
+            ui.transferPolling = false;
+            scheduleTransfers();
+          }
+        }
         function messageSummary(message) {
           if (!message) return "";
           return message.kind === "image"
@@ -2362,6 +2771,32 @@
           )
             throw new Error("Invalid LAN status");
           const peerIds = new Set();
+          if (
+            !Array.isArray(value.discoveredPeers) ||
+            value.discoveredPeers.length > 64 ||
+            (value.discoveryError !== null &&
+              (typeof value.discoveryError !== "string" ||
+                bytes(value.discoveryError) > 2048))
+          )
+            throw new Error("Invalid LAN discovery status");
+          const discoveredIds = new Set();
+          for (const peer of value.discoveredPeers) {
+            if (
+              !peer ||
+              !token(peer.id) ||
+              peer.id === value.nodeId ||
+              discoveredIds.has(peer.id) ||
+              !validName(peer.nickname) ||
+              typeof peer.address !== "string" ||
+              !peer.address ||
+              bytes(peer.address) > 100 ||
+              unsafeText(peer.address) ||
+              !validPort(peer.port) ||
+              !validTime(peer.lastSeen)
+            )
+              throw new Error("Invalid discovered device");
+            discoveredIds.add(peer.id);
+          }
           for (const peer of value.peers) {
             if (
               !peer ||
@@ -2474,6 +2909,7 @@
         function setAvatar(node, kind) {
           if (node.dataset.avatar === kind) return;
           node.dataset.avatar = kind;
+          node.dataset.surface = "control";
           node.replaceChildren(vectorIcon(kind, "avatar-mark"));
         }
         function avatarNode(kind) {
@@ -2487,6 +2923,18 @@
           if (className) node.className = className;
           if (text !== undefined) node.textContent = text;
           return node;
+        }
+        function reconcileChildren(target, nodes) {
+          let current = target.firstChild;
+          for (const node of nodes) {
+            if (current === node) current = current.nextSibling;
+            else target.insertBefore(node, current);
+          }
+          while (current) {
+            const next = current.nextSibling;
+            target.removeChild(current);
+            current = next;
+          }
         }
         function renderContacts() {
           const peers = (ui.state?.peers ?? [])
@@ -2507,7 +2955,6 @@
             peers,
             ui.selected,
             locale(),
-            ui.pending,
             ui.drafts,
             ui.state?.messages,
             ui.state?.loopbackPeerId,
@@ -2516,11 +2963,6 @@
           ui.contactsKey = key;
           const focused = document.activeElement?.dataset.peer;
           $("contacts").replaceChildren();
-          $("peer-count").textContent = String(ui.state?.peers.length ?? 0);
-          $("peer-count").setAttribute(
-            "aria-label",
-            t("{count} 位联系人", { count: ui.state?.peers.length ?? 0 }),
-          );
           if (!peers.length) {
             $("contacts").append(
               element(
@@ -2534,9 +2976,12 @@
             return;
           }
           for (const peer of peers) {
-            const button = element("button", "contact");
+            const button = element(
+              "button",
+              "ui-button ui-button-ghost contact",
+            );
             button.type = "button";
-            button.disabled = ui.pending;
+            button.disabled = !permitted() || !active();
             button.dataset.peer = peer.id;
             button.title = `${peer.nickname} · ${peer.address}:${peer.port} · ${peer.connected ? t("已连接") : t("离线")}${peer.unread ? ` · ${t("{count} 条未读消息", { count: peer.unread })}` : ""}`;
             button.setAttribute("aria-label", button.title);
@@ -2604,6 +3049,7 @@
             button.onclick = () => {
               if (ui.pending) return;
               ui.pendingLoopbackPeerId = "";
+              ui.pendingPeerAddress = "";
               selectPeer(peer.id);
               render();
               checkpoint();
@@ -2615,11 +3061,97 @@
               .find((node) => node.dataset.peer === focused)
               ?.focus();
         }
+        function renderNearby() {
+          const state = ui.state;
+          const query = $("search").value.trim().toLocaleLowerCase();
+          const devices = (state?.discoveredPeers ?? []).filter(
+            (peer) =>
+              !state.peers.some(
+                (known) => known.id === peer.id && known.connected,
+              ) &&
+              (!query ||
+                `${peer.nickname} ${peer.address}`
+                  .toLocaleLowerCase()
+                  .includes(query)),
+          );
+          const disabled = ui.checkpointBlocked || !permitted() || !active();
+          const key = JSON.stringify([
+            devices.map(({ id, nickname, address, port }) => [
+              id,
+              nickname,
+              address,
+              port,
+            ]),
+            disabled,
+            state?.running,
+            state?.mode,
+            state?.discoveryError,
+            locale(),
+            query,
+          ]);
+          if (ui.nearbyKey === key) return;
+          ui.nearbyKey = key;
+          const target = $("nearby-devices");
+          const focused = document.activeElement?.dataset.discovered;
+          target.replaceChildren();
+          if (!devices.length) {
+            target.append(
+              element(
+                "p",
+                "muted",
+                t(
+                  state?.discoveryError
+                    ? "自动发现不可用，可手动连接 IP。"
+                    : state?.mode === "loopback" && state.running
+                      ? "回环测试中，可在设置中开启局域网。"
+                      : state?.running
+                        ? query
+                          ? "没有匹配的设备"
+                          : "正在寻找附近设备…"
+                        : "开启监听以发现附近设备",
+                ),
+              ),
+            );
+            return;
+          }
+          for (const peer of devices) {
+            const button = element(
+              "button",
+              "ui-button ui-button-ghost nearby-device",
+            );
+            button.type = "button";
+            button.disabled = disabled;
+            button.dataset.discovered = peer.id;
+            button.setAttribute(
+              "aria-label",
+              t("连接 {nickname}", { nickname: peer.nickname }),
+            );
+            button.append(
+              element("span", "", peer.nickname),
+              element("small", "", t("连接")),
+            );
+            button.title = `${peer.address}:${peer.port}`;
+            button.onclick = () => {
+              if (button.disabled) return;
+              return call(
+                {
+                  action: "connect",
+                  address: peer.address,
+                  port: peer.port,
+                },
+                { selectOnConnect: true },
+              );
+            };
+            target.append(button);
+            if (focused === peer.id) button.focus();
+          }
+        }
         function setPanel(id, trigger, open) {
           $(id).hidden = !open;
           $(trigger).setAttribute("aria-expanded", String(open));
         }
         function closePopovers() {
+          closeAttachmentMenu(false);
           setPanel("settings-panel", "settings-toggle", false);
           setPanel("emoji-picker", "emoji-toggle", false);
           setPanel("conversation-menu", "conversation-more", false);
@@ -2628,12 +3160,14 @@
           if (!permitted() || !active()) return;
           closePopovers();
           setPanel("settings-panel", "settings-toggle", true);
+          const details = $(focus).closest("details");
+          if (details) details.open = true;
           $(focus).focus();
         }
         function trapFocus(event, container) {
-          const controls = [...container.querySelectorAll("button")].filter(
-            (node) => !node.disabled && !node.hidden,
-          );
+          const controls = [
+            ...container.querySelectorAll('button, [tabindex="0"]'),
+          ].filter((node) => !node.disabled && !node.hidden);
           if (!controls.length) return;
           const first = controls[0],
             last = controls[controls.length - 1];
@@ -2676,7 +3210,8 @@
             return;
           const candidates = messages
             .filter((message) => message.kind === "image")
-            .slice(-12);
+            .slice(-12)
+            .reverse();
           for (const message of candidates) {
             const generation = ui.thumbnailGeneration;
             const task = generation + ":" + message.id;
@@ -2689,12 +3224,16 @@
               let dataUrl = null;
               try {
                 const response = await normalService({
-                  action: "previewAttachment",
+                  action: "thumbnailAttachment",
                   messageId: message.id,
                 });
-                if (validPreview(response?.dataUrl)) dataUrl = response.dataUrl;
+                if (
+                  validPreview(response?.dataUrl) &&
+                  response.dataUrl.length <= 24 * 1024
+                )
+                  dataUrl = response.dataUrl;
               } catch {
-                /* An unavailable thumbnail keeps the explicit preview/save controls. */
+                /* The image trigger and its context menu remain available. */
               } finally {
                 ui.thumbnailTasks.delete(task);
                 ui.backgroundPending = false;
@@ -2703,14 +3242,13 @@
                   active() &&
                   permitted() &&
                   generation === ui.thumbnailGeneration &&
-                  ui.thumbnailWindow.has(message.id) &&
                   ui.state?.messages.some(
-                    (current) =>
-                      current.id === message.id &&
-                      current.peerId === ui.selected,
+                    (current) => current.id === message.id,
                   )
                 ) {
                   ui.thumbnails.set(message.id, dataUrl);
+                  while (ui.thumbnails.size > 48)
+                    ui.thumbnails.delete(ui.thumbnails.keys().next().value);
                   ui.messagesKey = "";
                   render();
                 } else if (active() && !ui.disposed) {
@@ -2725,29 +3263,62 @@
           }
         }
         function attachmentCard(message) {
-          const card = element("div", "attachment-card");
+          const available = message.transferOnly !== true;
+          const card = element(
+            message.kind === "image" || !available ? "div" : "button",
+            "attachment-card",
+          );
+          card.dataset.surface = message.kind === "image" ? "artwork" : "panel";
           card.dataset.message = message.id;
+          card.dataset.pending = String(!available);
           const attachment = message.attachment;
           const image = message.kind === "image";
           const thumbnail = ui.thumbnails.get(message.id);
-          if (image && thumbnail) {
+          if (image) {
+            card.className += " image-attachment";
             const show = element(
-              "button",
-              "thumbnail-button preview-attachment",
+              available ? "button" : "div",
+              "thumbnail-button" + (available ? " preview-attachment" : ""),
             );
-            show.type = "button";
             show.dataset.message = message.id;
-            show.dataset.action = "preview";
-            show.setAttribute(
-              "aria-label",
-              t("查看图片") + ": " + attachment.name,
-            );
-            const img = element("img", "image-thumbnail");
-            img.src = thumbnail;
-            img.alt = attachment.name;
-            show.append(img);
-            show.onclick = () => void previewAttachment(message, show);
+            show.dataset.surface = "artwork";
+            if (available) {
+              show.type = "button";
+              show.dataset.action = "preview";
+              show.setAttribute(
+                "aria-label",
+                t("查看图片") + ": " + attachment.name,
+              );
+              show.setAttribute("aria-haspopup", "menu");
+              show.setAttribute("aria-controls", "attachment-menu");
+            }
+            if (thumbnail) {
+              const img = element("img", "image-thumbnail");
+              img.src = thumbnail;
+              img.alt = attachment.name;
+              show.append(img);
+            } else {
+              const placeholder = element("span", "thumbnail-placeholder");
+              placeholder.append(
+                vectorIcon("image"),
+                element("span", "", t("图片")),
+              );
+              show.append(placeholder);
+            }
+            if (available) {
+              show.onclick = () => previewAttachment(message, show);
+              show.oncontextmenu = (event) =>
+                openAttachmentMenu(event, message, show);
+              show.onkeydown = (event) => {
+                if (
+                  event.key === "ContextMenu" ||
+                  (event.key === "F10" && event.shiftKey)
+                )
+                  openAttachmentMenu(event, message, show);
+              };
+            } else show.setAttribute("aria-label", attachment.name);
             card.append(show);
+            return card;
           }
           const info = element("div", "attachment-info");
           const copy = element("div", "file-copy");
@@ -2756,100 +3327,207 @@
             element(
               "span",
               "muted",
-              fileSize(attachment.bytes) +
-                " · " +
-                (image ? t("图片") : t("文件")),
+              fileSize(attachment.bytes) + " · " + t("文件"),
             ),
           );
-          if (!image || !thumbnail) {
-            const symbol = element("span", "file-symbol");
-            symbol.append(vectorIcon(image ? "image" : "file"));
-            info.append(symbol);
-          }
+          const symbol = element("span", "file-symbol");
+          symbol.append(vectorIcon("file"));
+          info.append(symbol);
           info.append(copy);
-          const actions = element("div", "attachment-actions");
-          if (image && !thumbnail) {
-            const show = element(
-              "button",
-              "ui-button ui-button-outline ui-button-size-sm preview-attachment",
-              t("查看图片"),
-            );
-            show.type = "button";
-            show.dataset.message = message.id;
-            show.dataset.action = "preview";
-            show.onclick = () => void previewAttachment(message, show);
-            actions.append(show);
-          }
-          const save = element(
-            "button",
-            "ui-button ui-button-outline ui-button-size-sm save-attachment",
-            t("另存为"),
-          );
-          save.type = "button";
-          save.dataset.message = message.id;
-          save.dataset.action = "save";
-          save.onclick = () => void saveAttachment(message.id);
-          actions.append(save);
-          card.append(info, actions);
+          card.append(info);
+          if (!available) return card;
+          card.type = "button";
+          card.className += " file-attachment";
+          card.dataset.action = "menu";
+          card.setAttribute("aria-haspopup", "menu");
+          card.setAttribute("aria-controls", "attachment-menu");
+          card.oncontextmenu = (event) =>
+            openAttachmentMenu(event, message, card);
+          card.onkeydown = (event) => {
+            if (
+              event.key === "ContextMenu" ||
+              (event.key === "F10" && event.shiftKey) ||
+              event.key === "Enter" ||
+              event.key === " "
+            )
+              openAttachmentMenu(event, message, card);
+          };
           return card;
         }
-        function closePreview(restoreFocus = true) {
-          const trigger = ui.previewTrigger;
-          ui.preview = null;
-          ui.previewTrigger = null;
-          $("attachment-preview").hidden = true;
-          $("preview-image").src = "";
-          if (restoreFocus && active()) {
+        function focusAttachment(trigger) {
+          if (active()) {
             const replacement =
               trigger &&
               [...$("messages").querySelectorAll("button")].find(
                 (button) =>
                   button.dataset.message === trigger.dataset.message &&
-                  button.dataset.action === trigger.dataset.action,
+                  button.dataset.action === trigger.dataset.action &&
+                  !button.disabled,
               );
-            (trigger?.isConnected
+            (trigger?.isConnected && !trigger.disabled
               ? trigger
               : (replacement ?? $("draft"))
             ).focus();
           }
         }
+        function closeAttachmentMenu(restoreFocus = true) {
+          const menu = ui.attachmentMenu;
+          ui.attachmentMenu = null;
+          $("attachment-menu").hidden = true;
+          if (restoreFocus && menu) focusAttachment(menu.trigger);
+        }
+        function openAttachmentMenu(event, message, trigger) {
+          event.preventDefault();
+          if (
+            !active() ||
+            !permitted() ||
+            ui.pending ||
+            ui.attachmentBusy ||
+            ui.snapshot?.busy === true
+          )
+            return;
+          closePopovers();
+          ui.attachmentMenu = { message, trigger };
+          const rect = trigger.getBoundingClientRect();
+          const bounds = document.body.getBoundingClientRect();
+          const x = Number.isFinite(event.clientX)
+            ? event.clientX
+            : (rect.left ?? 0) + 12;
+          const y = Number.isFinite(event.clientY)
+            ? event.clientY
+            : (rect.top ?? 0) + 24;
+          $("attachment-menu").style.left =
+            Math.max(8, Math.min(x, bounds.width - 176)) + "px";
+          $("attachment-menu").style.top =
+            Math.max(8, Math.min(y, bounds.height - 88)) + "px";
+          $("attachment-menu").hidden = false;
+          $("attachment-menu-view").hidden = message.kind !== "image";
+          $(
+            message.kind === "image"
+              ? "attachment-menu-view"
+              : "attachment-menu-save",
+          ).focus();
+        }
+        function endPreviewDrag(event) {
+          const drag = ui.previewDrag;
+          if (!drag || (event && event.pointerId !== drag.pointerId)) return;
+          ui.previewDrag = null;
+          $("preview-viewport").dataset.dragging = "false";
+          if ($("preview-viewport").hasPointerCapture(drag.pointerId))
+            $("preview-viewport").releasePointerCapture(drag.pointerId);
+        }
+        function updatePreviewTransform() {
+          const rect = $("preview-viewport").getBoundingClientRect();
+          const xLimit = (rect.width * Math.max(0, ui.previewScale - 1)) / 2;
+          const yLimit = (rect.height * Math.max(0, ui.previewScale - 1)) / 2;
+          ui.previewOffset.x = Math.max(
+            -xLimit,
+            Math.min(xLimit, ui.previewOffset.x),
+          );
+          ui.previewOffset.y = Math.max(
+            -yLimit,
+            Math.min(yLimit, ui.previewOffset.y),
+          );
+          $("preview-image").style.transform =
+            `translate(${ui.previewOffset.x}px, ${ui.previewOffset.y}px) scale(${ui.previewScale})`;
+          $("preview-scale").textContent =
+            Math.round(ui.previewScale * 100) + "%";
+          $("preview-viewport").dataset.zoomed = String(ui.previewScale > 1);
+          $("preview-zoom-out").disabled = ui.previewScale <= 0.25;
+          $("preview-zoom-in").disabled = ui.previewScale >= 8;
+        }
+        function zoomPreview(factor, point) {
+          if (!ui.preview) return;
+          const previous = ui.previewScale;
+          ui.previewScale = Math.max(
+            0.25,
+            Math.min(8, ui.previewScale * factor),
+          );
+          if (
+            point &&
+            Number.isFinite(point.clientX) &&
+            Number.isFinite(point.clientY)
+          ) {
+            const rect = $("preview-viewport").getBoundingClientRect();
+            const x = point.clientX - (rect.left ?? 0) - rect.width / 2;
+            const y = point.clientY - (rect.top ?? 0) - rect.height / 2;
+            const ratio = ui.previewScale / previous;
+            ui.previewOffset.x = x - (x - ui.previewOffset.x) * ratio;
+            ui.previewOffset.y = y - (y - ui.previewOffset.y) * ratio;
+          }
+          updatePreviewTransform();
+        }
+        function resetPreview() {
+          endPreviewDrag();
+          ui.previewGestureScale = null;
+          ui.previewScale = 1;
+          ui.previewOffset = { x: 0, y: 0 };
+          updatePreviewTransform();
+        }
+        function closePreview(restoreFocus = true) {
+          const trigger = ui.previewTrigger;
+          closeAttachmentMenu(false);
+          ui.previewEpoch++;
+          ui.preview = null;
+          ui.previewGestureScale = null;
+          ui.previewTrigger = null;
+          endPreviewDrag();
+          $("attachment-preview").hidden = true;
+          $("preview-image").src = "";
+          $("preview-viewport").setAttribute("aria-busy", "false");
+          if (restoreFocus) focusAttachment(trigger);
+        }
         async function previewAttachment(message, trigger) {
-          if (!active() || !permitted() || ui.pending || ui.attachmentBusy)
+          if (
+            !active() ||
+            !permitted() ||
+            ui.pending ||
+            ui.attachmentBusy ||
+            ui.snapshot?.busy === true
+          )
             return;
           ui.attachmentBusy = true;
           ui.actionEpoch++;
           const epoch = ui.actionEpoch,
-            peer = ui.selected;
+            peer = ui.selected,
+            previewEpoch = ++ui.previewEpoch,
+            cached = ui.thumbnails.get(message.id);
+          closePopovers();
+          ui.preview = message;
+          ui.previewTrigger = trigger;
+          $("preview-image").src = cached ?? "";
+          $("preview-image").alt = message.attachment.name;
+          $("preview-viewport").setAttribute("aria-busy", "true");
+          $("attachment-preview").hidden = false;
+          resetPreview();
+          $("close-preview").focus();
           render();
           try {
-            const cached = ui.thumbnails.get(message.id);
-            const response = cached
-              ? { dataUrl: cached }
-              : await normalService({
-                  action: "previewAttachment",
-                  messageId: message.id,
-                });
+            const response = await normalService({
+              action: "previewAttachment",
+              messageId: message.id,
+            });
             if (
               !active() ||
               !permitted() ||
               epoch !== ui.actionEpoch ||
-              peer !== ui.selected
+              peer !== ui.selected ||
+              previewEpoch !== ui.previewEpoch
             )
               return;
             if (!validPreview(response?.dataUrl)) {
+              if (!cached) closePreview();
               notice(t("此图片无法预览，可另存后查看。"), true);
               return;
             }
-            closePopovers();
-            ui.preview = message;
-            ui.previewTrigger = trigger;
-            $("preview-name").textContent = message.attachment.name;
             $("preview-image").src = response.dataUrl;
-            $("preview-image").alt = message.attachment.name;
-            $("attachment-preview").hidden = false;
-            $("close-preview").focus();
           } catch (error) {
-            if (epoch === ui.actionEpoch && permitted())
+            if (
+              epoch === ui.actionEpoch &&
+              previewEpoch === ui.previewEpoch &&
+              permitted()
+            ) {
+              if (!cached) closePreview();
               notice(
                 errorMessage(error, {
                   action: "previewAttachment",
@@ -2857,13 +3535,22 @@
                 }),
                 true,
               );
+            }
           } finally {
+            if (previewEpoch === ui.previewEpoch)
+              $("preview-viewport").setAttribute("aria-busy", "false");
             ui.attachmentBusy = false;
             if (!ui.disposed) render();
           }
         }
         async function saveAttachment(messageId) {
-          if (!active() || !permitted() || ui.pending || ui.attachmentBusy)
+          if (
+            !active() ||
+            !permitted() ||
+            ui.pending ||
+            ui.attachmentBusy ||
+            ui.snapshot?.busy === true
+          )
             return;
           ui.attachmentBusy = true;
           ui.actionEpoch++;
@@ -3002,6 +3689,7 @@
             ui.pollTimer = null;
             clearTimeout(ui.readTimer);
             ui.readTimer = null;
+            stopTransferPolling();
             clearTimeout(ui.checkpointTimer);
             ui.checkpointTimer = null;
             closePopovers();
@@ -3010,6 +3698,7 @@
           } else {
             flushNotice();
             void poll();
+            scheduleTransfers();
             retryCheckpoint();
             queueThumbnails(
               (ui.state?.messages ?? []).filter(
@@ -3020,25 +3709,83 @@
         }
         function renderMessages() {
           const peer = selectedPeer();
+          const transfers =
+            peer && permitted()
+              ? ui.transfers.filter((entry) => entry.peerId === ui.selected)
+              : [];
+          const messageId = (message) =>
+            `${message.outgoing ? "outgoing" : "incoming"}:${message.id}`;
+          const transferById = new Map(
+            transfers.map((entry) => [`${entry.direction}:${entry.id}`, entry]),
+          );
           const messages = (ui.state?.messages ?? []).filter(
             (message) => message.peerId === ui.selected,
           );
-          ui.thumbnailWindow = new Set(
-            messages
-              .filter((message) => message.kind === "image")
-              .slice(-12)
-              .map((message) => message.id),
+          const recordedIds = new Set(messages.map(messageId));
+          for (const entry of transfers) {
+            if (recordedIds.has(`${entry.direction}:${entry.id}`)) continue;
+            const outgoing = entry.direction === "outgoing";
+            // 仅渲染原生在途快照，不能写入历史、检查点或导出数据。
+            messages.push({
+              id: entry.id,
+              peerId: entry.peerId,
+              kind: entry.kind,
+              sender: outgoing ? ui.state.nodeId : entry.peerId,
+              nickname: outgoing ? ui.state.nickname : peer.nickname,
+              at: entry.startedAt,
+              outgoing,
+              transferOnly: true,
+              attachment: { name: entry.name, bytes: entry.bytes },
+            });
+          }
+          messages.sort((left, right) => {
+            const time = (message) =>
+              ui.messageRows.get(messageId(message))?.displayAt ??
+              transferById.get(messageId(message))?.startedAt ??
+              message.at;
+            return time(left) - time(right);
+          });
+          const clearBlocked =
+            ui.checkpointBlocked ||
+            !permitted() ||
+            !active() ||
+            ui.pendingAction === "clearHistory";
+          $("clear-conversation").disabled =
+            clearBlocked || !peer || !messages.length;
+          $("clear").disabled =
+            clearBlocked || !(ui.state?.messages.length || ui.transfers.length);
+          const retainedMessages = new Set(
+            (ui.state?.messages ?? []).map((message) => message.id),
           );
           for (const id of ui.thumbnails.keys())
-            if (!ui.thumbnailWindow.has(id)) ui.thumbnails.delete(id);
+            if (!retainedMessages.has(id)) ui.thumbnails.delete(id);
+          const visibleMessages = new Set(messages.map(messageId));
+          for (const id of ui.messageRows.keys())
+            if (!visibleMessages.has(id)) ui.messageRows.delete(id);
+          if (
+            ui.preview &&
+            !messages.some((message) => message.id === ui.preview.id)
+          )
+            closePreview(false);
+          if (
+            ui.attachmentMenu &&
+            !messages.some(
+              (message) => message.id === ui.attachmentMenu.message.id,
+            )
+          )
+            closeAttachmentMenu(false);
           const key = JSON.stringify([
             ui.selected,
             peer?.connected,
             messages,
+            transfers,
+            ui.transferReadError,
             locale(),
           ]);
           if (key === ui.messagesKey) {
-            queueThumbnails(messages);
+            queueThumbnails(
+              messages.filter((message) => !message.transferOnly),
+            );
             return;
           }
           const changedPeer = ui.renderedPeer !== ui.selected;
@@ -3049,7 +3796,7 @@
           const nearBottom =
             changedPeer ||
             target.scrollHeight - target.scrollTop - target.clientHeight < 90;
-          target.replaceChildren();
+          const rows = [];
           if (!messages.length) {
             const empty = element("div", "empty");
             empty.append(
@@ -3078,10 +3825,10 @@
                 t("连接设备"),
               );
               connect.type = "button";
-              connect.onclick = () => openSettings("mode-lan");
+              connect.onclick = () => openSettings("address");
               empty.append(connect);
             }
-            target.append(empty);
+            rows.push(empty);
           }
           const delivery = {
             sent: t("等待送达回执"),
@@ -3090,29 +3837,61 @@
             received: t("已接收"),
           };
           for (const message of messages) {
-            const row = element(
-              "article",
-              `message${message.outgoing ? " outgoing" : ""}`,
-            );
-            const time = new Date(message.at).toLocaleString(locale(), {
+            const id = messageId(message);
+            const entry = transferById.get(id);
+            const previous = ui.messageRows.get(id);
+            const displayAt =
+              previous?.displayAt ?? entry?.startedAt ?? message.at;
+            const receiptText =
+              entry?.phase === "failed"
+                ? t(message.outgoing ? "发送失败" : "接收失败")
+                : entry?.phase === "completed"
+                  ? t(message.outgoing ? "已送达" : "已接收")
+                  : message.delivery === "sent" && !peer?.connected
+                    ? t("未收到送达回执（当前离线）")
+                    : (delivery[message.delivery] ?? t("未知状态"));
+            const signature = JSON.stringify([
+              message.kind,
+              message.text,
+              message.nickname,
+              message.sender,
+              displayAt,
+              message.outgoing,
+              message.attachment,
+              message.transferOnly === true,
+              locale(),
+              ui.state?.loopbackPeerId,
+              ui.thumbnails.get(message.id),
+            ]);
+            if (previous?.signature === signature) {
+              if (changedPeer) previous.row.dataset.new = "false";
+              if (previous.receipt.textContent !== receiptText) {
+                previous.receipt.textContent = receiptText;
+                previous.receipt.title = receiptText;
+              }
+              if (message.attachment) updateAttachmentProgress(previous, entry);
+              rows.push(previous.row);
+              continue;
+            }
+            const row =
+              previous?.row ??
+              element(
+                "article",
+                `message${message.outgoing ? " outgoing" : ""}`,
+              );
+            row.dataset.message = message.id;
+            row.dataset.direction = message.outgoing ? "outgoing" : "incoming";
+            const time = new Date(displayAt).toLocaleString(locale(), {
               month: "numeric",
               day: "numeric",
               hour: "2-digit",
               minute: "2-digit",
             });
-            const author = element(
-              "div",
-              "message-meta",
-              `${message.nickname} · ${time}`,
-            );
+            const author = previous?.author ?? element("div", "message-meta");
+            author.textContent = `${message.nickname} · ${time}`;
             author.title = author.textContent;
-            const receipt = element(
-              "div",
-              "message-meta",
-              message.delivery === "sent" && !peer?.connected
-                ? t("未收到送达回执（当前离线）")
-                : (delivery[message.delivery] ?? t("未知状态")),
-            );
+            const receipt = previous?.receipt ?? element("div", "message-meta");
+            receipt.textContent = receiptText;
             receipt.title = receipt.textContent;
             row.dataset.new = String(
               !changedPeer && !ui.renderedIds.has(message.id),
@@ -3124,7 +3903,8 @@
                   ? "bot"
                   : "person",
             );
-            const content = element("div", "message-content");
+            const content =
+              previous?.content ?? element("div", "message-content");
             const bubble = ["image", "file"].includes(message.kind)
               ? attachmentCard(message)
               : element(
@@ -3132,10 +3912,26 @@
                   "bubble" + (message.kind === "sticker" ? " sticker" : ""),
                   message.text,
                 );
-            content.append(author, bubble, receipt);
-            row.append(avatar, content);
-            target.append(row);
+            if (!["image", "file"].includes(message.kind))
+              bubble.dataset.surface =
+                message.kind === "sticker" ? "artwork" : "control";
+            reconcileChildren(content, [author, bubble, receipt]);
+            reconcileChildren(row, [avatar, content]);
+            const view = {
+              signature,
+              row,
+              receipt,
+              author,
+              content,
+              bubble,
+              displayAt,
+              progress: previous?.progress,
+            };
+            if (message.attachment) updateAttachmentProgress(view, entry);
+            ui.messageRows.set(id, view);
+            rows.push(row);
           }
+          reconcileChildren(target, rows);
           if (focusedMessage && !ui.preview)
             [...target.querySelectorAll("button")]
               .find(
@@ -3147,7 +3943,7 @@
           ui.renderedPeer = ui.selected;
           ui.renderedIds = new Set(messages.map((message) => message.id));
           if (nearBottom) target.scrollTop = target.scrollHeight;
-          queueThumbnails(messages);
+          queueThumbnails(messages.filter((message) => !message.transferOnly));
         }
         function scheduleRead() {
           clearTimeout(ui.readTimer);
@@ -3184,8 +3980,8 @@
           const peer = selectedPeer();
           const busy =
             ui.pending || ui.attachmentBusy || ui.snapshot?.busy === true;
-          const writeBlocked =
-            busy || ui.checkpointBlocked || !allowed || !active();
+          const writeBlocked = ui.checkpointBlocked || !allowed || !active();
+          const busyFor = (action) => busy && ui.pendingAction === action;
           const invalidDraft =
             bytes($("draft").value) > 8192 || unsafeText($("draft").value);
           $("confirm-action").disabled = busy;
@@ -3205,7 +4001,7 @@
           $("status").classList.toggle("on", state?.running === true);
           $("status").classList.toggle("error", ui.readError !== null);
           $("status").title = ui.readError
-            ? t("状态已过期，请刷新重试。")
+            ? t("状态暂不可用，将自动重试。")
             : $("status").textContent;
           $("peer-name").textContent = peer?.nickname ?? t("选择会话");
           setAvatar(
@@ -3216,17 +4012,14 @@
                 ? "bot"
                 : "person",
           );
-          setAvatar($("my-avatar"), "self");
-          $("my-avatar").title = state?.nickname ?? t("我的设备");
           $("peer-name").title = $("peer-name").textContent;
           $("peer-detail").textContent = peer
-            ? peer.id === state?.loopbackPeerId
-              ? t("本机回环 · {status}", {
-                  status: peer.connected ? t("已连接") : t("离线"),
-                })
-              : `${peer.address}:${peer.port} · ${peer.connected ? t("已连接") : t("离线")}`
+            ? `${peer.address}:${peer.port} · ${peer.connected ? t("已连接") : t("离线")}`
             : t("未选择会话");
-          $("peer-detail").title = $("peer-detail").textContent;
+          $("peer-detail").title =
+            peer && peer.id === state?.loopbackPeerId
+              ? `${t("本机回环")} · ${$("peer-detail").textContent}`
+              : $("peer-detail").textContent;
           $("addresses").textContent = state?.running
             ? state.addresses
                 .map((address) => `${address}:${state.port}`)
@@ -3242,45 +4035,40 @@
           );
           $("send").disabled =
             writeBlocked ||
+            busyFor("send") ||
+            busyFor("sendAttachment") ||
             !peer?.connected ||
             !$("draft").value.trim() ||
             invalidDraft;
           $("draft").setAttribute("aria-invalid", String(invalidDraft));
           $("draft-count").dataset.invalid = String(invalidDraft);
           $("start").disabled =
-            writeBlocked || (state?.running === true && state.mode === "lan");
+            writeBlocked ||
+            busyFor("start") ||
+            (state?.running === true && state.mode === "lan");
+          $("start").hidden = state?.running === true;
+          $("stop").hidden = state?.running !== true;
+          $("start").textContent = t("开启通信");
+          $("stop").textContent = t(
+            state?.mode === "loopback" ? "结束回环测试" : "停止通信",
+          );
           $("loopback").disabled =
             writeBlocked ||
+            busyFor("loopback") ||
             (state?.running === true && state.mode === "loopback");
           $("loopback").textContent =
             state?.running && state.mode === "loopback"
               ? t("回环测试运行中")
               : t("开始回环测试");
-          $("mode-lan").disabled = busy;
-          $("mode-loopback").disabled = busy;
-          $("mode-lan").setAttribute("aria-pressed", String(ui.mode === "lan"));
-          $("mode-loopback").setAttribute(
-            "aria-pressed",
-            String(ui.mode === "loopback"),
-          );
-          $("lan-settings").hidden = ui.mode !== "lan";
-          $("loopback-settings").hidden = ui.mode !== "loopback";
-          $("lan-settings").inert = ui.mode !== "lan";
-          $("loopback-settings").inert = ui.mode !== "loopback";
-          $("lan-settings").setAttribute(
-            "aria-hidden",
-            String(ui.mode !== "lan"),
-          );
-          $("loopback-settings").setAttribute(
-            "aria-hidden",
-            String(ui.mode !== "loopback"),
-          );
           $("emoji-toggle").disabled = writeBlocked || !peer;
-          $("send-image").disabled = writeBlocked || !peer?.connected;
-          $("send-file").disabled = writeBlocked || !peer?.connected;
-          $("save-preview").disabled = busy || !permitted();
-          for (const button of $("messages").querySelectorAll("button"))
-            button.disabled = busy || !permitted() || !active();
+          $("send-image").disabled =
+            writeBlocked || busyFor("sendAttachment") || !peer?.connected;
+          $("send-file").disabled =
+            writeBlocked || busyFor("sendAttachment") || !peer?.connected;
+          $("attachment-menu-view").disabled =
+            ui.attachmentBusy || !permitted();
+          $("attachment-menu-save").disabled =
+            ui.attachmentBusy || !permitted();
           const transferring = ui.pendingAction === "sendAttachment";
           $("cancel-transfer").hidden = !transferring;
           $("send").hidden = transferring;
@@ -3291,19 +4079,26 @@
             : t("停止传输");
           $("stop").disabled = transferring
             ? ui.cancellingTransfer || !allowed || !active()
-            : writeBlocked || !state?.running;
+            : writeBlocked || busyFor("stop") || !state?.running;
           $("connect").disabled =
-            writeBlocked || !state?.running || state.mode !== "lan";
-          $("rename").disabled = writeBlocked;
+            writeBlocked ||
+            busyFor("connect") ||
+            !state?.running ||
+            state.mode !== "lan";
+          $("rename").disabled = writeBlocked || busyFor("nickname");
           $("reconnect").disabled =
-            writeBlocked || !state?.running || !peer || peer.connected;
+            writeBlocked ||
+            busyFor("connect") ||
+            !state?.running ||
+            !peer ||
+            peer.connected;
           $("export").disabled =
-            busy ||
+            !active() ||
+            busyFor("export") ||
             !allowed ||
             !state?.messages.some((message) => message.peerId === ui.selected);
-          $("forget").disabled = writeBlocked || !peer || peer.connected;
-          $("clear").disabled = writeBlocked || !state?.messages.length;
-          $("refresh").disabled = busy || !allowed;
+          $("forget").disabled =
+            writeBlocked || busyFor("forget") || !peer || peer.connected;
           for (const id of ["draft", "nickname", "address", "remote-port"])
             $(id).disabled = ui.checkpointBlocked;
           $("draft").disabled =
@@ -3324,16 +4119,60 @@
                 ? t("移除“{nickname}”及其本机消息历史和未发送草稿？", {
                     nickname: ui.confirmation.nickname,
                   })
-                : t("清空本机全部消息？联系人和对方消息将保留。");
+                : request.peerId
+                  ? t(
+                      "清空“{nickname}”的全部本机消息、图片和文件缓存？联系人、草稿、对方记录、原始文件及另存的文件会保留。",
+                      { nickname: ui.confirmation.nickname },
+                    )
+                  : t(
+                      "清空本机全部消息、图片和文件缓存？联系人、草稿、对方记录、原始文件及另存的文件会保留。",
+                    );
+            if (
+              request.action === "clearHistory" &&
+              ui.transfers.some(
+                (entry) =>
+                  !terminalTransfer(entry) &&
+                  (!request.peerId || entry.peerId === request.peerId),
+              )
+            )
+              $("confirmation-text").textContent +=
+                " " + t("正在进行的传输会继续。");
           }
           applyLayout();
           renderContacts();
+          renderNearby();
           renderMessages();
+          for (const button of $("contacts").querySelectorAll("button"))
+            button.disabled = !allowed || !active();
           for (const button of $("messages").querySelectorAll("button"))
-            button.disabled = busy || !allowed || !active();
+            button.disabled = !allowed || !active();
+          for (const [id, action] of Object.entries({
+            start: "start",
+            stop: "stop",
+            rename: "nickname",
+            connect: "connect",
+            reconnect: "connect",
+            loopback: "loopback",
+            send: "send",
+            "send-image": "sendAttachment",
+            "send-file": "sendAttachment",
+            clear: "clearHistory",
+            "clear-conversation": "clearHistory",
+            forget: "forget",
+            export: "export",
+          }))
+            $(id).setAttribute("aria-busy", String(busyFor(action)));
           scheduleRead();
+          scheduleTransfers();
         }
-        async function call(request, { background = false } = {}) {
+        async function call(
+          request,
+          {
+            background = false,
+            automatic = false,
+            selectOnConnect = false,
+          } = {},
+        ) {
           if (
             ui.pending ||
             ui.attachmentBusy ||
@@ -3348,12 +4187,19 @@
                 ui.normalRequests >= 2))
           )
             return false;
+          if (["start", "stop", "loopback"].includes(request.action))
+            ui.autoStartAttempted = true;
+          if (["start", "stop", "loopback", "connect"].includes(request.action))
+            ui.pendingPeerAddress = selectOnConnect
+              ? `${request.address}:${request.port}`
+              : "";
           if (background) ui.backgroundPending = true;
           else {
             ui.pending = true;
             ui.pendingAction = request.action;
             ui.actionEpoch++;
             render();
+            if (request.action === "sendAttachment") scheduleTransfers(true);
           }
           // 一个后台请求在途；手动动作会使它失效，旧快照不能覆盖发送 / 停止结果。
           const epoch = ui.actionEpoch;
@@ -3363,6 +4209,17 @@
             if (ui.disposed || !permitted() || epoch !== ui.actionEpoch)
               return false;
             ui.state = state;
+            if (ui.pendingPeerAddress) {
+              const connected = state.peers.find(
+                (peer) =>
+                  peer.connected &&
+                  `${peer.address}:${peer.port}` === ui.pendingPeerAddress,
+              );
+              if (connected) {
+                selectPeer(connected.id);
+                ui.pendingPeerAddress = "";
+              }
+            }
             if (request.action === "forget") {
               if (ui.selected === request.peerId) {
                 $("draft").value = "";
@@ -3382,7 +4239,15 @@
             }
             if (["start", "stop"].includes(request.action))
               ui.pendingLoopbackPeerId = "";
-            if (request.action === "clearHistory") clearThumbnails();
+            if (request.action === "clearHistory") {
+              stopTransferPolling();
+              clearThumbnails();
+              closePreview(false);
+              ui.transfers = ui.transfers.filter(
+                (entry) => request.peerId && entry.peerId !== request.peerId,
+              );
+            }
+            if (request.action === "stop") stopTransferPolling(true);
             ui.readError = null;
             if (
               !ui.selected ||
@@ -3398,9 +4263,10 @@
             if (!ui.nicknameDirty && $("nickname").value !== state.nickname)
               $("nickname").value = state.nickname;
             if (state.lastError && state.lastError !== ui.lastError) {
-              notice(t("连接或历史写入失败，请检查连接并刷新。"), true);
+              notice(t("连接或历史写入失败，请检查连接后重试。"), true);
             } else if (
               !background &&
+              !automatic &&
               !["status", "send", "sendAttachment"].includes(request.action)
             )
               notice(
@@ -3420,6 +4286,7 @@
             return true;
           } catch (error) {
             if (!ui.disposed && permitted() && epoch === ui.actionEpoch) {
+              if (request.action === "connect") ui.pendingPeerAddress = "";
               const code =
                 typeof error?.code === "string" ? error.code : "UNKNOWN";
               const report = !background || ui.readError !== code;
@@ -3473,6 +4340,8 @@
             !active()
           )
             return;
+          ui.autoStartAttempted = true;
+          ui.pendingPeerAddress = "";
           ui.cancellingTransfer = true;
           const epoch = ++ui.actionEpoch;
           ui.pendingEpoch = epoch;
@@ -3483,6 +4352,7 @@
             );
             if (ui.disposed || !permitted() || epoch !== ui.actionEpoch) return;
             ui.state = state;
+            stopTransferPolling(true);
             ui.pendingLoopbackPeerId = "";
             ui.readError = null;
             notice(t("已停止传输并断开连接，历史和草稿已保留。"));
@@ -3490,7 +4360,10 @@
             if (!ui.disposed && permitted() && epoch === ui.actionEpoch) {
               ui.readError =
                 typeof error?.code === "string" ? error.code : "UNKNOWN";
-              notice(t("停止未完成，传输结果未知，请刷新后重试。"), true);
+              notice(
+                t("停止未完成，传输结果未知，请等待状态更新后重试。"),
+                true,
+              );
             }
           } finally {
             ui.cancellingTransfer = false;
@@ -3502,10 +4375,11 @@
           }
         }
         $("cancel-transfer").onclick = () => void cancelTransfer();
-        $("stop").onclick = () =>
-          ui.pendingAction === "sendAttachment"
+        $("stop").onclick = () => {
+          return ui.pendingAction === "sendAttachment"
             ? void cancelTransfer()
             : call({ action: "stop" });
+        };
         $("loopback").onclick = () => {
           const name = nickname();
           if (name) void call({ action: "loopback", nickname: name });
@@ -3522,10 +4396,6 @@
         $("rename").onclick = () => {
           const name = nickname();
           if (name) call({ action: "nickname", nickname: name });
-        };
-        $("refresh").onclick = () => {
-          retryCheckpoint();
-          return call({ action: "status" });
         };
         $("reconnect").onclick = () => {
           const peer = selectedPeer();
@@ -3556,13 +4426,16 @@
           const trigger =
             confirmation &&
             $(
-              confirmation.trigger === "forget"
+              ["forget", "clear-conversation"].includes(confirmation.trigger)
                 ? "conversation-more"
                 : confirmation.trigger === "clear"
                   ? "settings-toggle"
                   : confirmation.trigger,
             );
-          (trigger && !trigger.disabled ? trigger : $("refresh")).focus();
+          (trigger && !trigger.disabled
+            ? trigger
+            : $("settings-toggle")
+          ).focus();
         }
         $("confirm-action").onclick = async () => {
           if ($("confirm-action").disabled) return;
@@ -3574,6 +4447,28 @@
         $("cancel-action").onclick = () =>
           restoreConfirmationFocus(closeConfirmation());
         document.addEventListener("keydown", (event) => {
+          if (ui.attachmentMenu) {
+            if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+              event.preventDefault();
+              const view = $("attachment-menu-view"),
+                save = $("attachment-menu-save");
+              const target =
+                event.key === "Home"
+                  ? view
+                  : event.key === "End"
+                    ? save
+                    : document.activeElement === view
+                      ? save
+                      : view;
+              target.focus();
+              return;
+            }
+            if (event.key === "Escape" || event.key === "Tab") {
+              if (event.key === "Escape") event.preventDefault();
+              closeAttachmentMenu();
+              return;
+            }
+          }
           if (event.key === "Escape" && ui.resize) {
             event.preventDefault();
             finishResize(true);
@@ -3589,6 +4484,41 @@
             event.preventDefault();
             closePreview();
             return;
+          }
+          if (
+            ui.preview &&
+            !event.ctrlKey &&
+            !event.metaKey &&
+            !ui.attachmentMenu
+          ) {
+            if (
+              [
+                "+",
+                "=",
+                "-",
+                "0",
+                "Home",
+                "ArrowLeft",
+                "ArrowRight",
+                "ArrowUp",
+                "ArrowDown",
+              ].includes(event.key)
+            ) {
+              event.preventDefault();
+              if (event.key === "+" || event.key === "=") zoomPreview(1.25);
+              else if (event.key === "-") zoomPreview(0.8);
+              else if (event.key === "0" || event.key === "Home")
+                resetPreview();
+              else {
+                const step = event.shiftKey ? 80 : 40;
+                if (event.key === "ArrowLeft") ui.previewOffset.x += step;
+                if (event.key === "ArrowRight") ui.previewOffset.x -= step;
+                if (event.key === "ArrowUp") ui.previewOffset.y += step;
+                if (event.key === "ArrowDown") ui.previewOffset.y -= step;
+                updatePreviewTransform();
+              }
+              return;
+            }
           }
           if (event.key === "Escape" && !ui.confirmation) {
             if (!$("emoji-picker").hidden) {
@@ -3621,6 +4551,15 @@
         };
         $("clear").onclick = () =>
           confirmAction({ action: "clearHistory" }, "clear");
+        $("clear-conversation").onclick = () => {
+          const peer = selectedPeer();
+          if (peer && !$("clear-conversation").disabled)
+            confirmAction(
+              { action: "clearHistory", peerId: peer.id },
+              "clear-conversation",
+              peer.nickname,
+            );
+        };
         async function sendMessage() {
           const peer = selectedPeer();
           const content = $("draft").value;
@@ -3667,24 +4606,18 @@
             void sendMessage();
           }
         };
-        $("search").oninput = renderContacts;
+        $("search").oninput = () => {
+          renderContacts();
+          renderNearby();
+        };
         $("settings-toggle").onclick = () => {
+          retryCheckpoint();
           if ($("settings-panel").hidden) openSettings();
           else setPanel("settings-panel", "settings-toggle", false);
         };
         $("close-settings").onclick = () => {
           setPanel("settings-panel", "settings-toggle", false);
           $("settings-toggle").focus();
-        };
-        $("add-contact").onclick = () => {
-          ui.mode = "lan";
-          ui.modeTouched = true;
-          render();
-          openSettings("address");
-        };
-        $("conversations-toggle").onclick = () => {
-          closePopovers();
-          $("search").focus();
         };
         $("conversation-more").onclick = () => {
           const open = $("conversation-menu").hidden;
@@ -3695,13 +4628,6 @@
               .find((button) => !button.disabled)
               ?.focus();
         };
-        for (const mode of ["lan", "loopback"])
-          $("mode-" + mode).onclick = () => {
-            ui.mode = mode;
-            ui.modeTouched = true;
-            render();
-            checkpoint();
-          };
         $("emoji-toggle").onclick = () => {
           if ($("emoji-toggle").disabled) return;
           const open = $("emoji-picker").hidden;
@@ -3745,13 +4671,120 @@
             }
           };
         $("close-preview").onclick = () => closePreview();
-        $("save-preview").onclick = () => {
-          if (ui.preview) return saveAttachment(ui.preview.id);
+        $("preview-zoom-in").onclick = () => zoomPreview(1.25);
+        $("preview-zoom-out").onclick = () => zoomPreview(0.8);
+        $("preview-reset").onclick = () => resetPreview();
+        $("preview-viewport").ondblclick = () => resetPreview();
+        const previewGestures = {
+          wheel(event) {
+            if (!ui.preview || !event.deltaY) return;
+            event.preventDefault();
+            // 精密触控板的捏合由 ctrl + wheel 表达，按连续增量缩放并保留手势中心。
+            const unit =
+              event.deltaMode === 1
+                ? 16
+                : event.deltaMode === 2
+                  ? $("preview-viewport").clientHeight
+                  : 1;
+            const factor = event.ctrlKey
+              ? Math.exp(
+                  Math.max(-1, Math.min(1, (-event.deltaY * unit) / 100)),
+                )
+              : event.deltaY < 0
+                ? 1.25
+                : 0.8;
+            zoomPreview(factor, event);
+          },
+          gesturestart(event) {
+            if (!ui.preview) return;
+            event.preventDefault();
+            ui.previewGestureScale = ui.previewScale;
+          },
+          gesturechange(event) {
+            if (
+              !ui.preview ||
+              !ui.previewGestureScale ||
+              !Number.isFinite(event.scale) ||
+              event.scale <= 0
+            )
+              return;
+            event.preventDefault();
+            zoomPreview(
+              (ui.previewGestureScale * event.scale) / ui.previewScale,
+              event,
+            );
+          },
+          gestureend(event) {
+            if (!ui.preview) return;
+            event.preventDefault();
+            ui.previewGestureScale = null;
+          },
+        };
+        for (const [name, handler] of Object.entries(previewGestures))
+          $("attachment-preview").addEventListener(name, handler, {
+            passive: false,
+          });
+        $("preview-viewport").onpointerdown = (event) => {
+          if (
+            !ui.preview ||
+            ui.previewScale <= 1 ||
+            event.button !== 0 ||
+            ui.previewDrag
+          )
+            return;
+          event.preventDefault();
+          ui.previewDrag = {
+            pointerId: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            offset: { ...ui.previewOffset },
+          };
+          $("preview-viewport").setPointerCapture(event.pointerId);
+          $("preview-viewport").dataset.dragging = "true";
+        };
+        $("preview-viewport").onpointermove = (event) => {
+          const drag = ui.previewDrag;
+          if (!drag || event.pointerId !== drag.pointerId) return;
+          ui.previewOffset = {
+            x: drag.offset.x + event.clientX - drag.x,
+            y: drag.offset.y + event.clientY - drag.y,
+          };
+          updatePreviewTransform();
+        };
+        $("preview-viewport").onpointerup = endPreviewDrag;
+        $("preview-viewport").onpointercancel = endPreviewDrag;
+        $("preview-viewport").onlostpointercapture = () => endPreviewDrag();
+        $("preview-viewport").oncontextmenu = (event) => {
+          if (ui.preview)
+            openAttachmentMenu(event, ui.preview, $("preview-viewport"));
+        };
+        $("preview-viewport").onkeydown = (event) => {
+          if (
+            ui.preview &&
+            (event.key === "ContextMenu" ||
+              (event.key === "F10" && event.shiftKey))
+          )
+            openAttachmentMenu(event, ui.preview, $("preview-viewport"));
+        };
+        $("attachment-menu-view").onclick = () => {
+          const menu = ui.attachmentMenu;
+          if (!menu || menu.message.kind !== "image") return;
+          closeAttachmentMenu();
+          if (ui.preview?.id === menu.message.id) resetPreview();
+          else return previewAttachment(menu.message, menu.trigger);
+        };
+        $("attachment-menu-save").onclick = () => {
+          const menu = ui.attachmentMenu;
+          if (!menu) return;
+          closeAttachmentMenu();
+          return saveAttachment(menu.message.id);
         };
         $("attachment-preview").onclick = (event) => {
           if (event.target === $("attachment-preview")) closePreview();
         };
         document.addEventListener("click", (event) => {
+          if (ui.attachmentMenu && !$("attachment-menu").contains(event.target))
+            closeAttachmentMenu(false);
           for (const [id, trigger] of [
             ["settings-panel", "settings-toggle"],
             ["conversation-menu", "conversation-more"],
@@ -3760,8 +4793,7 @@
             if (
               !$(id).hidden &&
               !$(id).contains(event.target) &&
-              !$(trigger).contains(event.target) &&
-              event.target !== $("add-contact")
+              !$(trigger).contains(event.target)
             )
               setPanel(id, trigger, false);
           }
@@ -3773,6 +4805,8 @@
           if (
             !peer ||
             ui.pending ||
+            ui.attachmentBusy ||
+            ui.snapshot?.busy === true ||
             $("export").disabled ||
             !permitted() ||
             ui.disposed
@@ -3800,6 +4834,7 @@
           }
           const body = header(first) + lines.slice(first).join("\n");
           ui.pending = true;
+          ui.pendingAction = "export";
           ui.actionEpoch++;
           const epoch = ui.actionEpoch;
           render();
@@ -3824,6 +4859,7 @@
               notice(t("会话导出失败，请重试。"), true);
           } finally {
             ui.pending = false;
+            ui.pendingAction = "";
             if (!ui.disposed) render();
           }
         };
@@ -3832,8 +4868,32 @@
           if (ui.polling || ui.disposed) return;
           ui.polling = true;
           try {
-            if (active() && permitted() && !ui.pending && !ui.attachmentBusy)
-              await call({ action: "status" }, { background: true });
+            if (active() && permitted() && !ui.pending && !ui.attachmentBusy) {
+              const read = await call(
+                { action: "status" },
+                { background: true },
+              );
+              if (
+                read &&
+                !ui.autoStartAttempted &&
+                !ui.checkpointBlocked &&
+                active() &&
+                permitted() &&
+                !ui.snapshot?.busy
+              ) {
+                ui.autoStartAttempted = true;
+                if (!ui.state.running)
+                  await call(
+                    {
+                      action: "start",
+                      nickname: ui.state.nickname,
+                      port: 45873,
+                      mode: "lan",
+                    },
+                    { automatic: true },
+                  );
+              }
+            }
           } finally {
             ui.polling = false;
             if (active()) ui.pollTimer = setTimeout(poll, 2000);
@@ -3964,10 +5024,12 @@
             if (!allowed) {
               ui.state = null;
               ui.pendingLoopbackPeerId = "";
+              ui.pendingPeerAddress = "";
               ui.contactsKey = "";
               ui.messagesKey = "";
               ui.readError = null;
               ui.lastError = null;
+              stopTransferPolling(true);
               closeConfirmation();
               clearThumbnails();
               closePopovers();
@@ -4006,7 +5068,10 @@
           "pagehide",
           () => {
             ui.disposed = true;
+            for (const [name, handler] of Object.entries(previewGestures))
+              $("attachment-preview").removeEventListener(name, handler);
             clearTimeout(ui.pollTimer);
+            stopTransferPolling(true);
             clearTimeout(ui.readTimer);
             clearTimeout(ui.checkpointTimer);
             observer.disconnect();

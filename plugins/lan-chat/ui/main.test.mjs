@@ -27,6 +27,8 @@ function status() {
     port: 45873,
     addresses: ["192.168.1.20"],
     lastError: null,
+    discoveredPeers: [],
+    discoveryError: null,
     peers: [
       {
         id: peerId,
@@ -56,6 +58,7 @@ function status() {
 }
 async function setup({
   service = () => Promise.resolve(status()),
+  transfer = () => Promise.resolve({ transfers: [] }),
   checkpoint = () => Promise.resolve(),
   run = () => Promise.resolve(),
   saved = null,
@@ -67,7 +70,8 @@ async function setup({
     events = new Map(),
     timers = new Map();
   let timerId = 0,
-    change;
+    change,
+    serviceCalls = 0;
   const geometry = { width, height };
   const sdk = { pending: 0, maximumPending: 0, rejected: [] };
   function sdkRequest(method, operation) {
@@ -128,6 +132,20 @@ async function setup({
     setAttribute(name, value) {
       this.attributes.set(name, String(value));
     }
+    removeAttribute(name) {
+      this.attributes.delete(name);
+    }
+    addEventListener(name, callback) {
+      this.listeners ??= new Map();
+      this.listeners.set(name, callback);
+    }
+    removeEventListener(name, callback) {
+      if (this.listeners?.get(name) === callback) this.listeners.delete(name);
+    }
+    dispatch(name, event) {
+      this["on" + name]?.(event);
+      this.listeners?.get(name)?.(event);
+    }
     getAttribute(name) {
       return this.attributes.get(name) ?? null;
     }
@@ -136,6 +154,25 @@ async function setup({
         child.parentElement = this;
         this.childNodes.push(child);
       }
+    }
+    get firstChild() {
+      return this.childNodes[0] ?? null;
+    }
+    get nextSibling() {
+      const siblings = this.parentElement?.childNodes ?? [];
+      return siblings[siblings.indexOf(this) + 1] ?? null;
+    }
+    insertBefore(node, reference) {
+      node.parentElement?.removeChild(node);
+      const index = reference
+        ? this.childNodes.indexOf(reference)
+        : this.childNodes.length;
+      this.childNodes.splice(index, 0, node);
+      node.parentElement = this;
+    }
+    removeChild(node) {
+      this.childNodes.splice(this.childNodes.indexOf(node), 1);
+      node.parentElement = null;
     }
     replaceChildren(...children) {
       for (const child of this.childNodes) child.parentElement = null;
@@ -192,7 +229,16 @@ async function setup({
       return this.childNodes.flatMap((child) =>
         child instanceof Element
           ? [
-              ...(selector === child.tagName ? [child] : []),
+              ...(selector
+                .split(",")
+                .some(
+                  (part) =>
+                    part.trim() === child.tagName ||
+                    (part.trim() === '[tabindex="0"]' &&
+                      child.getAttribute("tabindex") === "0"),
+                )
+                ? [child]
+                : []),
               ...child.querySelectorAll(selector),
             ]
           : [],
@@ -260,7 +306,9 @@ async function setup({
       request: async (_name, request) =>
         sdkRequest("services." + request.action, () => {
           calls.push(request);
-          return service(request, calls.length);
+          return request.action === "transferStatus"
+            ? transfer(request)
+            : service(request, ++serviceCalls);
         }),
     },
     checkpoint: async (value, dirty) =>
@@ -342,7 +390,10 @@ async function setup({
 test("locale changes translate fixed text, receipts and confirmations without replacing inputs", async () => {
   const env = await setup();
   const { nodes, document } = env;
-  assert.equal(nodes.get("refresh").getAttribute("aria-label"), "Refresh");
+  assert.equal(
+    nodes.get("settings-toggle").getAttribute("aria-label"),
+    "Connection settings",
+  );
   assert.equal(nodes.get("status").textContent, "LAN online");
   assert.match(nodes.get("messages").textContent, /Awaiting delivery receipt/);
   assert.match(nodes.get("messages").textContent, /Literal <b>text<\/b>/);
@@ -368,7 +419,7 @@ test("offline changes refresh the receipt even when the message list is identica
     service: () => Promise.resolve(structuredClone(state)),
   });
   state.peers[0].connected = false;
-  env.nodes.get("refresh").onclick();
+  await env.tick(2000);
   await flush();
   assert.match(
     env.nodes.get("messages").textContent,
@@ -385,8 +436,8 @@ test("background failures after a successful read remain visible and notify once
   });
   fail = true;
   await env.tick(2000);
-  assert.equal(env.nodes.get("status").textContent, "Refresh failed");
-  assert.match(env.nodes.get("status").title, /out of date/);
+  assert.equal(env.nodes.get("status").textContent, "Status unavailable");
+  assert.match(env.nodes.get("status").title, /Retrying automatically/);
   assert.equal(env.notices.length, 1);
   await env.tick(2000);
   assert.equal(env.notices.length, 1);
@@ -426,7 +477,7 @@ test("send preserves an edited draft even if its text returns to the original va
   env.nodes.get("send").onclick();
   assert.equal(
     env.nodes.get("contacts").querySelectorAll("button")[0].disabled,
-    true,
+    false,
   );
   env.input("draft", "Edited text");
   env.input("draft", "Same text");
@@ -437,6 +488,144 @@ test("send preserves an edited draft even if its text returns to the original va
     env.calls.filter((request) => request.action === "send").length,
     1,
   );
+});
+
+test("saving a nickname keeps unrelated controls and loaded image nodes stable", async () => {
+  const pending = deferred();
+  const state = withImages();
+  const env = await setup({
+    service: (request) =>
+      request.action === "nickname"
+        ? pending.promise
+        : request.action === "thumbnailAttachment"
+          ? Promise.resolve({ dataUrl: thumbnail })
+          : Promise.resolve(structuredClone(state)),
+  });
+  const contact = env.nodes.get("contacts").querySelectorAll("button")[0];
+  const image = env.nodes.get("messages").querySelectorAll("img")[0];
+  const imageButton = env.nodes.get("messages").querySelectorAll("button")[0];
+  env.input("nickname", "Renamed device");
+  env.nodes.get("rename").onclick();
+  assert.equal(env.nodes.get("rename").disabled, true);
+  assert.equal(env.nodes.get("send-file").disabled, false);
+  assert.equal(imageButton.disabled, false);
+  assert.equal(
+    env.nodes.get("contacts").querySelectorAll("button")[0],
+    contact,
+  );
+  assert.equal(env.nodes.get("messages").querySelectorAll("img")[0], image);
+  pending.resolve({ ...state, nickname: "Renamed device" });
+  await flush();
+  assert.equal(env.nodes.get("messages").querySelectorAll("img")[0], image);
+  assert.equal(
+    env.nodes.get("contacts").querySelectorAll("button")[0],
+    contact,
+  );
+});
+
+test("contacts recover after an inactive late snapshot without replacing their nodes", async () => {
+  const pending = deferred();
+  const state = status();
+  const env = await setup({
+    service: (_request, count) =>
+      count === 2 ? pending.promise : Promise.resolve(structuredClone(state)),
+  });
+  await env.tick(2000);
+  env.emit({ active: false });
+  state.peers[0].nickname = "Updated while hidden";
+  pending.resolve(structuredClone(state));
+  await flush();
+  const contact = env.nodes.get("contacts").querySelectorAll("button")[0];
+  assert.equal(contact.disabled, true);
+  env.emit({ active: true });
+  await flush();
+  assert.equal(contact.disabled, false);
+  assert.equal(
+    env.nodes.get("contacts").querySelectorAll("button")[0],
+    contact,
+  );
+});
+
+test("export admission refuses a busy host without running or opening a save dialog", async () => {
+  const env = await setup();
+  env.emit({ busy: true });
+  await env.nodes.get("export").onclick();
+  assert.equal(env.runs.length, 0);
+  assert.equal(env.saves.length, 0);
+});
+
+test("an unsupported checkpoint still permits read-only history export", async () => {
+  const env = await setup({
+    saved: { version: 9, draft: "Original future data" },
+  });
+  await env.tick(2000);
+  assert.equal(env.nodes.get("draft").disabled, true);
+  assert.equal(env.nodes.get("export").disabled, false);
+  await env.nodes.get("export").onclick();
+  assert.equal(env.runs.length, 1);
+  assert.deepEqual(env.saves, [0]);
+  assert.equal(env.checkpoints.length, 0);
+});
+
+test("file cards expose saving only through their accessible context menu", async () => {
+  const state = withImages();
+  state.messages[0].kind = "file";
+  state.messages[0].attachment.mime = "application/octet-stream";
+  const env = await setup({
+    service: (request) =>
+      request.action === "saveAttachment"
+        ? Promise.resolve({ cancelled: false })
+        : Promise.resolve(state),
+  });
+  const card = env.nodes.get("messages").querySelectorAll("button")[0];
+  assert.match(card.className, /file-attachment/);
+  assert.doesNotMatch(card.textContent, /Save as/);
+  card.oncontextmenu({ clientX: 100, clientY: 100, preventDefault() {} });
+  assert.equal(env.nodes.get("attachment-menu").hidden, false);
+  assert.equal(env.nodes.get("attachment-menu-view").hidden, true);
+  assert.equal(
+    env.document.activeElement,
+    env.nodes.get("attachment-menu-save"),
+  );
+  await env.nodes.get("attachment-menu-save").onclick();
+  assert.equal(
+    env.calls.filter((request) => request.action === "saveAttachment").length,
+    1,
+  );
+  assert.equal(env.document.activeElement, card);
+  card.onkeydown({ key: "F10", shiftKey: true, preventDefault() {} });
+  assert.equal(env.nodes.get("attachment-menu").hidden, false);
+});
+
+test("sending another message and receiving its receipt retain existing images", async () => {
+  const pending = deferred();
+  const state = withImages();
+  const env = await setup({
+    service: (request) =>
+      request.action === "send"
+        ? pending.promise
+        : request.action === "thumbnailAttachment"
+          ? Promise.resolve({ dataUrl: thumbnail })
+          : Promise.resolve(structuredClone(state)),
+  });
+  const image = env.nodes.get("messages").querySelectorAll("img")[0];
+  env.input("draft", "Another message");
+  env.nodes.get("send").onclick();
+  const sent = {
+    ...state.messages[0],
+    id: "f".repeat(32),
+    kind: "text",
+    text: "Another message",
+    attachment: null,
+    delivery: "sent",
+  };
+  state.messages.push(sent);
+  pending.resolve(structuredClone(state));
+  await flush();
+  assert.equal(env.nodes.get("messages").querySelectorAll("img")[0], image);
+  sent.delivery = "delivered";
+  await env.tick(2000);
+  assert.equal(env.nodes.get("messages").querySelectorAll("img")[0], image);
 });
 
 test("checkpoint writes are serialized and coalesce to the latest draft", async () => {
@@ -515,9 +704,9 @@ test("invalid service snapshots never replace the last valid history", async () 
         Promise.resolve(count === 1 ? status() : state),
     });
     mutate(state);
-    env.nodes.get("refresh").onclick();
+    await env.tick(2000);
     await flush();
-    assert.equal(env.nodes.get("status").textContent, "Refresh failed");
+    assert.equal(env.nodes.get("status").textContent, "Status unavailable");
     assert.match(env.nodes.get("messages").textContent, /Literal <b>text<\/b>/);
     assert.equal(
       env.nodes.get("contacts").querySelectorAll("button").length,
@@ -526,7 +715,7 @@ test("invalid service snapshots never replace the last valid history", async () 
   }
 });
 
-test("connection settings stay collapsed and switching modes requires an explicit start", async () => {
+test("connection settings combine LAN and explicit loopback actions in one panel", async () => {
   const state = status();
   const env = await setup({
     service: (request) => {
@@ -540,8 +729,8 @@ test("connection settings stay collapsed and switching modes requires an explici
   assert.equal(env.nodes.get("settings-panel").hidden, true);
   env.nodes.get("settings-toggle").onclick();
   assert.equal(env.nodes.get("settings-panel").hidden, false);
-  env.nodes.get("mode-loopback").onclick();
-  assert.equal(env.nodes.get("lan-settings").hidden, true);
+  assert.equal(env.nodes.has("mode-loopback"), false);
+  assert.equal(env.nodes.get("lan-settings").hidden, false);
   assert.equal(env.nodes.get("loopback-settings").hidden, false);
   assert.equal(
     env.calls.filter((request) => request.action === "loopback").length,
@@ -553,11 +742,179 @@ test("connection settings stay collapsed and switching modes requires an explici
     env.calls.filter((request) => request.action === "loopback").length,
     1,
   );
-  assert.match(env.nodes.get("peer-detail").textContent, /Local loopback/);
+  assert.equal(
+    env.nodes.get("peer-detail").textContent,
+    "192.168.1.21:45873 · Connected",
+  );
+  assert.match(env.nodes.get("peer-detail").title, /Local loopback/);
   assert.equal(env.nodes.get("status").textContent, "Local loopback");
   env.event("keydown", { key: "Escape", preventDefault() {} });
   assert.equal(env.nodes.get("settings-panel").hidden, true);
   assert.equal(env.document.activeElement, env.nodes.get("settings-toggle"));
+});
+
+test("opening an authorized inactive service starts discovery once and stop stays stopped", async () => {
+  const state = status();
+  state.running = false;
+  state.port = 0;
+  state.peers = [];
+  state.messages = [];
+  const env = await setup({
+    service: (request) => {
+      if (request.action === "start") {
+        state.running = true;
+        state.port = request.port;
+      }
+      if (request.action === "stop") {
+        state.running = false;
+        state.port = 0;
+      }
+      return Promise.resolve(structuredClone(state));
+    },
+  });
+  await flush();
+  assert.equal(
+    env.calls.filter((request) => request.action === "start").length,
+    1,
+  );
+  assert.equal(
+    env.calls.find((request) => request.action === "start").nickname,
+    "My device",
+  );
+  await env.nodes.get("stop").onclick();
+  await env.tick(2000);
+  assert.equal(
+    env.calls.filter((request) => request.action === "start").length,
+    1,
+  );
+  assert.equal(env.nodes.has("refresh"), false);
+});
+
+test("stopping a manual loopback before the first status returns prevents later automatic LAN startup", async () => {
+  const firstStatus = deferred();
+  const state = status();
+  state.running = false;
+  state.port = 0;
+  state.peers = [];
+  state.messages = [];
+  const initial = structuredClone(state);
+  let reads = 0;
+  const env = await setup({
+    service: (request) => {
+      if (request.action === "status" && reads++ === 0)
+        return firstStatus.promise;
+      if (request.action === "loopback") {
+        state.running = true;
+        state.mode = "loopback";
+        state.port = 45873;
+        state.loopbackPeerId = peerId;
+      }
+      if (request.action === "stop") {
+        state.running = false;
+        state.port = 0;
+        state.loopbackPeerId = null;
+      }
+      return Promise.resolve(structuredClone(state));
+    },
+  });
+  assert.equal(env.nodes.get("loopback").disabled, false);
+  env.input("nickname", "My device");
+  await flush();
+  env.nodes.get("loopback").onclick();
+  await flush();
+  assert.equal(env.nodes.get("stop").hidden, false);
+  await env.nodes.get("stop").onclick();
+  firstStatus.resolve(initial);
+  await flush();
+  await env.tick(2000);
+  assert.equal(
+    env.calls.filter((request) => request.action === "start").length,
+    0,
+  );
+  assert.equal(env.nodes.get("stop").hidden, true);
+});
+
+test("nearby devices are temporary and connect with one click without filling IP", async () => {
+  const state = status();
+  state.discoveredPeers = [
+    {
+      id: "d".repeat(32),
+      nickname: "Nearby laptop",
+      address: "192.168.1.30",
+      port: 45873,
+      lastSeen: 1761400000000,
+    },
+  ];
+  const env = await setup({
+    service: () => Promise.resolve(structuredClone(state)),
+  });
+  assert.match(env.nodes.get("nearby-devices").textContent, /Nearby laptop/);
+  assert.equal(env.nodes.get("contacts").querySelectorAll("button").length, 1);
+  await env.nodes.get("nearby-devices").querySelectorAll("button")[0].onclick();
+  const request = env.calls.find((value) => value.action === "connect");
+  assert.equal(request.address, "192.168.1.30");
+  assert.equal(request.port, 45873);
+  assert.equal(env.nodes.get("peer-name").textContent, "Friend");
+  state.peers.push({
+    ...state.peers[0],
+    id: "d".repeat(32),
+    nickname: "Nearby laptop",
+    address: "192.168.1.30",
+    connected: true,
+  });
+  state.discoveredPeers = [];
+  await flush();
+  await env.tick(2000);
+  assert.equal(
+    env.nodes.get("nearby-devices").querySelectorAll("button").length,
+    0,
+  );
+  assert.match(env.nodes.get("nearby-devices").textContent, /Looking for/);
+  assert.equal(env.nodes.get("peer-name").textContent, "Nearby laptop");
+});
+
+test("a late nearby handshake keeps a conversation the user selected afterward", async () => {
+  const state = status();
+  const nearbyId = "d".repeat(32);
+  const otherId = "e".repeat(32);
+  state.discoveredPeers = [
+    {
+      id: nearbyId,
+      nickname: "Nearby laptop",
+      address: "192.168.1.30",
+      port: 45873,
+      lastSeen: 1761400000000,
+    },
+  ];
+  state.peers.push({
+    ...state.peers[0],
+    id: otherId,
+    nickname: "Other conversation",
+  });
+  const env = await setup({
+    service: () => Promise.resolve(structuredClone(state)),
+  });
+  await env.nodes.get("nearby-devices").querySelectorAll("button")[0].onclick();
+  env.nodes
+    .get("contacts")
+    .querySelectorAll("button")
+    .find((button) => button.dataset.peer === otherId)
+    .onclick();
+  env.input("draft", "Keep writing in the chosen conversation");
+  state.peers.push({
+    ...state.peers[0],
+    id: nearbyId,
+    nickname: "Nearby laptop",
+    address: "192.168.1.30",
+    connected: true,
+  });
+  await flush();
+  await env.tick(2000);
+  assert.equal(env.nodes.get("peer-name").textContent, "Other conversation");
+  assert.equal(
+    env.nodes.get("draft").value,
+    "Keep writing in the chosen conversation",
+  );
 });
 
 test("each conversation preserves its own draft and message search finds the right contact", async () => {
@@ -707,12 +1064,12 @@ function withImages(count = 1) {
 }
 const thumbnail = "data:image/png;base64,aGVsbG8=";
 
-test("images load bounded inline thumbnails, preview and save through the native boundary", async () => {
+test("image messages show only the image and expose preview and save from their context menu", async () => {
   const state = withImages();
   const env = await setup({
     service: (request) =>
       Promise.resolve(
-        request.action === "previewAttachment"
+        ["thumbnailAttachment", "previewAttachment"].includes(request.action)
           ? { dataUrl: thumbnail }
           : request.action === "saveAttachment"
             ? { cancelled: false, name: "Image.png" }
@@ -720,9 +1077,13 @@ test("images load bounded inline thumbnails, preview and save through the native
       ),
   });
   assert.equal(
-    env.calls.filter((request) => request.action === "previewAttachment")
+    env.calls.filter((request) => request.action === "thumbnailAttachment")
       .length,
     1,
+  );
+  assert.doesNotMatch(
+    env.nodes.get("messages").textContent,
+    /Image 0|80 B|Save as/,
   );
   const show = env.nodes
     .get("messages")
@@ -732,7 +1093,13 @@ test("images load bounded inline thumbnails, preview and save through the native
   await show.onclick();
   assert.equal(env.nodes.get("attachment-preview").hidden, false);
   assert.equal(env.nodes.get("preview-image").src, thumbnail);
-  await env.nodes.get("save-preview").onclick();
+  env.nodes.get("preview-viewport").oncontextmenu({
+    clientX: 100,
+    clientY: 120,
+    preventDefault() {},
+  });
+  assert.equal(env.nodes.get("attachment-menu").hidden, false);
+  await env.nodes.get("attachment-menu-save").onclick();
   assert.equal(
     env.calls.filter((request) => request.action === "saveAttachment").length,
     1,
@@ -744,12 +1111,14 @@ test("images load bounded inline thumbnails, preview and save through the native
   assert.equal(env.nodes.get("preview-image").src, "");
 });
 
-test("automatic thumbnails keep only the latest twelve images and share one background read slot", async () => {
+test("automatic thumbnails prioritize the latest twelve images and retain a bounded cache across conversations", async () => {
   const state = withImages(20);
+  const other = "d".repeat(32);
+  state.peers.push({ ...state.peers[0], id: other, nickname: "Other friend" });
   const pending = [];
   const env = await setup({
     service: (request) => {
-      if (request.action !== "previewAttachment")
+      if (request.action !== "thumbnailAttachment")
         return Promise.resolve(structuredClone(state));
       const result = deferred();
       pending.push(result);
@@ -763,23 +1132,23 @@ test("automatic thumbnails keep only the latest twelve images and share one back
   }
   assert.equal(pending.length, 12);
   const firstRead = env.calls.find(
-    (request) => request.action === "previewAttachment",
+    (request) => request.action === "thumbnailAttachment",
   );
-  assert.equal(firstRead.messageId, state.messages[8].id);
-  env.nodes.get("refresh").onclick();
+  assert.equal(firstRead.messageId, state.messages[19].id);
+  env.nodes.get("contacts").querySelectorAll("button")[1].onclick();
+  env.nodes.get("contacts").querySelectorAll("button")[0].onclick();
   await flush();
   assert.equal(pending.length, 12);
   assert.equal(env.nodes.get("messages").querySelectorAll("img").length, 12);
   state.messages = withImages(22).messages;
-  env.nodes.get("refresh").onclick();
-  await flush();
+  await env.tick(2000);
   assert.equal(pending.length, 13);
   pending[12].resolve({ dataUrl: thumbnail });
   await flush();
   assert.equal(pending.length, 14);
   pending[13].resolve({ dataUrl: thumbnail });
   await flush();
-  assert.equal(env.nodes.get("messages").querySelectorAll("img").length, 12);
+  assert.equal(env.nodes.get("messages").querySelectorAll("img").length, 14);
 });
 
 test("a late preview cannot reopen an image after permission revocation", async () => {
@@ -804,28 +1173,260 @@ test("a late preview cannot reopen an image after permission revocation", async 
   assert.equal(env.nodes.get("preview-image").src, "");
 });
 
-test("thumbnail completion preserves the focused attachment action", async () => {
+test("thumbnail completion preserves the focused image trigger", async () => {
   const state = withImages();
   const pending = deferred();
   const env = await setup({
     service: (request) =>
-      request.action === "previewAttachment"
+      request.action === "thumbnailAttachment"
         ? pending.promise
         : Promise.resolve(state),
   });
-  const save = env.nodes
+  const show = env.nodes
     .get("messages")
     .querySelectorAll("button")
-    .find((button) => button.dataset.action === "save");
-  save.focus();
+    .find((button) => button.dataset.action === "preview");
+  show.focus();
   pending.resolve({ dataUrl: thumbnail });
   await flush();
-  assert.equal(env.document.activeElement.dataset.action, "save");
+  assert.equal(env.document.activeElement.dataset.action, "preview");
   assert.equal(
     env.document.activeElement.dataset.message,
     state.messages[0].id,
   );
-  assert.notEqual(env.document.activeElement, save);
+  assert.notEqual(env.document.activeElement, show);
+});
+
+test("image context menus support keyboard navigation, dismissal and preview", async () => {
+  const env = await setup({
+    service: (request) =>
+      Promise.resolve(
+        ["thumbnailAttachment", "previewAttachment"].includes(request.action)
+          ? { dataUrl: thumbnail }
+          : withImages(),
+      ),
+  });
+  const show = env.nodes.get("messages").querySelectorAll("button")[0];
+  for (const event of [key("ContextMenu"), key("F10", true)]) {
+    show.onkeydown(event);
+    assert.equal(env.nodes.get("attachment-menu").hidden, false);
+    assert.equal(
+      env.document.activeElement,
+      env.nodes.get("attachment-menu-view"),
+    );
+    env.event("keydown", key("ArrowDown"));
+    assert.equal(
+      env.document.activeElement,
+      env.nodes.get("attachment-menu-save"),
+    );
+    env.event("keydown", key("Escape"));
+    assert.equal(env.nodes.get("attachment-menu").hidden, true);
+    assert.equal(env.document.activeElement.dataset.action, "preview");
+  }
+  show.oncontextmenu({ clientX: 20, clientY: 40, preventDefault() {} });
+  await env.nodes.get("attachment-menu-view").onclick();
+  assert.equal(env.nodes.get("attachment-menu").hidden, true);
+  assert.equal(env.nodes.get("attachment-preview").hidden, false);
+});
+
+test("an image preview zooms within bounds, pans only its captured pointer and resets", async () => {
+  const env = await setup({
+    service: (request) =>
+      Promise.resolve(
+        ["thumbnailAttachment", "previewAttachment"].includes(request.action)
+          ? { dataUrl: thumbnail }
+          : withImages(),
+      ),
+  });
+  await env.nodes.get("messages").querySelectorAll("button")[0].onclick();
+  const viewport = env.nodes.get("preview-viewport");
+  const image = env.nodes.get("preview-image");
+  assert.equal(env.nodes.get("preview-scale").textContent, "100%");
+  env.nodes.get("preview-zoom-in").onclick();
+  assert.equal(env.nodes.get("preview-scale").textContent, "125%");
+  viewport.onpointerdown(pointer(7, 100, 100));
+  viewport.onpointermove(pointer(8, 160, 140));
+  assert.match(image.style.transform, /translate\(0px, 0px\)/);
+  viewport.onpointermove(pointer(7, 160, 140));
+  assert.match(image.style.transform, /translate\(60px, 40px\)/);
+  viewport.onpointerup(pointer(7));
+  assert.equal(viewport.hasPointerCapture(7), false);
+  env.nodes
+    .get("attachment-preview")
+    .dispatch("wheel", { deltaY: -100, preventDefault() {} });
+  assert.equal(env.nodes.get("preview-scale").textContent, "156%");
+  env.nodes.get("preview-reset").onclick();
+  assert.equal(env.nodes.get("preview-scale").textContent, "100%");
+  assert.match(image.style.transform, /translate\(0px, 0px\) scale\(1\)/);
+  for (let index = 0; index < 20; index++) env.event("keydown", key("+"));
+  assert.equal(env.nodes.get("preview-scale").textContent, "800%");
+  for (let index = 0; index < 40; index++) env.event("keydown", key("-"));
+  assert.equal(env.nodes.get("preview-scale").textContent, "25%");
+  env.event("keydown", key("0"));
+  assert.equal(env.nodes.get("preview-scale").textContent, "100%");
+});
+
+test("the preview focus loop includes the image region and its keyboard menu", async () => {
+  const env = await setup({
+    service: (request) =>
+      Promise.resolve(
+        ["thumbnailAttachment", "previewAttachment"].includes(request.action)
+          ? { dataUrl: thumbnail }
+          : withImages(),
+      ),
+  });
+  await env.nodes.get("messages").querySelectorAll("button")[0].onclick();
+  const ids = [
+    "preview-zoom-out",
+    "preview-zoom-in",
+    "preview-reset",
+    "close-preview",
+    "preview-viewport",
+  ];
+  env.nodes
+    .get("attachment-preview")
+    .append(...ids.map((id) => env.nodes.get(id)));
+  const viewport = env.nodes.get("preview-viewport");
+  viewport.focus();
+  let prevented = false;
+  env.event("keydown", {
+    key: "Tab",
+    preventDefault() {
+      prevented = true;
+    },
+  });
+  assert.equal(prevented, true);
+  assert.equal(env.document.activeElement, env.nodes.get("preview-zoom-out"));
+  env.event("keydown", { key: "Tab", shiftKey: true, preventDefault() {} });
+  assert.equal(env.document.activeElement, viewport);
+  viewport.onkeydown({ key: "F10", shiftKey: true, preventDefault() {} });
+  assert.equal(env.nodes.get("attachment-menu").hidden, false);
+});
+
+test("trackpad pinch uses continuous image zoom and prevents the page gesture", async () => {
+  const env = await setup({
+    service: (request) =>
+      Promise.resolve(
+        ["thumbnailAttachment", "previewAttachment"].includes(request.action)
+          ? { dataUrl: thumbnail }
+          : withImages(),
+      ),
+  });
+  await env.nodes.get("messages").querySelectorAll("button")[0].onclick();
+  const overlay = env.nodes.get("attachment-preview");
+  let prevented = false;
+  overlay.dispatch("wheel", {
+    deltaY: -2,
+    deltaMode: 0,
+    ctrlKey: true,
+    preventDefault() {
+      prevented = true;
+    },
+  });
+  assert.equal(prevented, true);
+  assert.equal(env.nodes.get("preview-scale").textContent, "102%");
+  env.nodes.get("preview-reset").onclick();
+  overlay.dispatch("gesturestart", { preventDefault() {} });
+  overlay.dispatch("gesturechange", { scale: 1.5, preventDefault() {} });
+  assert.equal(env.nodes.get("preview-scale").textContent, "150%");
+  overlay.dispatch("gestureend", { preventDefault() {} });
+  env.nodes.get("close-preview").onclick();
+  overlay.dispatch("wheel", {
+    deltaY: -2,
+    ctrlKey: true,
+    preventDefault() {
+      assert.fail("closed preview captured a gesture");
+    },
+  });
+});
+
+test("a cached image opens immediately while its full preview loads and closing discards the late result", async () => {
+  const full = deferred();
+  const env = await setup({
+    service: (request) =>
+      request.action === "thumbnailAttachment"
+        ? Promise.resolve({ dataUrl: thumbnail })
+        : request.action === "previewAttachment"
+          ? full.promise
+          : Promise.resolve(withImages()),
+  });
+  const opening = env.nodes
+    .get("messages")
+    .querySelectorAll("button")[0]
+    .onclick();
+  assert.equal(env.nodes.get("attachment-preview").hidden, false);
+  assert.equal(env.nodes.get("preview-image").src, thumbnail);
+  env.nodes.get("close-preview").onclick();
+  full.resolve({ dataUrl: "data:image/jpeg;base64,d29ybGQ=" });
+  await opening;
+  assert.equal(env.nodes.get("attachment-preview").hidden, true);
+  assert.equal(env.document.activeElement.dataset.action, "preview");
+  assert.equal(env.nodes.get("preview-image").src, "");
+});
+
+test("image caches retain late thumbnails across a conversation switch and evict older conversations", async () => {
+  const state = withImages(60);
+  state.peers = Array.from({ length: 5 }, (_, index) => ({
+    ...state.peers[0],
+    id: (index + 10).toString(16).padStart(32, "0"),
+  }));
+  state.messages.forEach((message, index) => {
+    message.peerId = state.peers[Math.floor(index / 12)].id;
+  });
+  const first = deferred();
+  let reads = 0;
+  const env = await setup({
+    service: (request) =>
+      request.action === "thumbnailAttachment"
+        ? ++reads === 1
+          ? first.promise
+          : Promise.resolve({ dataUrl: thumbnail })
+        : Promise.resolve(state),
+  });
+  env.nodes.get("contacts").querySelectorAll("button")[1].onclick();
+  first.resolve({ dataUrl: thumbnail });
+  await flush();
+  assert.equal(reads, 13);
+  env.nodes.get("contacts").querySelectorAll("button")[0].onclick();
+  await flush();
+  assert.equal(reads, 24);
+  for (const index of [2, 3, 4]) {
+    env.nodes.get("contacts").querySelectorAll("button")[index].onclick();
+    await flush();
+  }
+  assert.equal(reads, 60);
+  env.nodes.get("contacts").querySelectorAll("button")[0].onclick();
+  await flush();
+  assert.equal(reads, 61);
+  env.nodes.get("contacts").querySelectorAll("button")[4].onclick();
+  await flush();
+  assert.equal(reads, 61);
+});
+
+test("image actions close on permission loss and a preview context menu dismisses before its preview", async () => {
+  const env = await setup({
+    service: (request) =>
+      Promise.resolve(
+        ["thumbnailAttachment", "previewAttachment"].includes(request.action)
+          ? { dataUrl: thumbnail }
+          : withImages(),
+      ),
+  });
+  await env.nodes.get("messages").querySelectorAll("button")[0].onclick();
+  env.nodes.get("preview-viewport").onkeydown(key("ContextMenu"));
+  env.event("keydown", key("Escape"));
+  assert.equal(env.nodes.get("attachment-menu").hidden, true);
+  assert.equal(env.nodes.get("attachment-preview").hidden, false);
+  env.nodes.get("preview-viewport").onkeydown(key("F10", true));
+  env.emit({ grantedPermissions: [] });
+  assert.equal(env.nodes.get("attachment-menu").hidden, true);
+  assert.equal(env.nodes.get("attachment-preview").hidden, true);
+  assert.equal(env.nodes.get("preview-image").src, "");
+  await env.nodes.get("attachment-menu-save").onclick();
+  assert.equal(
+    env.calls.some((request) => request.action === "saveAttachment"),
+    false,
+  );
 });
 
 test("native attachment picker cancellation preserves the draft without a success notification", async () => {
@@ -1032,13 +1633,9 @@ test("invalid layout checkpoints preserve their original data and refuse partial
   }
 });
 
-test("self, contact and loopback avatars use fixed SVG shapes instead of nickname initials", async () => {
+test("contact and loopback avatars use fixed SVG shapes instead of nickname initials", async () => {
   const env = await setup();
-  assert.equal(env.nodes.get("my-avatar").textContent, "");
-  assert.equal(
-    env.nodes.get("my-avatar").querySelectorAll("svg")[0].dataset.icon,
-    "self",
-  );
+  assert.equal(env.nodes.has("my-avatar"), false);
   assert.equal(env.nodes.get("peer-avatar").textContent, "");
   assert.equal(
     env.nodes.get("peer-avatar").querySelectorAll("svg")[0].dataset.icon,
@@ -1072,15 +1669,15 @@ test("file cards accept the 1 GiB file boundary while images keep the separate 8
   });
   assert.match(env.nodes.get("messages").textContent, /Archive\.bin.*1\.0 GiB/);
   state.messages[0].attachment.bytes++;
-  env.nodes.get("refresh").onclick();
+  await env.tick(2000);
   await flush();
-  assert.equal(env.nodes.get("status").textContent, "Refresh failed");
+  assert.equal(env.nodes.get("status").textContent, "Status unavailable");
   assert.match(env.nodes.get("messages").textContent, /Archive\.bin.*1\.0 GiB/);
   state.messages = withImages().messages;
   state.messages[0].attachment.bytes = 8 * 1024 * 1024 + 1;
-  env.nodes.get("refresh").onclick();
+  await env.tick(2000);
   await flush();
-  assert.equal(env.nodes.get("status").textContent, "Refresh failed");
+  assert.equal(env.nodes.get("status").textContent, "Status unavailable");
   assert.match(env.nodes.get("messages").textContent, /Archive\.bin/);
 });
 
@@ -1120,6 +1717,435 @@ test("attachment errors use stable codes and distinguish size, cache, transport 
   }
 });
 
+function fileTransfer(patch = {}) {
+  return {
+    id: "d".repeat(32),
+    peerId,
+    direction: "outgoing",
+    kind: "file",
+    name: "Large file.bin",
+    bytes: 300 * 1024 * 1024,
+    phase: "preparing",
+    completedBytes: 75 * 1024 * 1024,
+    totalBytes: 300 * 1024 * 1024,
+    startedAt: 1761400000000,
+    ...patch,
+  };
+}
+function transferMessage(env, id = "d".repeat(32)) {
+  return env.nodes
+    .get("messages")
+    .querySelectorAll("article")
+    .find((row) => row.dataset.message === id);
+}
+function transferBubble(env, id = "d".repeat(32)) {
+  return transferMessage(env, id)
+    ?.querySelectorAll("div,button")
+    .find((node) => node.className?.split(" ").includes("attachment-card"));
+}
+
+test("large file preparation and socket progress update while the send request is still pending", async () => {
+  const sending = deferred();
+  let entry = fileTransfer();
+  const env = await setup({
+    service: (request) =>
+      request.action === "sendAttachment"
+        ? sending.promise
+        : Promise.resolve(status()),
+    transfer: () => Promise.resolve({ transfers: [entry] }),
+  });
+  const originalMessage = env.nodes.get("messages").firstChild;
+  const send = env.nodes.get("send-file").onclick();
+  await env.tick(500);
+  const panel = transferBubble(env);
+  assert.ok(panel, "the pending attachment needs its own message bubble");
+  assert.equal(
+    env.nodes.has("transfer-progress"),
+    false,
+    "progress must not occupy a separate composer panel",
+  );
+  assert.match(panel.textContent, /Large file.bin.*Preparing file/s);
+  assert.match(panel.textContent, /75.0 MiB.*300.0 MiB.*25%/);
+  const row = transferMessage(env);
+  assert.equal(row.className, "message outgoing");
+  const progress = panel.querySelectorAll("progress")[0];
+  assert.equal(progress.value, 75 * 1024 * 1024);
+  assert.equal(progress.max, 300 * 1024 * 1024);
+  assert.equal(env.nodes.get("layout").getAttribute("aria-busy"), "true");
+  entry = fileTransfer({ phase: "sending", completedBytes: 150 * 1024 * 1024 });
+  await env.tick(500);
+  assert.equal(transferMessage(env), row);
+  assert.equal(transferBubble(env), panel);
+  assert.equal(panel.querySelectorAll("progress")[0], progress);
+  assert.match(panel.textContent, /Sending.*150.0 MiB.*50%/s);
+  assert.equal(env.nodes.get("messages").firstChild, originalMessage);
+  entry = fileTransfer({
+    phase: "awaitingReceipt",
+    completedBytes: entry.bytes,
+  });
+  await env.tick(500);
+  assert.match(panel.textContent, /Waiting for the peer to save and confirm/);
+  assert.doesNotMatch(panel.textContent, /Delivered/);
+  assert.equal(progress.hidden, true);
+  sending.resolve(status());
+  await send;
+});
+
+test("incoming image and file progress become one saved attachment bubble without duplicating the message", async () => {
+  for (const kind of ["image", "file"]) {
+    const state = status();
+    let entry = fileTransfer({
+      kind,
+      direction: "incoming",
+      phase: "receiving",
+      bytes: 1024 * 1024,
+      totalBytes: 1024 * 1024,
+      completedBytes: 256 * 1024,
+    });
+    const env = await setup({
+      service: () => Promise.resolve(structuredClone(state)),
+      transfer: () => Promise.resolve({ transfers: [entry] }),
+    });
+    await env.tick(2000);
+    const row = transferMessage(env);
+    const card = transferBubble(env);
+    assert.ok(
+      row,
+      "incoming data needs an incoming attachment row before it finishes",
+    );
+    assert.equal(row.className, "message");
+    assert.equal(
+      card.querySelectorAll("progress")[0].value,
+      entry.completedBytes,
+    );
+    assert.equal(
+      card.querySelectorAll("button").length,
+      0,
+      "unfinished attachments cannot preview or save",
+    );
+    entry = { ...entry, phase: "verifying", completedBytes: 512 * 1024 };
+    await env.tick(500);
+    assert.equal(transferMessage(env), row);
+    assert.equal(transferBubble(env), card);
+    assert.match(card.textContent, /Verifying.*50%/s);
+    state.messages.push({
+      ...state.messages[0],
+      id: entry.id,
+      outgoing: false,
+      sender: peerId,
+      nickname: "Friend",
+      kind,
+      text: "",
+      delivery: "received",
+      attachment: {
+        name: entry.name,
+        bytes: entry.bytes,
+        mime: kind === "image" ? "image/png" : "application/octet-stream",
+        sha256: "f".repeat(64),
+      },
+    });
+    entry = { ...entry, phase: "completed", completedBytes: entry.bytes };
+    await env.tick(500);
+    assert.equal(
+      transferMessage(env),
+      row,
+      "finishing keeps the same message row",
+    );
+    assert.equal(
+      env.nodes
+        .get("messages")
+        .querySelectorAll("article")
+        .filter((node) => node.dataset.message === entry.id).length,
+      1,
+    );
+    assert.match(row.textContent, /Received/);
+    assert.doesNotMatch(row.textContent, /Verifying|25%|50%/);
+  }
+});
+
+test("failed attachment placeholders can be cleared even before any history message exists", async () => {
+  const state = status();
+  state.messages = [];
+  let transfers = [fileTransfer({ phase: "failed" })];
+  const env = await setup({
+    service: (request) => {
+      if (request.action === "clearHistory") transfers = [];
+      return Promise.resolve(structuredClone(state));
+    },
+    transfer: () => Promise.resolve({ transfers }),
+  });
+  await env.tick(2000);
+  assert.match(transferMessage(env)?.textContent ?? "", /Send failed/);
+  assert.equal(env.nodes.get("clear-conversation").disabled, false);
+  env.nodes.get("clear-conversation").onclick();
+  await env.nodes.get("confirm-action").onclick();
+  assert.equal(transferMessage(env), undefined);
+  assert.equal(env.nodes.get("draft").value, "");
+});
+
+test("clearing a conversation removes its pending bubbles immediately and a late receipt cannot restore them", async () => {
+  const state = status();
+  const otherId = "f".repeat(32);
+  state.peers.push({ ...state.peers[0], id: otherId, nickname: "Other" });
+  const entry = fileTransfer({
+    phase: "awaitingReceipt",
+    completedBytes: 300 * 1024 * 1024,
+  });
+  state.messages = [
+    {
+      ...state.messages[0],
+      id: entry.id,
+      kind: "file",
+      text: "",
+      attachment: {
+        name: entry.name,
+        bytes: entry.bytes,
+        mime: "application/octet-stream",
+        sha256: "f".repeat(64),
+      },
+    },
+  ];
+  const other = fileTransfer({
+    id: "e".repeat(32),
+    peerId: otherId,
+    direction: "incoming",
+    phase: "receiving",
+  });
+  let visibleTransfers = [entry, other];
+  const env = await setup({
+    service: (request) => {
+      if (request.action === "clearHistory") {
+        state.messages = state.messages.filter(
+          (message) => message.peerId !== request.peerId,
+        );
+        visibleTransfers = visibleTransfers.filter(
+          (item) => item.peerId !== request.peerId,
+        );
+      }
+      return Promise.resolve(structuredClone(state));
+    },
+    transfer: () =>
+      Promise.resolve({ transfers: structuredClone(visibleTransfers) }),
+  });
+  await env.tick(2000);
+  assert.ok(transferMessage(env));
+  env.nodes.get("clear-conversation").onclick();
+  await env.nodes.get("confirm-action").onclick();
+  assert.equal(
+    transferMessage(env),
+    undefined,
+    "clearing must remove the old active bubble without waiting for another poll",
+  );
+  entry.phase = "completed";
+  await env.tick(500);
+  await env.tick(2000);
+  assert.equal(
+    transferMessage(env),
+    undefined,
+    "the native-hidden receipt must not recreate cleared history",
+  );
+  env.nodes
+    .get("contacts")
+    .querySelectorAll("button")
+    .find((node) => node.dataset.peer === otherId)
+    .onclick();
+  assert.match(transferMessage(env, other.id)?.textContent ?? "", /Receiving/);
+});
+
+test("a progress snapshot started during clear cannot restore a removed bubble after clear succeeds", async () => {
+  const clearing = deferred(),
+    reading = deferred();
+  const state = status();
+  const cleared = { ...state, messages: [] };
+  let reads = 0;
+  const env = await setup({
+    service: (request) =>
+      request.action === "clearHistory"
+        ? clearing.promise
+        : Promise.resolve(state),
+    transfer: () =>
+      ++reads === 1
+        ? Promise.resolve({
+            transfers: [fileTransfer({ phase: "awaitingReceipt" })],
+          })
+        : reading.promise,
+  });
+  await env.tick(2000);
+  env.nodes.get("clear-conversation").onclick();
+  const clear = env.nodes.get("confirm-action").onclick();
+  await env.tick(500);
+  assert.equal(reads, 2, "the delayed read must start after the clear request");
+  clearing.resolve(cleared);
+  await clear;
+  assert.equal(transferMessage(env) === undefined, true);
+  reading.resolve({ transfers: [fileTransfer({ phase: "awaitingReceipt" })] });
+  await flush();
+  assert.equal(
+    transferMessage(env) === undefined,
+    true,
+    "a pre-clear native snapshot must stay invalid after the clear receipt",
+  );
+});
+
+test("progress shares ordinary admission and leaves a fourth SDK slot for Stop", async () => {
+  const sending = deferred(),
+    reading = deferred(),
+    checkpoint = deferred();
+  const stopped = status();
+  stopped.running = false;
+  stopped.port = 0;
+  stopped.addresses = [];
+  stopped.peers[0].connected = false;
+  const env = await setup({
+    sdkLimit: 4,
+    checkpoint: () => checkpoint.promise,
+    transfer: () => reading.promise,
+    service: (request) =>
+      request.action === "sendAttachment"
+        ? sending.promise
+        : Promise.resolve(request.action === "stop" ? stopped : status()),
+  });
+  const send = env.nodes.get("send-file").onclick();
+  await env.tick(500);
+  env.input("draft", "Draft remains writable during transfer");
+  assert.equal(env.sdk.pending, 3);
+  await env.tick(500);
+  assert.equal(
+    env.calls.filter((request) => request.action === "transferStatus").length,
+    1,
+  );
+  env.nodes.get("cancel-transfer").onclick();
+  await flush();
+  assert.equal(env.sdk.maximumPending, 4);
+  assert.deepEqual(env.sdk.rejected, []);
+  assert.equal(env.nodes.get("status").textContent, "Disconnected");
+  reading.resolve({ transfers: [fileTransfer()] });
+  sending.resolve(status());
+  checkpoint.resolve();
+  await send;
+  await flush();
+  assert.equal(
+    env.nodes.get("messages").querySelectorAll("progress").length,
+    0,
+  );
+  assert.equal(
+    env.nodes.get("draft").value,
+    "Draft remains writable during transfer",
+  );
+});
+
+test("incoming progress polls independently and ignores inactive or revoked late results", async () => {
+  const reading = deferred();
+  let response = {
+    transfers: [fileTransfer({ direction: "incoming", phase: "receiving" })],
+  };
+  let reads = 0;
+  const env = await setup({
+    transfer: () =>
+      ++reads === 1 ? Promise.resolve(response) : reading.promise,
+  });
+  await env.tick(2000);
+  assert.match(transferBubble(env)?.textContent ?? "", /Receiving/);
+  await env.tick(500);
+  env.emit({ active: false });
+  reading.resolve({
+    transfers: [fileTransfer({ direction: "incoming", phase: "verifying" })],
+  });
+  await flush();
+  assert.doesNotMatch(transferBubble(env)?.textContent ?? "", /Verifying/);
+  const count = env.calls.length;
+  await env.tick(500);
+  await env.tick(2000);
+  assert.equal(env.calls.length, count);
+  env.emit({ grantedPermissions: [] });
+  assert.equal(
+    env.nodes.get("messages").querySelectorAll("progress").length,
+    0,
+  );
+});
+
+test("malformed progress retains the last valid bytes and reports a retry without exposing raw errors", async () => {
+  let response = { transfers: [fileTransfer()] };
+  const env = await setup({ transfer: () => Promise.resolve(response) });
+  await env.tick(2000);
+  response = {
+    transfers: [fileTransfer({ completedBytes: -1, name: "secret-path" })],
+  };
+  await env.tick(500);
+  assert.match(transferBubble(env)?.textContent ?? "", /75.0 MiB.*25%/);
+  assert.match(
+    transferBubble(env)?.textContent ?? "",
+    /Progress unavailable.*retrying/,
+  );
+  assert.doesNotMatch(transferBubble(env)?.textContent ?? "", /secret-path/);
+  response = {
+    transfers: [
+      fileTransfer({ phase: "verifying", completedBytes: 150 * 1024 * 1024 }),
+    ],
+  };
+  await env.tick(500);
+  assert.match(transferBubble(env)?.textContent ?? "", /Verifying.*50%/s);
+  assert.doesNotMatch(
+    transferBubble(env)?.textContent ?? "",
+    /Progress unavailable/,
+  );
+});
+
+test("conversation clear confirms its own history and attachments, keeps contacts and drafts, and restores menu focus", async () => {
+  const state = status();
+  const other = {
+    ...state.peers[0],
+    id: "e".repeat(32),
+    nickname: "Other device",
+  };
+  state.peers.push(other);
+  state.messages.push({
+    ...state.messages[0],
+    id: "f".repeat(32),
+    peerId: other.id,
+  });
+  const env = await setup({
+    service: (request) => {
+      if (request.action === "clearHistory")
+        state.messages = state.messages.filter(
+          (message) => message.peerId !== request.peerId,
+        );
+      return Promise.resolve(structuredClone(state));
+    },
+  });
+  env.input("draft", "Keep my unsent draft");
+  const clear = env.nodes.get("clear-conversation");
+  assert.ok(clear, "the conversation menu needs a clear-history action");
+  assert.equal(clear.disabled, false);
+  clear.onclick();
+  assert.match(
+    env.nodes.get("confirmation-text").textContent,
+    /messages.*images.*files.*Friend/s,
+  );
+  assert.match(
+    env.nodes.get("confirmation-text").textContent,
+    /original.*saved files.*kept/s,
+  );
+  env.nodes.get("cancel-action").onclick();
+  assert.equal(env.document.activeElement, env.nodes.get("conversation-more"));
+  assert.equal(
+    env.calls.some((request) => request.action === "clearHistory"),
+    false,
+  );
+  clear.onclick();
+  await env.nodes.get("confirm-action").onclick();
+  const request = env.calls.find(
+    (request) => request.action === "clearHistory",
+  );
+  assert.equal(request.peerId, peerId);
+  assert.equal(env.nodes.get("draft").value, "Keep my unsent draft");
+  assert.equal(env.nodes.get("contacts").querySelectorAll("button").length, 2);
+  assert.equal(env.nodes.get("clear-conversation").disabled, true);
+  assert.equal(env.nodes.get("clear").disabled, false);
+  assert.equal(env.document.activeElement, env.nodes.get("conversation-more"));
+  assert.doesNotMatch(env.nodes.get("messages").textContent, /Literal/);
+});
+
 test("stopping a transfer discards its late snapshot and cannot clear a newer operation's busy state", async () => {
   const sending = deferred(),
     stopping = deferred(),
@@ -1150,11 +2176,12 @@ test("stopping a transfer discards its late snapshot and cannot clear a newer op
   assert.equal(env.nodes.get("status").textContent, "Disconnected");
   assert.equal(env.nodes.get("draft").value, "Keep across cancellation");
   env.nodes.get("start").onclick();
-  assert.equal(env.nodes.get("rename").disabled, true);
+  assert.equal(env.nodes.get("start").getAttribute("aria-busy"), "true");
+  assert.equal(env.nodes.get("rename").disabled, false);
   sending.resolve(status());
   await send;
   await flush();
-  assert.equal(env.nodes.get("rename").disabled, true);
+  assert.equal(env.nodes.get("start").getAttribute("aria-busy"), "true");
   assert.equal(env.nodes.get("status").textContent, "Disconnected");
   const resumed = status();
   resumed.peers[0].connected = false;
@@ -1180,7 +2207,7 @@ test("a failed stop never reports cancellation success and leaves an explicit re
   env.nodes.get("cancel-transfer").onclick();
   await flush();
   assert.match(env.notices.at(-1).message, /transfer result is unknown/);
-  assert.equal(env.nodes.get("status").textContent, "Refresh failed");
+  assert.equal(env.nodes.get("status").textContent, "Status unavailable");
   assert.equal(env.nodes.get("stop").disabled, false);
   assert.equal(env.nodes.get("draft").value, "Still retained");
   pending.resolve(status());
@@ -1201,14 +2228,14 @@ test("a shared four-request SDK retains a Stop slot during a thumbnail, transfer
     sdkLimit: 4,
     checkpoint: () => draftWrite.promise,
     service: (request) =>
-      request.action === "previewAttachment"
+      request.action === "thumbnailAttachment"
         ? thumbnailRead.promise
         : request.action === "sendAttachment"
           ? transfer.promise
           : Promise.resolve(request.action === "stop" ? stopped : state),
   });
   assert.equal(
-    env.calls.filter((request) => request.action === "previewAttachment")
+    env.calls.filter((request) => request.action === "thumbnailAttachment")
       .length,
     1,
   );
@@ -1249,7 +2276,7 @@ test("ordinary admission never queues a picker or connection to start after its 
   const env = await setup({
     sdkLimit: 4,
     service: (request) =>
-      request.action === "previewAttachment"
+      request.action === "thumbnailAttachment"
         ? thumbnailRead.promise
         : request.action === "sendAttachment"
           ? transfer.promise
@@ -1359,19 +2386,19 @@ test("checkpoint retries are bounded, then a finished host save restarts the ret
   assert.equal(env.checkpoints.at(-1).dirty, true);
 });
 
-test("Refresh retries a failed checkpoint immediately without leaving a duplicate timer", async () => {
+test("opening settings retries a failed checkpoint immediately without leaving a duplicate timer", async () => {
   let failing = true;
   const env = await setup({
     checkpoint: () =>
       failing ? Promise.reject({ code: "CONFLICT" }) : Promise.resolve(),
   });
-  env.input("draft", "Retry through Refresh");
+  env.input("draft", "Retry through settings");
   await flush();
   failing = false;
-  await env.nodes.get("refresh").onclick();
+  env.nodes.get("settings-toggle").onclick();
   await flush();
   assert.equal(env.checkpoints.length, 2);
-  assert.equal(env.checkpoints.at(-1).value.draft, "Retry through Refresh");
+  assert.equal(env.checkpoints.at(-1).value.draft, "Retry through settings");
   await env.tick(500);
   assert.equal(env.checkpoints.length, 2);
 });
@@ -1526,19 +2553,23 @@ test("numeric port drafts round-trip through real checkpoints and can be correct
     );
     assert.equal(reopened.nodes.get("port").value, value);
     assert.equal(reopened.nodes.get("remote-port").value, value);
+    const automaticStarts = reopened.calls.filter(
+      (request) => request.action === "start",
+    ).length;
     if (![100, 65535].includes(Number(value))) {
       reopened.nodes.get("start").onclick();
       await flush();
       assert.equal(
         reopened.calls.filter((request) => request.action === "start").length,
-        0,
+        automaticStarts,
       );
     }
     reopened.nodes.get("port").value = "43123";
     reopened.nodes.get("start").onclick();
     await flush();
     assert.equal(
-      reopened.calls.find((request) => request.action === "start").port,
+      reopened.calls.filter((request) => request.action === "start").at(-1)
+        .port,
       43123,
     );
     assert.equal(reopened.nodes.get("status").textContent, "LAN online");
