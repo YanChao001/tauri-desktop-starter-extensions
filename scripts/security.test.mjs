@@ -15,7 +15,11 @@ import { basename, dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { hash, packagePlugin, validateListings } from "./build.mjs";
 import { ensureDirectory, parseJson, readBounded } from "./files.mjs";
-import { publish, publishCatalog } from "./publish.mjs";
+import {
+  publish as publishWithConfig,
+  publishCatalog as publishCatalogWithConfig,
+} from "./publish.mjs";
+import githubRepositoryConfig from "./fixtures/github-repository.config.json" with { type: "json" };
 import { signRelease } from "./sign-release.mjs";
 import {
   generateKey,
@@ -26,6 +30,12 @@ import {
 import { verifyAssets, verifyRelease } from "./verify.mjs";
 
 const root = resolve(import.meta.dirname, "..");
+const publish = (directory, options = {}) =>
+  publishWithConfig(directory, { config: githubRepositoryConfig, ...options });
+const publishCatalog = (catalog, directory, sourceSha, run) =>
+  publishCatalogWithConfig(catalog, directory, sourceSha, run, {
+    config: githubRepositoryConfig,
+  });
 const sourceSha = "0123456789abcdef0123456789abcdef01234567";
 const privateKey = () =>
   generateKeyPairSync("ed25519").privateKey.export({

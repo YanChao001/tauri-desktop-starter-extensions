@@ -8,6 +8,8 @@
     "node": ">=24"
   },
   "scripts": {
+    "repository:sync": "node scripts/repository-config.mjs sync",
+    "repository:check": "node scripts/repository-config.mjs check",
     "test": "node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
