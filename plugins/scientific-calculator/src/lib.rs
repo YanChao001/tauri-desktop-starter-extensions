@@ -134,7 +134,7 @@ impl Default for State {
             notice: String::new(),
             fields: BTreeMap::from([
                 ("expression".into(), "0".into()),
-                ("angle".into(), "deg".into()),
+                ("angle".into(), "rad".into()),
                 ("functions".into(), String::new()),
                 ("xmin".into(), "-10".into()),
                 ("xmax".into(), "10".into()),
@@ -190,6 +190,9 @@ fn localized_error(error: String, zh: bool) -> String {
         }
         "Power result is below the supported floating-point range" => {
             "幂运算的非零结果小于科学计算支持的浮点范围。"
+        }
+        "Hyperbolic result is below the supported floating-point range" => {
+            "双曲函数的非零结果小于科学计算支持的浮点范围。"
         }
         "Modulo by zero" => "取余运算的除数不能为零。",
         "Memory overflow" => "记忆寄存器数值溢出。",
@@ -1751,6 +1754,37 @@ mod tests {
         assert_eq!(view["display"], "Calculator");
     }
     #[test]
+    fn new_workspaces_evaluate_trigonometry_in_radians() {
+        let view = call(Some("calculate"), "", json!({"expression":"sin(pi/2)"}));
+        let state: State = serde_json::from_str(view["state"].as_str().unwrap()).unwrap();
+        assert_eq!(view["errors"], json!({}));
+        assert_eq!(state.result, "1");
+        assert_eq!(state.fields["angle"], "rad");
+        assert_eq!(state.history[0].angle, "rad");
+    }
+    #[test]
+    fn restored_workspaces_keep_explicit_degree_and_gradian_modes() {
+        for (angle, expression) in [("deg", "sin(90)"), ("grad", "sin(100)")] {
+            let selected = call(None, "", json!({"angle":angle}));
+            let selected_state: Value =
+                serde_json::from_str(selected["state"].as_str().unwrap()).unwrap();
+            let loaded =
+                with_storage("load", "", json!({STORAGE_KEY:selected_state}), json!([])).unwrap();
+            for restored in [&selected, &loaded] {
+                let calculated = call(
+                    Some("calculate"),
+                    restored["state"].as_str().unwrap(),
+                    json!({"expression":expression}),
+                );
+                let state: State =
+                    serde_json::from_str(calculated["state"].as_str().unwrap()).unwrap();
+                assert_eq!(calculated["errors"], json!({}));
+                assert_eq!(state.fields["angle"], angle);
+                assert_eq!(state.result, "1");
+            }
+        }
+    }
+    #[test]
     fn calculator_and_converters_fit_the_host_field_budget() {
         let view: Value = serde_json::from_str(
             &process(
@@ -2083,9 +2117,9 @@ mod tests {
             assert_eq!(state.ans_exact, "0");
         }
         for (expression, expected) in [
-            ("sin(30)", "0.5"),
+            ("sin(pi/6)", "0.5"),
             ("2^0.5", "1.414213562373"),
-            ("atan2(1,1)", "45"),
+            ("atan2(1,1)", "0.785398163397"),
             ("2*pi", "6.28318530718"),
             ("0^0", "1"),
         ] {

@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
+import { readRepositoryConfig, repositoryLink } from "./repository-config.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const validSha = (value) => /^[a-f0-9]{40}$/i.test(value);
@@ -89,8 +90,15 @@ export function readReleaseCommits(sourceSha, previousTag, git = runGit) {
   return commits;
 }
 
-export function renderReleaseNotes(catalog, sourceSha, previousTag, commits) {
-  const base = `https://github.com/${catalog.repository}`;
+export function renderReleaseNotes(
+  catalog,
+  sourceSha,
+  previousTag,
+  commits,
+  config = readRepositoryConfig(),
+) {
+  const link = (kind, values) =>
+    repositoryLink(config, catalog.repository, kind, values);
   const groups = new Map([...headings.keys()].map((type) => [type, []]));
   const breaking = [];
   for (const { sha, message } of commits) {
@@ -98,8 +106,8 @@ export function renderReleaseNotes(catalog, sourceSha, previousTag, commits) {
     const match = /^([a-z]+)(?:\(([^)\r\n]+)\))?(!)?:[ \t]+(.+)$/.exec(subject);
     const type = match && headings.has(match[1]) ? match[1] : "other";
     const scope = match?.[2] ? `**${markdown(match[2])}：** ` : "";
-    const link = `([${sha.slice(0, 7)}](${base}/commit/${sha}))`;
-    const item = `${scope}${markdown(match?.[4] ?? subject)} ${link}`;
+    const commitLink = `([${sha.slice(0, 7)}](${link("commit", { ref: sha })}))`;
+    const item = `${scope}${markdown(match?.[4] ?? subject)} ${commitLink}`;
     groups.get(type).push(item);
     const footer = /(?:^|\n)BREAKING[ -]CHANGE:[ \t]*([\s\S]+)/.exec(message);
     if (match?.[3] || footer) {
@@ -111,8 +119,8 @@ export function renderReleaseNotes(catalog, sourceSha, previousTag, commits) {
     "## 发布信息",
     "",
     `- 目录修订：\`market-${catalog.revision}\`（schema ${catalog.schemaVersion}）`,
-    `- 市场源码：[${sourceSha.slice(0, 7)}](${base}/commit/${sourceSha})`,
-    `- 变更基线：${previousTag ? `[${previousTag}](${base}/releases/tag/${previousTag})` : "首次正式发布，包含全部源码历史"}`,
+    `- 市场源码：[${sourceSha.slice(0, 7)}](${link("commit", { ref: sourceSha })})`,
+    `- 变更基线：${previousTag ? `[${previousTag}](${link("release", { tag: previousTag })})` : "首次正式发布，包含全部源码历史"}`,
     `- 签名有效期：${new Date(catalog.issuedAt * 1000).toISOString()} 至 ${new Date(catalog.expiresAt * 1000).toISOString()}（UTC）`,
     "",
     "## 破坏性变更",
@@ -154,13 +162,13 @@ export function renderReleaseNotes(catalog, sourceSha, previousTag, commits) {
     "",
     "在配套原生宿主中刷新扩展市场，审阅版本与权限后安装。目录签名与包完整性由宿主核验，安装不会自动授予新增权限。最低版本相同的开发快照仍须确认包含插件所需能力。",
     "",
-    `[构建与离线检查流程](${base}/blob/${sourceSha}/.github/workflows/publish.yml)与[发布验收边界](${base}/blob/${sourceSha}/docs/publishing.md#发布前验收)可供核对；自动生成的变更说明不代表已完成真实桌面、多机网络或全部目标平台验收。`,
+    `[构建与离线检查流程](${link("file", { ref: sourceSha, path: ".github/workflows/publish.yml" })})与[发布验收边界](${link("file", { ref: sourceSha, path: "docs/publishing.md", fragment: "发布前验收" })})可供核对；自动生成的变更说明不代表已完成真实桌面、多机网络或全部目标平台验收。`,
     "",
     "## 完整变更",
     "",
     previousTag
-      ? `[${previousTag}...market-${catalog.revision}](${base}/compare/${previousTag}...${sourceSha})`
-      : `[全部提交](${base}/commits/${sourceSha})`,
+      ? `[${previousTag}...market-${catalog.revision}](${link("compare", { base: previousTag, ref: sourceSha })})`
+      : `[全部提交](${link("commits", { ref: sourceSha })})`,
     "",
   );
   const notes = lines.join("\n");
@@ -171,12 +179,19 @@ export function renderReleaseNotes(catalog, sourceSha, previousTag, commits) {
   return notes;
 }
 
-export function createReleaseNotes(catalog, sourceSha, releases, git = runGit) {
+export function createReleaseNotes(
+  catalog,
+  sourceSha,
+  releases,
+  git = runGit,
+  config = readRepositoryConfig(),
+) {
   const previousTag = previousReleaseTag(releases);
   return renderReleaseNotes(
     catalog,
     sourceSha,
     previousTag,
     readReleaseCommits(sourceSha, previousTag, git),
+    config,
   );
 }

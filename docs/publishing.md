@@ -18,7 +18,7 @@
 
 市场工具调用配套宿主的 `extension-tool` 检查清单、Wasm ABI、命令输出和视图。包与协议版本由 [宿主扩展契约](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md#包与输入契约) 定义，最低宿主以各插件的 `extension.json` 为准。协议或内容改变后从配套源码重建并签名，不能只修改版本数字。
 
-当前四款插件最低要求均为 **0.1.8**，使用该版本的共享界面规则；仅更新插件不能补齐旧宿主 SDK。开发阶段验证选定当前宿主或固定的待发布提交，不承诺历史版本兼容，也不维护旧版矩阵。作者公开材料的固定基线见 [作者入口](./plugin-authoring.md#作者需要的公开契约)；本页及其他指南的 `develop` 链接用于定位当前文档，发布时须改读所选 SHA 对应内容，并核对实际安装包 Release。
+各插件的最低版本以清单为准。壁纸库 1.5.0 最低要求宿主 **0.1.11**，使用图库元数据与按项预览、合并下载 / 预览和在途下载取消；应用背景使用轻量保存回执。早期开发版期待完整图库及内嵌缩略图，需要配套更新；仅更新插件不能补齐旧宿主能力。开发阶段验证选定当前宿主或固定的待发布提交，不承诺历史版本兼容，也不维护旧版矩阵。作者公开材料的固定基线见 [作者入口](./plugin-authoring.md#作者需要的公开契约)；本页及其他指南的默认分支链接用于定位当前文档，发布时须改读所选 SHA 对应内容，并核对实际安装包 Release。
 
 LAN 两端还须使用相同配套线协议；插件最低宿主版本不代替端点与原生服务验证。协议、数据边界与升级说明见 [宿主 LAN 契约](https://github.com/YanChao001/tauri-desktop-starter/blob/develop/docs/extensions.md#局域网通信) 和 [插件操作说明](../plugins/lan-chat/README.md)。旧客户端报 `MARKET_INVALID` 或条目需要新宿主时，按 [排障手册](./troubleshooting.md#客户端错误) 处理。
 
@@ -26,7 +26,7 @@ LAN 两端还须使用相同配套线协议；插件最低宿主版本不代替�
 
 独立 CI 的宿主来自 [.github/actions/host-tool/action.yml](../.github/actions/host-tool/action.yml)，与本机子模块旁的宿主代码无关：
 
-- [PR / main 检查](../.github/workflows/ci.yml) 使用仓库变量 `STARTER_HOST_REF`，未设置时使用 `develop`。
+- [PR / main 检查](../.github/workflows/ci.yml) 使用仓库变量 `STARTER_HOST_REF`，未设置时使用 `repository.config.json` 的 `host.defaultRef`；宿主仓库与默认值按 [仓库来源配置](./development.md#仓库来源与平台入口) 同步。
 - [发布工作流](../.github/workflows/publish.yml) 自动触发时使用 `STARTER_HOST_REF`，手动触发时可用本次 `host_ref` 输入覆盖；必须为已推送并审核的完整 40 位提交 SHA。未配置、分支名和标签均在构建前拒绝，没有可变分支回退。
 - `host_ref` 只覆盖这一次发布，不会修复 PR CI 的默认宿主选择。
 
@@ -67,7 +67,7 @@ HTML、权限或服务联动须核对宿主包含对应实现与生命周期修�
 
 来源检查通过后，脚本使用 `--target GITHUB_SHA` 指定草稿 Release 的源码提交，上传快照中的 `catalog.json` 与全部目录所列插件包，最后才将草稿公开并设为 latest。`GITHUB_SHA` 是市场源码提交，不能误填成宿主提交。
 
-预先存在的标签不会因 `--target` 改指向。脚本在创建草稿前和公开 latest 前核对精确标签及其最终源码 commit，错配或无法确定时停止；上传后失败保留草稿。检查实现见 [publish.mjs](../scripts/publish.mjs)。
+预先存在的标签不会因 `--target` 改指向。脚本在创建草稿前和公开 latest 前核对精确标签及其最终源码 commit，错配或无法确定时停止；上传后失败保留草稿。发布顺序见 [publish.mjs](../scripts/publish.mjs)，GitHub 操作和标签复核见 [平台适配器](../scripts/hosting/github.mjs)；来源与链接的维护入口见 [仓库来源配置](./development.md#仓库来源与平台入口)。
 
 仓库和标签写权限仍须由受控维护者持有；这些检查不能代替保护规则，也不能保证其他授权者不会在检查之后修改远端标签。
 

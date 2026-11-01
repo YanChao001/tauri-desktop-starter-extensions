@@ -5,11 +5,35 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  createReleaseNotes,
+  createReleaseNotes as createReleaseNotesWithConfig,
   previousReleaseTag,
   readReleaseCommits,
-  renderReleaseNotes,
+  renderReleaseNotes as renderReleaseNotesWithConfig,
 } from "./release-notes.mjs";
+import githubRepositoryConfig from "./fixtures/github-repository.config.json" with { type: "json" };
+
+const renderReleaseNotes = (
+  catalog,
+  sourceSha,
+  previousTag,
+  commits,
+  config = githubRepositoryConfig,
+) =>
+  renderReleaseNotesWithConfig(
+    catalog,
+    sourceSha,
+    previousTag,
+    commits,
+    config,
+  );
+const createReleaseNotes = (catalog, sourceSha, releases, git) =>
+  createReleaseNotesWithConfig(
+    catalog,
+    sourceSha,
+    releases,
+    git,
+    githubRepositoryConfig,
+  );
 
 const catalog = {
   revision: 50,
@@ -134,6 +158,59 @@ test("renewals, initial releases and Markdown content retain clear meaning", () 
       ]),
     /Release notes exceed/,
   );
+});
+
+test("release notes use explicitly configured repository links without inferring a platform", () => {
+  const config = {
+    schemaVersion: 1,
+    hosting: {
+      provider: "github",
+      repositoryUrlTemplate: "https://forge.example.test/projects/{repository}",
+      links: {
+        file: "{repositoryUrl}/source/{ref}/{path}",
+        tree: "{repositoryUrl}/directory/{ref}/{path}",
+        commit: "{repositoryUrl}/changes/{ref}",
+        commits: "{repositoryUrl}/history/{ref}",
+        compare: "{repositoryUrl}/difference/{base}/{ref}",
+        release: "{repositoryUrl}/versions/{tag}",
+      },
+    },
+    host: {
+      repository: "another/host",
+      repositoryUrl: "https://forge.example.test/projects/another/host",
+      docsRef: "docs/preview",
+      defaultRef: "integration",
+    },
+    wallpaperUserAgentTemplate: "ExampleWallpaper/2.0 ({repositoryUrl})",
+  };
+  const notes = renderReleaseNotes(
+    catalog,
+    sha,
+    "market-10",
+    [{ sha, message: "fix: 修复配置链接" }],
+    config,
+  );
+  assert.ok(
+    notes.includes(
+      `https://forge.example.test/projects/owner/market/changes/${sha}`,
+    ),
+  );
+  assert.ok(
+    notes.includes(
+      "https://forge.example.test/projects/owner/market/versions/market-10",
+    ),
+  );
+  assert.ok(
+    notes.includes(
+      `https://forge.example.test/projects/owner/market/source/${sha}/docs/publishing.md#`,
+    ),
+  );
+  assert.ok(
+    notes.includes(
+      `https://forge.example.test/projects/owner/market/difference/market-10/${sha}`,
+    ),
+  );
+  assert.ok(!notes.includes("github.com"));
 });
 
 test("real git history includes underlying commits once and supports annotated tags and renewals", async (t) => {

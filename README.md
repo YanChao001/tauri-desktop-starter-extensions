@@ -11,7 +11,7 @@
 | [计算器](./plugins/scientific-calculator/README.md) | 五种计算模式、十三类转换器、记忆与历史、独立竖屏窗口                      | 可选私有存储、置顶、汇率网络与来源链接 |
 | [贪吃蛇](./plugins/snake/README.md)                 | Slither 移植：360°转向、冲刺与成长、离线 AI、皮肤、小地图、原版音效与重放 | 可选私有存储                           |
 | [内网通信](./plugins/lan-chat/README.md)            | 聊天式界面、文字 / 表情 / 图片 / 文件、送达回执、会话导出与本机回环测试   | 必需 `messaging:lan`                   |
-| [壁纸库](./plugins/wallpaper-browser/README.md)     | 四图源搜索与分类、最多 24 张平铺、原图另存与本机图库管理                  | 必需 `wallpapers:manage`               |
+| [壁纸库](./plugins/wallpaper-browser/README.md)     | 四站壁纸搜索、分页去重、高清预览与下载、本机图库管理                      | 必需 `wallpapers:manage`               |
 
 计算器的五种模式与十二类单位转换、贪吃蛇均可离线使用，保存工作区或纪录需要可选私有存储。内网通信为明文 TCP，无远端身份认证，仅适合可信局域网。壁纸库拒绝联网仍可管理本机图库，背景仅作用于本应用，图片许可由原站决定。具体操作、数据与权限用途见各插件 README；网络及来源审核见 [安全规范](./docs/security.md#原生服务与外部来源)。
 
@@ -35,6 +35,8 @@ node scripts/check.mjs
 `check` 编译全部收录插件、真实运行手写 fixture，并用一次性测试密钥核对目录及包；不使用生产签名密钥，也不发布线上目录。产物位于 `artifacts/market-<revision>/`，同一修订目录不能覆盖。其他 shell、单插件迭代与验证范围见 [开发指南](./docs/development.md) 和 [测试规范](./docs/testing.md)。
 
 四款插件均使用独立 Rust / Cargo 项目和自包含 HTML / CSS / JavaScript，没有 React / Vite 构建依赖。Wasm、界面与原生服务的分工，以及宿主 JS / TS 示例的适用范围见 [架构说明](./docs/architecture.md)。
+
+项目来源、配套宿主和文档链接统一由 [repository.config.json](./repository.config.json) 维护；修改后运行 `node scripts/repository-config.mjs sync` 与 `node scripts/repository-config.mjs check`。配置字段、同步范围和平台适配入口见 [仓库来源与平台入口](./docs/development.md#仓库来源与平台入口)。
 
 ## 文档与贡献
 

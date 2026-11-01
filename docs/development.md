@@ -38,6 +38,37 @@ rustup target add wasm32-unknown-unknown
 
 构建、离线检查和生产发布共用市场仓库内的 `artifacts/market-<revision>/`，不再写入 `dist/`，也不向宿主的 `artifacts/` 复制发布包。独立检出与作为子模块检出保持同一布局；宿主运行测试时创建的临时 fixture、报告和截图由宿主测试流程管理。编译缓存保留在 `target/`，清理打包结果无需删除它。最小作者示例的本地包使用 `artifacts/author-text/`，见[独立作者入口](./plugin-authoring.md)。
 
+## 仓库来源与平台入口
+
+项目自身的来源、配套宿主、链接格式和壁纸请求联系方式由 [`repository.config.json`](../repository.config.json) 维护。目录身份继续以 [`listings.json`](../listings.json) 的 `repository` 为准；链接配置不改变签名协议、生产公钥或客户端信任范围。
+
+| 字段                                    | 用途                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| `hosting.provider`                      | 明确选择发布适配器；当前支持 `github`                                |
+| `hosting.repositoryUrlTemplate`         | 由 `{repository}` 构造市场源码 URL，仓库身份来自 `listings.json`     |
+| `hosting.links`                         | `file`、`tree`、`commit`、`commits`、`compare`、`release` 的链接模板 |
+| `host.repository`、`host.repositoryUrl` | CI 检出的宿主身份与跨仓库文档来源                                    |
+| `host.docsRef`、`host.defaultRef`       | 移动文档链接的分支与 PR CI 默认宿主 ref；生产仍要求完整 SHA          |
+| `wallpaperUserAgentTemplate`            | 壁纸请求的固定 User-Agent，`{repositoryUrl}` 解析为市场源码 URL      |
+
+`file` / `tree` 使用 `{repositoryUrl}`、`{ref}`、`{path}`；`commit` / `commits` 使用 `{repositoryUrl}`、`{ref}`；`compare` 使用 `{repositoryUrl}`、`{base}`、`{ref}`；`release` 使用 `{repositoryUrl}`、`{tag}`。URL 必须为无凭据的 HTTPS 地址，链接模板必须从 `{repositoryUrl}/` 开始；未知或缺少占位符、控制字符及无效配置会在写入前拒绝。
+
+修改配置后，从**市场仓库根目录**运行：
+
+```sh
+node scripts/repository-config.mjs sync
+node scripts/repository-config.mjs check
+node --test scripts/*.test.mjs plugins/*/ui/*.test.mjs
+```
+
+`package.json` 提供同义的 `repository:sync` 与 `repository:check`。`sync` 使用已提交的 [`repository.generated.json`](../repository.generated.json) 中上次同步的配置及目录身份作为旧值来源，有界更新根目录 Markdown、`docs/` Markdown、插件 README 中本项目的 URL / 仓库身份，以及宿主 checkout、PR CI 默认 ref 和壁纸 fixture 的 User-Agent。默认文档分支随 `host.docsRef` 更新，已固定的标签或 SHA 保留；第三方来源、上游 Actions 与相似前缀仓库不会被替换。同步后审阅差异并一起提交配置、同步记录和派生文件；保留旧同步记录直到命令完成，不手工把它预先改成新值。`check` 只检查漂移，不写文件，脚本回归和 CI 会执行同样检查。需要检查另一个独立检出时，两条命令均可追加 `--root <checkout>`。
+
+同步先在相同目录暂存完整新字节，提交每个文件前比较读取时的原始字节，并拒绝覆盖随后编辑或新建的文件。安装失败时逆序恢复已替换且未被再次修改的文件；若并发编辑导致无法安全恢复，会保留当前文件和 `.repository-sync-*.bak` 原件备份，并在错误中报告恢复位置。此时先核对并保留双方内容，解决冲突后再运行同步，不直接删除报告的备份。
+
+发布脚本通过 [`scripts/hosting.mjs`](../scripts/hosting.mjs) 选择显式适配器。GitHub API、`gh` 参数、CI 源码 SHA 来源和标签复核集中在 [`scripts/hosting/github.mjs`](../scripts/hosting/github.mjs)；Release 说明使用配置中的链接模板。配置其他 HTTPS 链接不会自动切换发布 API。未来迁移平台时，维护者统一修改配置，添加经审核的适配器，并检查 [`.github/`](../.github/) 中的平台工作流；不按域名自动猜测平台，不预建其他服务实现。宿主 checkout 和默认 ref 由同步命令更新，其他 GitHub Actions 语法与上游 action 地址留在这些明确的平台适配文件中。
+
+壁纸 Rust 插件通过 `include_str!` 嵌入同步生成的 [`user-agent.generated.txt`](../plugins/wallpaper-browser/user-agent.generated.txt)，该文件只包含从市场配置与 `listings.repository` 派生的固定请求 User-Agent；它不嵌入整个收录清单，增删其他插件不会因此改变壁纸 Wasm 字节。手写 smoke fixture 由同步命令更新同一字段，其余网络来源、权限与业务断言仍由插件维护。宿主测试可通过 `scripts/repository-config.mjs` 的只读 `wallpaperUserAgent(config, repository)` 取得相同联系方式。联系方式迁移会改变编译后的插件字节，应按正常插件版本与发布流程验收。
+
 ## 准备宿主校验工具
 
 市场构建需要与当前协议一致的 `extension-tool`。它是宿主提供的专用无界面二进制，支持 `validate` 和 `test`，不初始化桌面应用。不要使用主应用可执行文件代替它，也不要为绕过失败而跳过权威校验。

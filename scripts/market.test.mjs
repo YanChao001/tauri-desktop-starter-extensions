@@ -16,7 +16,8 @@ import {
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { publishCatalog as publishCatalogWithHistory } from "./publish.mjs";
+import { publishCatalog as publishCatalogWithConfig } from "./publish.mjs";
+import githubRepositoryConfig from "./fixtures/github-repository.config.json" with { type: "json" };
 import {
   validateCatalog,
   validateManifest,
@@ -464,6 +465,17 @@ test("offline release verification binds signed metadata to the exact packaged m
   );
 });
 const releaseSourceSha = "0123456789abcdef0123456789abcdef01234567";
+const publishCatalogWithHistory = (
+  catalog,
+  directory,
+  sourceSha,
+  run,
+  options = {},
+) =>
+  publishCatalogWithConfig(catalog, directory, sourceSha, run, {
+    config: githubRepositoryConfig,
+    ...options,
+  });
 const isHistory = (args) => args[0] === "api" && args[1].includes("/releases?");
 const publishCatalog = (...args) =>
   publishCatalogWithHistory(...args, {

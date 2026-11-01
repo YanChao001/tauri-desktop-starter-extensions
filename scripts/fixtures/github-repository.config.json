@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "hosting": {
+    "provider": "github",
+    "repositoryUrlTemplate": "https://github.com/{repository}",
+    "links": {
+      "file": "{repositoryUrl}/blob/{ref}/{path}",
+      "tree": "{repositoryUrl}/tree/{ref}/{path}",
+      "commit": "{repositoryUrl}/commit/{ref}",
+      "commits": "{repositoryUrl}/commits/{ref}",
+      "compare": "{repositoryUrl}/compare/{base}...{ref}",
+      "release": "{repositoryUrl}/releases/tag/{tag}"
+    }
+  },
+  "host": {
+    "repository": "owner/host",
+    "repositoryUrl": "https://github.com/owner/host",
+    "docsRef": "develop",
+    "defaultRef": "develop"
+  },
+  "wallpaperUserAgentTemplate": "Wallpaper/2.0 ({repositoryUrl})"
+}

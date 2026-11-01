@@ -1,6 +1,5 @@
 import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { mkdtempSync, writeFileSync, rmSync, rmdirSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -8,67 +7,19 @@ import { validateCatalog, validRepository } from "./protocol.mjs";
 import { verifyRelease } from "./verify.mjs";
 import { parseJson, readBounded } from "./files.mjs";
 import { createReleaseNotes, runGit } from "./release-notes.mjs";
-
-const runGh = (args) =>
-  execFileSync("gh", args, {
-    encoding: "utf8",
-    windowsHide: true,
-    timeout: 600_000,
-    maxBuffer: 32 * 1024 * 1024,
-  });
+import { createHosting } from "./hosting.mjs";
+import { readRepositoryConfig } from "./repository-config.mjs";
 
 const validSha = (value) =>
   typeof value === "string" &&
   value.length === 40 &&
   /^[a-f0-9]{40}$/i.test(value);
 
-function verifyTagSource(repository, tag, sourceSha, run) {
-  const expectedRef = `refs/tags/${tag}`;
-  // The matching endpoint returns [] when absent, without conflating read failures with absence.
-  const references = JSON.parse(
-    run(["api", `repos/${repository}/git/matching-refs/tags/${tag}`]),
-  );
-  if (
-    !Array.isArray(references) ||
-    references.some(
-      (entry) =>
-        typeof entry?.ref !== "string" || !entry.ref.startsWith(expectedRef),
-    )
-  )
-    throw new Error("Invalid release tag reference response");
-  const matches = references.filter((entry) => entry.ref === expectedRef);
-  if (matches.length > 1)
-    throw new Error("Invalid duplicate release tag references");
-  if (matches.length === 0) return;
-
-  let object = matches[0].object;
-  const visited = new Set();
-  for (let depth = 0; depth <= 8; depth++) {
-    if (!validSha(object?.sha)) throw new Error("Invalid release tag object");
-    const sha = object.sha.toLowerCase();
-    if (object.type === "commit") {
-      if (sha !== sourceSha.toLowerCase())
-        throw new Error(
-          "Release tag does not match the reviewed source commit",
-        );
-      return;
-    }
-    if (object.type !== "tag" || depth === 8 || visited.has(sha))
-      throw new Error("Release tag does not resolve to a commit");
-    visited.add(sha);
-    const annotated = JSON.parse(
-      run(["api", `repos/${repository}/git/tags/${sha}`]),
-    );
-    if (!validSha(annotated?.sha) || annotated.sha.toLowerCase() !== sha)
-      throw new Error("Invalid annotated release tag response");
-    object = annotated.object;
-  }
-}
-
 export async function publish(
   directory,
-  { run = runGh, encodedKey, git = runGit } = {},
+  { run, encodedKey, git = runGit, config = readRepositoryConfig() } = {},
 ) {
+  const hosting = createHosting(config, { run });
   const root = resolve(import.meta.dirname, "..");
   const parent = await realpath(tmpdir());
   const snapshot = await mkdtemp(join(parent, "starter-market-publish-"));
@@ -82,13 +33,11 @@ export async function publish(
     ).repository;
     if (catalog.repository !== repository)
       throw new Error("Invalid release repository");
-    publishCatalog(
-      catalog,
-      snapshot,
-      process.env.GITHUB_SHA ?? process.env.MARKET_SOURCE_SHA,
-      run,
-      { git },
-    );
+    publishCatalog(catalog, snapshot, hosting.sourceSha(), run, {
+      git,
+      config,
+      hosting,
+    });
   } finally {
     if (
       dirname(resolve(snapshot)) !== parent ||
@@ -103,7 +52,11 @@ export function publishCatalog(
   directory,
   sourceSha,
   run,
-  { git = runGit } = {},
+  {
+    git = runGit,
+    config = readRepositoryConfig(),
+    hosting = createHosting(config, { run }),
+  } = {},
 ) {
   if (!validSha(sourceSha))
     throw new Error(
@@ -118,26 +71,7 @@ export function publishCatalog(
     catalog.revision > 0xffffffff
   )
     throw new Error("Invalid release identity");
-  const pages = JSON.parse(
-    run([
-      "api",
-      `repos/${repository}/releases?per_page=100`,
-      "--paginate",
-      "--slurp",
-    ]),
-  );
-  if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page)))
-    throw new Error("Invalid release history response");
-  const releases = pages.flat();
-  if (
-    releases.some(
-      (release) =>
-        !release ||
-        typeof release.tag_name !== "string" ||
-        typeof release.draft !== "boolean",
-    )
-  )
-    throw new Error("Invalid release history entry");
+  const releases = hosting.listReleases(repository);
   const previous = releases.reduce(
     (highest, release) =>
       release.draft
@@ -161,52 +95,33 @@ export function publishCatalog(
       throw new Error("Invalid release asset");
     return join(directory, entry.asset);
   });
-  verifyTagSource(repository, tag, sourceSha, run);
-  const notes = createReleaseNotes(catalog, sourceSha, releases, git);
+  hosting.verifyTagSource(repository, tag, sourceSha);
+  const notes = createReleaseNotes(catalog, sourceSha, releases, git, config);
   // Published latest is changed only after every asset has been uploaded successfully.
   const notesDirectory = mkdtempSync(join(tmpdir(), "starter-market-notes-"));
   const notesFile = join(notesDirectory, "release-notes.md");
   try {
     writeFileSync(notesFile, notes, { flag: "wx", encoding: "utf8" });
-    run([
-      "release",
-      "create",
-      tag,
-      "--repo",
+    hosting.createDraft({
       repository,
-      "--target",
+      tag,
       sourceSha,
-      "--draft",
-      "--title",
-      `市场目录 ${catalog.revision}`,
-      "--notes-file",
+      title: `市场目录 ${catalog.revision}`,
       notesFile,
-    ]);
+    });
   } finally {
     rmSync(notesFile, { force: true });
     rmdirSync(notesDirectory);
   }
-  run([
-    "release",
-    "upload",
-    tag,
-    "--repo",
+  hosting.uploadAssets({
     repository,
-    join(directory, "catalog.json"),
-    ...assets,
-  ]);
-  // Recheck after upload: --target does not override a tag created or moved in the meantime.
-  verifyTagSource(repository, tag, sourceSha, run);
+    tag,
+    assets: [join(directory, "catalog.json"), ...assets],
+  });
+  // Recheck after upload in case the remote tag was created or moved in the meantime.
+  hosting.verifyTagSource(repository, tag, sourceSha);
   validateCatalog(catalog);
-  run([
-    "release",
-    "edit",
-    tag,
-    "--repo",
-    repository,
-    "--draft=false",
-    "--latest",
-  ]);
+  hosting.publishLatest({ repository, tag });
   console.log(`Published ${repository} ${tag}`);
 }
 if (

@@ -711,7 +711,7 @@ No provider rate snapshot is bundled with this document.
       }
       .canvas-wrap {
         position: absolute;
-        inset: 0;
+        inset: 0 0 28px;
         overflow: hidden;
       }
       canvas {
@@ -737,7 +737,7 @@ No provider rate snapshot is bundled with this document.
         position: absolute;
         z-index: 2;
         right: 8px;
-        bottom: 20px;
+        bottom: 56px;
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -745,8 +745,14 @@ No provider rate snapshot is bundled with this document.
       .coordinates {
         position: absolute;
         bottom: 0;
-        left: 12px;
-        height: 20px;
+        inset-inline: 0;
+        display: flex;
+        align-items: center;
+        height: 28px;
+        padding-inline: 12px;
+        overflow: hidden;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
         font-size: 12px;
         color: var(--win-muted);
         pointer-events: none;
@@ -1626,7 +1632,7 @@ No provider rate snapshot is bundled with this document.
             </section>
           </div>
           <div class="mode-bar">
-            <button id="angle-cycle" class="flat">DEG</button
+            <button id="angle-cycle" class="flat">RAD</button
             ><button
               id="notation"
               class="flat"
@@ -1693,6 +1699,24 @@ No provider rate snapshot is bundled with this document.
           </div>
           <div class="graph-floats">
             <button
+              id="box-zoom"
+              class="flat icon"
+              data-help-label="boxZoom"
+              aria-pressed="false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect
+                  x="3"
+                  y="3"
+                  width="14"
+                  height="14"
+                  rx="1"
+                  stroke-dasharray="3 2"
+                />
+                <path d="M10 7v6m-3-3h6m3 6 5 5" />
+              </svg>
+            </button>
+            <button
               id="graph-settings-toggle"
               class="flat icon"
               data-help-label="graphSettings"
@@ -1742,6 +1766,14 @@ No provider rate snapshot is bundled with this document.
                 ><span data-i18n="ymax">Y最大值</span
                 ><input id="ymax" inputmode="decimal" maxlength="80"
               /></label>
+              <label>
+                <span data-i18n="angle">角度制</span>
+                <select id="graph-angle">
+                  <option value="rad">RAD</option>
+                  <option value="deg">DEG</option>
+                  <option value="grad">GRAD</option>
+                </select>
+              </label>
             </div>
             <div class="row">
               <button data-variant="ghost" data-action="plot" data-i18n="apply">
@@ -2447,8 +2479,8 @@ No provider rate snapshot is bundled with this document.
       ><span id="graph-help" class="sr-only" data-i18n="graphHelp"></span>
       <div hidden>
         <select id="angle">
-          <option value="deg">DEG</option>
           <option value="rad">RAD</option>
+          <option value="deg">DEG</option>
           <option value="grad">GRAD</option></select
         ><textarea id="functions"></textarea
         ><input id="mode" value="standard" /><input
@@ -2583,8 +2615,8 @@ No provider rate snapshot is bundled with this document.
           reset: ["重置坐标", "Reset axes"],
           plot: ["绘制", "Plot"],
           graphHelp: [
-            "拖动平移，滚轮缩放。聚焦图像后方向键平移，+ / − 缩放。采样仅为近似。",
-            "Drag to pan; scroll to zoom. Focus the graph to pan with arrows or zoom with + / −. Samples are approximate.",
+            "拖动平移，滚轮或双指缩放；框选工具或 Shift + 拖动放大选区，Esc 取消。聚焦图像后方向键平移，+ / − 缩放，Home 重置。采样仅为近似。",
+            "Drag to pan; scroll or pinch to zoom. Use box zoom or Shift-drag to zoom into a region; Escape cancels. Focus the graph to pan with arrows, zoom with + / − or reset with Home. Samples are approximate.",
           ],
           functions: ["函数", "Functions"],
           functionsHint: [
@@ -2617,8 +2649,8 @@ No provider rate snapshot is bundled with this document.
             "Operation did not complete. Your input and last result were retained.",
           ],
           graphLabel: [
-            "函数图像；可拖动平移、滚轮缩放，或使用键盘方向键与加减号。",
-            "Function graph. Drag or use arrow keys to pan; scroll or use plus and minus to zoom.",
+            "函数图像；拖动平移，滚轮或双指缩放，Shift 拖动框选放大；方向键平移，加减号缩放，Home 重置。",
+            "Function graph. Drag to pan, scroll or pinch to zoom, Shift-drag for box zoom. Use arrows to pan, plus/minus to zoom or Home to reset.",
           ],
           checkpointFailed: [
             "无法保留草稿，请先保存重要输入。",
@@ -2733,6 +2765,10 @@ No provider rate snapshot is bundled with this document.
           ymax: ["Y 最大值", "Y maximum"],
           zoomIn: ["放大 +", "Zoom in +"],
           zoomOut: ["缩小 −", "Zoom out −"],
+          boxZoom: [
+            "框选放大（也可按 Shift 拖动，Esc 取消）",
+            "Box zoom (or Shift-drag; Escape cancels)",
+          ],
           resampling: ["正在重新采样…", "Resampling…"],
           samplePreview: [
             "坐标预览；停止操作后重新采样",
@@ -2766,6 +2802,10 @@ No provider rate snapshot is bundled with this document.
           hydrated = false,
           localDraft = false;
         let draftTimer, zoomTimer, viewport, pointer, cursor, chartData, frame;
+        let plotting = false,
+          graphViewportRevision = 0,
+          boxZoom = false;
+        const graphPointers = new Map();
         let draftRevision = 0,
           syncedRevision = 0,
           syncing = null,
@@ -3117,6 +3157,8 @@ No provider rate snapshot is bundled with this document.
                   : "";
           }
           $("expression-line").textContent = prettyExpression(trail);
+          $("graph-angle").value = $("angle").value;
+          setDisabled($("graph-angle"));
           $("angle-cycle").textContent = $("angle").value.toUpperCase();
           $("angle-cycle").setAttribute(
             "aria-label",
@@ -3227,26 +3269,25 @@ No provider rate snapshot is bundled with this document.
             : $("expression").value;
           const span = operandSpan(value);
           const operand = span.text;
+          // 函数调用本身是完整操作数；复合算式保留分组供后续一元运算复用。
           const transformed =
-            "(" +
-            (key === "square"
-              ? `(${operand})^2`
+            key === "square"
+              ? `((${operand})^2)`
               : key === "cube"
-                ? `(${operand})^3`
+                ? `((${operand})^3)`
                 : key === "reciprocal"
-                  ? `1/(${operand})`
+                  ? `(1/(${operand}))`
                   : key === "factorial"
-                    ? `(${operand})!`
+                    ? `((${operand})!)`
                     : key === "pow10"
-                      ? `10^(${operand})`
+                      ? `(10^(${operand}))`
                       : key === "pow2"
-                        ? `2^(${operand})`
+                        ? `(2^(${operand}))`
                         : key === "powe"
                           ? `exp(${operand})`
                           : key === "negate"
-                            ? `-(${operand})`
-                            : `${key}(${operand})`) +
-            ")";
+                            ? `(-(${operand}))`
+                            : `${key}(${operand})`;
           if (!setExpression(value.slice(0, span.start) + transformed, null))
             return;
           $("operand").value = transformed;
@@ -3479,6 +3520,7 @@ No provider rate snapshot is bundled with this document.
         function setMode(mode) {
           if (busy()) return;
           if (!MODES.includes(mode)) return;
+          cancelGraphGesture();
           clearTimeout(dateTimer);
           clearTimeout(equationTimer);
           clearTimeout(zoomTimer);
@@ -4257,23 +4299,37 @@ No provider rate snapshot is bundled with this document.
         function syncEquations(submit = false) {
           const inputs = [
             ...$("equations").querySelectorAll("input[data-equation]"),
-          ];
+          ].filter((input) => input.value.trim());
           $("functions").value = inputs
             .map((input) => input.value.trim())
-            .filter(Boolean)
             .join("\n");
+          // Empty editor rows stay mounted while typing. Keep their own curve
+          // metadata so repeated drafts cannot shift another row's appearance.
+          equationVisibility = inputs.map(
+            (input) => input.dataset.curveVisible !== "false",
+          );
+          equationStyles = inputs.map((input) =>
+            Number(input.dataset.lineStyle),
+          );
           previewing = true;
           checkpoint();
-          if (submit && $("functions").value.trim()) void act("plot");
+          if (submit) void act("plot");
         }
         function buildEquations(forceBuild = false) {
           const source = $("functions").value || "";
           if (!forceBuild && source === renderedEquations) return;
           if (!forceBuild && $("equations").contains(document.activeElement))
             return;
-          const selections = [
+          const previousInputs = [
             ...$("equations").querySelectorAll("input[data-equation]"),
-          ].map((input) => ({
+          ];
+          const populatedInputs = previousInputs.filter((input) =>
+            input.value.trim(),
+          );
+          const previousActive = populatedInputs.indexOf(
+            previousInputs[activeEquation],
+          );
+          const selections = populatedInputs.map((input) => ({
             value: input.value,
             start: input.selectionStart,
             end: input.selectionEnd,
@@ -4286,6 +4342,10 @@ No provider rate snapshot is bundled with this document.
             .slice(0, 8);
           if (functions.length < 8) functions.push("");
           if (!functions.length) functions.push("");
+          activeEquation = Math.min(
+            previousActive >= 0 ? previousActive : activeEquation,
+            functions.length - 1,
+          );
           $("equations").replaceChildren(
             ...functions.map((value, index) => {
               const row = document.createElement("div");
@@ -4314,11 +4374,15 @@ No provider rate snapshot is bundled with this document.
               );
               toggle.onclick = () => {
                 if (busy()) return;
-                equationVisibility[index] = equationVisibility[index] === false;
-                toggle.setAttribute(
-                  "aria-pressed",
-                  String(equationVisibility[index]),
-                );
+                const visible = input.dataset.curveVisible === "false";
+                input.dataset.curveVisible = String(visible);
+                const curve = [
+                  ...$("equations").querySelectorAll("input[data-equation]"),
+                ]
+                  .filter((node) => node.value.trim())
+                  .indexOf(input);
+                if (curve >= 0) equationVisibility[curve] = visible;
+                toggle.setAttribute("aria-pressed", String(visible));
                 checkpoint();
                 scheduleDraw();
               };
@@ -4331,6 +4395,10 @@ No provider rate snapshot is bundled with this document.
               )
                 input.setSelectionRange(selection.start, selection.end);
               input.dataset.equation = String(index);
+              input.dataset.curveVisible = String(
+                equationVisibility[index] !== false,
+              );
+              input.dataset.lineStyle = String(equationStyles[index] ?? 0);
               input.placeholder =
                 current?.locale === "en" ? "Enter an expression" : "输入表达式";
               input.maxLength = 4096;
@@ -4346,12 +4414,10 @@ No provider rate snapshot is bundled with this document.
                 }
               });
               input.onkeydown = (event) => {
-                if (event.key === "Enter" && !event.isComposing) {
+                if (event.key === "Enter" && !event.isComposing && !busy()) {
                   event.preventDefault();
+                  activeEquation = index;
                   syncEquations(true);
-                  if (index < 7) {
-                    activeEquation = index + 1;
-                  }
                 }
               };
               input.addEventListener("change", () => {
@@ -4359,12 +4425,7 @@ No provider rate snapshot is bundled with this document.
                   syncEquations();
                   clearTimeout(equationTimer);
                   equationTimer = setTimeout(() => {
-                    if (
-                      disposed ||
-                      calculatorMode !== "graph" ||
-                      !$("functions").value
-                    )
-                      return;
+                    if (disposed || calculatorMode !== "graph") return;
                     if (busy()) {
                       plotDeferred = true;
                       return;
@@ -4374,13 +4435,20 @@ No provider rate snapshot is bundled with this document.
                 }
               });
               style.className = "flat";
-              style.textContent = "⋯";
+              style.textContent = ["━", "┄", "┈"][equationStyles[index] ?? 0];
               style.dataset.curveStyle = String(index);
               style.setAttribute("aria-label", tr("curveStyle"));
               style.onclick = () => {
                 if (busy()) return;
-                equationStyles[index] = ((equationStyles[index] ?? 0) + 1) % 3;
-                style.textContent = ["━", "┄", "┈"][equationStyles[index]];
+                const lineStyle = (Number(input.dataset.lineStyle) + 1) % 3;
+                input.dataset.lineStyle = String(lineStyle);
+                const curve = [
+                  ...$("equations").querySelectorAll("input[data-equation]"),
+                ]
+                  .filter((node) => node.value.trim())
+                  .indexOf(input);
+                if (curve >= 0) equationStyles[curve] = lineStyle;
+                style.textContent = ["━", "┄", "┈"][lineStyle];
                 checkpoint();
                 scheduleDraw();
               };
@@ -4390,17 +4458,11 @@ No provider rate snapshot is bundled with this document.
               remove.setAttribute("aria-label", tr("removeEquation"));
               remove.onclick = () => {
                 if (busy()) return;
-                const all = [
-                  ...$("equations").querySelectorAll("input[data-equation]"),
-                ].map((node) => node.value);
-                all.splice(index, 1);
-                $("functions").value = all.filter(Boolean).join("\n");
-                equationVisibility.splice(index, 1);
-                equationStyles.splice(index, 1);
+                input.value = "";
+                syncEquations();
                 renderedEquations = null;
                 buildEquations(true);
-                checkpoint();
-                if ($("functions").value) void act("plot");
+                void act("plot");
               };
               for (const button of [toggle, style, remove]) setDisabled(button);
               row.append(toggle, input, style, remove);
@@ -4462,7 +4524,8 @@ No provider rate snapshot is bundled with this document.
             syncEquations(true);
             return;
           }
-          if (key === "clear" || key === "clear-all") input.value = "";
+          if (["clear", "clear-entry", "clear-all"].includes(key))
+            input.value = "";
           else if (key === "backspace") {
             const position =
               start === end
@@ -4515,7 +4578,7 @@ No provider rate snapshot is bundled with this document.
             return;
           }
           input.focus();
-          syncEquations();
+          syncEquations(["clear", "clear-entry", "clear-all"].includes(key));
           second = false;
           renderDisplay();
         }
@@ -5998,6 +6061,7 @@ No provider rate snapshot is bundled with this document.
           )
             return false;
           viewport = next;
+          graphViewportRevision++;
           for (const id of ["xmin", "xmax", "ymin", "ymax"])
             // The shortest round-trippable representation stays below 80 bytes.
             // Rounding to 14 digits can collapse a valid narrow range at a large offset.
@@ -6320,7 +6384,12 @@ No provider rate snapshot is bundled with this document.
             dateDeferred = false;
             queueDate();
           }
-          if (plotDeferred && !busy() && calculatorMode === "graph") {
+          if (
+            plotDeferred &&
+            !busy() &&
+            !pointer &&
+            calculatorMode === "graph"
+          ) {
             plotDeferred = false;
             void act("plot");
           }
@@ -6349,6 +6418,7 @@ No provider rate snapshot is bundled with this document.
           draftTimer = undefined;
           clearTimeout(zoomTimer);
           working = true;
+          plotting = id === "plot";
           localError = "";
           render();
           try {
@@ -6359,6 +6429,8 @@ No provider rate snapshot is bundled with this document.
             )
               return false;
             const wasDirty = current.dirty || localDraft;
+            const submittedGraphRevision = graphViewportRevision,
+              submittedDraftRevision = draftRevision;
             const next = await starter.run(id, values());
             const notice = JSON.parse(next.state).notice;
             if (notice && !["root", "integrate"].includes(id))
@@ -6373,6 +6445,13 @@ No provider rate snapshot is bundled with this document.
                 field.id === "operand" ? "" : field.value,
               ]),
             );
+            // A sampling response may arrive after another local graph gesture.
+            // Keep the latest viewport and resample it after the gesture settles.
+            let newerViewport =
+              id === "plot" && submittedGraphRevision !== graphViewportRevision;
+            if (newerViewport)
+              for (const key of ["xmin", "xmax", "ymin", "ymax"])
+                nextValues[key] = $(key).value;
             const succeeded = !Object.values(next.errors ?? {}).some(Boolean);
             if (id === "load" && succeeded) {
               const loaded = JSON.parse(next.state);
@@ -6431,15 +6510,28 @@ No provider rate snapshot is bundled with this document.
             };
             rememberCheckpoint(actionCheckpoint);
             await starter.checkpoint(actionCheckpoint, dirty);
+            newerViewport =
+              id === "plot" && submittedGraphRevision !== graphViewportRevision;
+            if (newerViewport) {
+              for (const key of ["xmin", "xmax", "ymin", "ymax"])
+                nextValues[key] = $(key).value;
+              rememberCheckpoint(actionCheckpoint);
+            }
             current = {
               ...current,
               view: next,
               fields: nextValues,
               checkpoint: actionCheckpoint,
             };
-            localDraft = false;
-            syncedRevision = draftRevision;
-            previewing = false;
+            localDraft = newerViewport;
+            syncedRevision = newerViewport
+              ? submittedDraftRevision
+              : draftRevision;
+            previewing = newerViewport;
+            if (newerViewport) {
+              queueDraft();
+              resampleSoon();
+            }
             force = true;
             if (updatesDisplay) displayValue = null;
             if (["root", "integrate"].includes(id) && succeeded)
@@ -6462,6 +6554,7 @@ No provider rate snapshot is bundled with this document.
             return false;
           } finally {
             working = false;
+            plotting = false;
             render();
           }
         }
@@ -6539,6 +6632,13 @@ No provider rate snapshot is bundled with this document.
             if (calculatorMode === "graph") void act("plot");
           }
         });
+        $("graph-angle").addEventListener("change", () => {
+          if (busy()) return;
+          $("angle").value = $("graph-angle").value;
+          checkpoint();
+          renderDisplay();
+          void act("plot");
+        });
         $("expression").onkeydown = (event) => {
           if (event.isComposing) return;
           if (event.key === "Enter") {
@@ -6575,11 +6675,12 @@ No provider rate snapshot is bundled with this document.
             bottom: 30,
           };
         }
-        function gridStep(span) {
-          const unit = 10 ** Math.floor(Math.log10(span / 7));
+        function gridStep(span, divisions) {
+          const unit = 10 ** Math.floor(Math.log10(span / divisions));
           return (
-            [1, 2, 5, 10].map((n) => n * unit).find((n) => span / n <= 10) ??
-            unit * 10
+            [1, 2, 5, 10]
+              .map((n) => n * unit)
+              .find((n) => span / n <= divisions) ?? unit * 10
           );
         }
         function draw() {
@@ -6608,8 +6709,18 @@ No provider rate snapshot is bundled with this document.
           context.strokeStyle =
             styles.getPropertyValue("--border").trim() || "#ccc";
           context.lineWidth = 0.7;
-          const xstep = gridStep(r.xmax - r.xmin),
-            ystep = gridStep(r.ymax - r.ymin);
+          const xstep = gridStep(
+              r.xmax - r.xmin,
+              Math.max(2, Math.floor(plotWidth / 75)),
+            ),
+            ystep = gridStep(
+              r.ymax - r.ymin,
+              Math.max(2, Math.floor(plotHeight / 50)),
+            ),
+            tickLabel = (value, step) =>
+              Math.abs(value) < step * 1e-8
+                ? "0"
+                : Number(value.toPrecision(5)).toString();
           context.textAlign = "center";
           for (
             let x = Math.ceil(r.xmin / xstep) * xstep, i = 0;
@@ -6621,9 +6732,10 @@ No provider rate snapshot is bundled with this document.
             context.lineTo(px(x), d.h - d.bottom);
             context.stroke();
             context.fillText(
-              Number(x.toPrecision(5)).toString(),
-              px(x),
+              tickLabel(x, xstep),
+              Math.max(d.left, Math.min(d.w - 22, px(x))),
               d.h - 9,
+              Math.min(70, plotWidth / 2),
             );
           }
           context.textAlign = "right";
@@ -6637,9 +6749,10 @@ No provider rate snapshot is bundled with this document.
             context.lineTo(d.w - d.right, py(y));
             context.stroke();
             context.fillText(
-              Number(y.toPrecision(5)).toString(),
+              tickLabel(y, ystep),
               d.left - 5,
               py(y) + 4,
+              d.left - 8,
             );
           }
           context.save();
@@ -6706,7 +6819,22 @@ No provider rate snapshot is bundled with this document.
             context.lineTo(d.w - d.right, cursor.y);
             context.stroke();
           }
+          if (pointer?.kind === "box" && pointer.end) {
+            const x = Math.min(pointer.x, pointer.end.x),
+              y = Math.min(pointer.y, pointer.end.y),
+              width = Math.abs(pointer.end.x - pointer.x),
+              height = Math.abs(pointer.end.y - pointer.y);
+            context.setLineDash([5, 3]);
+            context.strokeStyle =
+              styles.getPropertyValue("--primary").trim() || color(0);
+            context.fillStyle = context.strokeStyle;
+            context.globalAlpha = 0.15;
+            context.fillRect(x, y, width, height);
+            context.globalAlpha = 1;
+            context.strokeRect(x, y, width, height);
+          }
           context.restore();
+          showCoordinates(cursor);
         }
         function location(event) {
           const rect = canvas.getBoundingClientRect();
@@ -6728,11 +6856,52 @@ No provider rate snapshot is bundled with this document.
             ymax: y + ty * dy,
           });
         }
+        function graphCanInteract() {
+          return (
+            !disposed &&
+            current?.active !== false &&
+            calculatorMode === "graph" &&
+            (!busy() || plotting)
+          );
+        }
+        function graphPoint(point, clamp = false) {
+          const d = dimensions();
+          if (d.w <= d.left + d.right || d.h <= d.top + d.bottom) return null;
+          if (clamp)
+            return {
+              x: Math.max(d.left, Math.min(d.w - d.right, point.x)),
+              y: Math.max(d.top, Math.min(d.h - d.bottom, point.y)),
+            };
+          return point.x >= d.left &&
+            point.x <= d.w - d.right &&
+            point.y >= d.top &&
+            point.y <= d.h - d.bottom
+            ? point
+            : null;
+        }
+        function showCoordinates(point) {
+          const r = viewport ?? range(),
+            d = dimensions();
+          $("coordinates").textContent = point
+            ? `x ≈ ${fmt(r.xmin + ((point.x - d.left) / (d.w - d.left - d.right)) * (r.xmax - r.xmin), 7)}   y ≈ ${fmt(r.ymax - ((point.y - d.top) / (d.h - d.top - d.bottom)) * (r.ymax - r.ymin), 7)}`
+            : "";
+        }
+        function cancelGraphGesture() {
+          const captured = [...graphPointers.keys()];
+          graphPointers.clear();
+          pointer = null;
+          cursor = null;
+          for (const id of captured)
+            if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+          showCoordinates(null);
+          scheduleDraw();
+        }
         function resampleSoon() {
           clearTimeout(zoomTimer);
           zoomTimer = setTimeout(() => {
+            zoomTimer = undefined;
             if (disposed || calculatorMode !== "graph") return;
-            if (busy()) {
+            if (busy() || pointer) {
               plotDeferred = true;
               return;
             }
@@ -6742,12 +6911,19 @@ No provider rate snapshot is bundled with this document.
         canvas.addEventListener(
           "wheel",
           (event) => {
-            if (busy() || event.deltaY === 0) return;
+            if (!graphCanInteract() || event.deltaY === 0 || pointer) return;
             event.preventDefault();
+            const delta =
+              event.deltaY *
+              (event.deltaMode === 1
+                ? 16
+                : event.deltaMode === 2
+                  ? canvas.clientHeight
+                  : 1);
             if (
               zoom(
-                Math.exp(Math.max(-1, Math.min(1, event.deltaY / 100)) * 0.18),
-                location(event),
+                Math.exp(Math.max(-1, Math.min(1, delta / 100)) * 0.18),
+                graphPoint(location(event), true),
               )
             )
               resampleSoon();
@@ -6755,57 +6931,156 @@ No provider rate snapshot is bundled with this document.
           { passive: false },
         );
         canvas.onpointerdown = (event) => {
-          if (busy() || event.button !== 0 || !event.isPrimary) return;
+          if (
+            !graphCanInteract() ||
+            event.button !== 0 ||
+            (event.pointerType !== "touch" && !event.isPrimary) ||
+            graphPointers.size >= 2
+          )
+            return;
+          const point = graphPoint(location(event));
+          if (!point) return;
           event.preventDefault();
           canvas.focus();
-          pointer = {
-            ...location(event),
-            range: { ...(viewport ?? range()) },
-            id: event.pointerId,
-          };
+          graphPointers.set(event.pointerId, point);
           canvas.setPointerCapture(event.pointerId);
+          if (graphPointers.size === 2) {
+            const [first, second] = [...graphPointers.values()];
+            pointer = {
+              kind: "pinch",
+              range: { ...(viewport ?? range()) },
+              center: {
+                x: (first.x + second.x) / 2,
+                y: (first.y + second.y) / 2,
+              },
+              distance: Math.max(
+                1,
+                Math.hypot(second.x - first.x, second.y - first.y),
+              ),
+              changed: pointer?.changed ?? false,
+            };
+          } else
+            pointer = {
+              ...point,
+              range: { ...(viewport ?? range()) },
+              kind: event.shiftKey || boxZoom ? "box" : "pan",
+              id: event.pointerId,
+              changed: false,
+            };
         };
         canvas.onpointermove = (event) => {
           const point = location(event),
             d = dimensions();
-          cursor = point;
-          if (pointer && pointer.id === event.pointerId && !busy()) {
-            const r = pointer.range,
-              dx =
-                ((point.x - pointer.x) / (d.w - d.left - d.right)) *
-                (r.xmax - r.xmin),
-              dy =
-                ((point.y - pointer.y) / (d.h - d.top - d.bottom)) *
-                (r.ymax - r.ymin);
-            setRange({
-              xmin: r.xmin - dx,
-              xmax: r.xmax - dx,
-              ymin: r.ymin + dy,
-              ymax: r.ymax + dy,
-            });
+          cursor = graphPoint(point);
+          if (graphPointers.has(event.pointerId))
+            graphPointers.set(event.pointerId, point);
+          if (
+            pointer &&
+            graphCanInteract() &&
+            graphPointers.has(event.pointerId)
+          ) {
+            if (pointer.kind === "box") pointer.end = graphPoint(point, true);
+            else if (pointer.kind === "pinch") {
+              const [first, second] = [...graphPointers.values()],
+                center = {
+                  x: (first.x + second.x) / 2,
+                  y: (first.y + second.y) / 2,
+                },
+                factor =
+                  pointer.distance /
+                  Math.max(
+                    1,
+                    Math.hypot(second.x - first.x, second.y - first.y),
+                  ),
+                r = pointer.range,
+                width = d.w - d.left - d.right,
+                height = d.h - d.top - d.bottom,
+                x =
+                  r.xmin +
+                  ((pointer.center.x - d.left) / width) * (r.xmax - r.xmin),
+                y =
+                  r.ymax -
+                  ((pointer.center.y - d.top) / height) * (r.ymax - r.ymin),
+                dx = (r.xmax - r.xmin) * factor,
+                dy = (r.ymax - r.ymin) * factor,
+                tx = (center.x - d.left) / width,
+                ty = (center.y - d.top) / height;
+              pointer.changed =
+                setRange({
+                  xmin: x - tx * dx,
+                  xmax: x + (1 - tx) * dx,
+                  ymin: y - (1 - ty) * dy,
+                  ymax: y + ty * dy,
+                }) || pointer.changed;
+              cursor = null;
+            } else {
+              const r = pointer.range,
+                dx =
+                  ((point.x - pointer.x) / (d.w - d.left - d.right)) *
+                  (r.xmax - r.xmin),
+                dy =
+                  ((point.y - pointer.y) / (d.h - d.top - d.bottom)) *
+                  (r.ymax - r.ymin);
+              if (dx !== 0 || dy !== 0)
+                pointer.changed =
+                  setRange({
+                    xmin: r.xmin - dx,
+                    xmax: r.xmax - dx,
+                    ymin: r.ymin + dy,
+                    ymax: r.ymax + dy,
+                  }) || pointer.changed;
+            }
           }
-          const r = viewport ?? range(),
-            x =
-              r.xmin +
-              ((point.x - d.left) / (d.w - d.left - d.right)) *
-                (r.xmax - r.xmin),
-            y =
-              r.ymax -
-              ((point.y - d.top) / (d.h - d.top - d.bottom)) *
-                (r.ymax - r.ymin);
-          $("coordinates").textContent = `x ≈ ${fmt(x, 7)}   y ≈ ${fmt(y, 7)}`;
+          showCoordinates(cursor);
           scheduleDraw();
         };
-        const endPan = (event) => {
-          if (!pointer || pointer.id !== event.pointerId) return;
+        const endGesture = (event, apply) => {
+          if (!pointer || !graphPointers.has(event.pointerId)) return;
+          let changed = pointer.changed;
+          if (apply && pointer.kind === "box" && pointer.end) {
+            const d = dimensions(),
+              start = { x: pointer.x, y: pointer.y },
+              end = pointer.end,
+              r = pointer.range;
+            if (
+              Math.abs(end.x - start.x) >= 8 &&
+              Math.abs(end.y - start.y) >= 8
+            ) {
+              const x = (value) =>
+                  r.xmin +
+                  ((value - d.left) / (d.w - d.left - d.right)) *
+                    (r.xmax - r.xmin),
+                y = (value) =>
+                  r.ymax -
+                  ((value - d.top) / (d.h - d.top - d.bottom)) *
+                    (r.ymax - r.ymin);
+              changed = setRange({
+                xmin: x(Math.min(start.x, end.x)),
+                xmax: x(Math.max(start.x, end.x)),
+                ymin: y(Math.max(start.y, end.y)),
+                ymax: y(Math.min(start.y, end.y)),
+              });
+            }
+          }
+          graphPointers.delete(event.pointerId);
           pointer = null;
           if (canvas.hasPointerCapture(event.pointerId))
             canvas.releasePointerCapture(event.pointerId);
-          resampleSoon();
+          if (graphPointers.size) {
+            const [id, point] = [...graphPointers.entries()][0];
+            pointer = {
+              ...point,
+              id,
+              kind: "pan",
+              range: { ...(viewport ?? range()) },
+              changed,
+            };
+          } else if (changed || plotDeferred) resampleSoon();
+          scheduleDraw();
         };
-        canvas.onpointerup = endPan;
-        canvas.onpointercancel = endPan;
-        canvas.onlostpointercapture = endPan;
+        canvas.onpointerup = (event) => endGesture(event, true);
+        canvas.onpointercancel = (event) => endGesture(event, false);
+        canvas.onlostpointercapture = (event) => endGesture(event, false);
         canvas.onpointerleave = () => {
           if (!pointer) {
             cursor = null;
@@ -6814,7 +7089,21 @@ No provider rate snapshot is bundled with this document.
           }
         };
         canvas.onkeydown = (event) => {
-          if (busy()) return;
+          if (event.key === "Escape" && (pointer || boxZoom)) {
+            event.preventDefault();
+            const changed = pointer?.changed;
+            cancelGraphGesture();
+            boxZoom = false;
+            $("box-zoom").setAttribute("aria-pressed", "false");
+            if (changed || plotDeferred) resampleSoon();
+            return;
+          }
+          if (!graphCanInteract()) return;
+          if (event.key === "Home") {
+            event.preventDefault();
+            if (!busy()) void act("reset-plot");
+            return;
+          }
           const r = viewport ?? range(),
             dx = (r.xmax - r.xmin) * 0.15,
             dy = (r.ymax - r.ymin) * 0.15;
@@ -6835,11 +7124,18 @@ No provider rate snapshot is bundled with this document.
             resampleSoon();
           }
         };
+        $("box-zoom").onclick = () => {
+          if (!graphCanInteract()) return;
+          cancelGraphGesture();
+          boxZoom = !boxZoom;
+          $("box-zoom").setAttribute("aria-pressed", String(boxZoom));
+          canvas.focus();
+        };
         $("zoom-in").onclick = () => {
-          if (!busy() && zoom(0.8)) resampleSoon();
+          if (graphCanInteract() && zoom(0.8)) resampleSoon();
         };
         $("zoom-out").onclick = () => {
-          if (!busy() && zoom(1.25)) resampleSoon();
+          if (graphCanInteract() && zoom(1.25)) resampleSoon();
         };
         const resize = new ResizeObserver(scheduleDraw);
         resize.observe(canvas.parentElement);
@@ -6874,6 +7170,7 @@ No provider rate snapshot is bundled with this document.
             clearTimeout(dateTimer);
             clearTimeout(equationTimer);
             clearTimeout(converterTimer);
+            cancelGraphGesture();
             if (frame) cancelAnimationFrame(frame);
             resize.disconnect();
             converterResize.disconnect();
@@ -7011,9 +7308,15 @@ No provider rate snapshot is bundled with this document.
             $("angle").value = { F3: "deg", F4: "rad", F5: "grad" }[event.key];
             checkpoint();
             renderDisplay();
+            if (calculatorMode === "graph") void act("plot");
             return;
           }
           if (calculatorMode === "date") return;
+          if (
+            event.target?.tagName === "BUTTON" &&
+            ["Enter", " "].includes(event.key)
+          )
+            return;
           if (
             event.key === "F9" ||
             (event.key === "=" && event.target === $("expression"))
@@ -7075,6 +7378,11 @@ No provider rate snapshot is bundled with this document.
         });
         starter.onChange((snapshot) => {
           if (disposed) return;
+          if (snapshot.active === false) {
+            cancelGraphGesture();
+            clearTimeout(zoomTimer);
+            if (previewing) plotDeferred = true;
+          }
           hostSnapshotSerial++;
           if (current?.busy && !snapshot.busy)
             completedBusySerial = hostSnapshotSerial;
@@ -7088,6 +7396,9 @@ No provider rate snapshot is bundled with this document.
             checkpointKey !== lastCheckpoint &&
             !ownedCheckpoints.has(checkpointKey)
           ) {
+            cancelGraphGesture();
+            clearTimeout(zoomTimer);
+            plotDeferred = false;
             clearTimeout(draftTimer);
             draftTimer = undefined;
             draftEpoch++;

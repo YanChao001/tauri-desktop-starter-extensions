@@ -23,8 +23,7 @@
       "action": "calculate",
       "state": "",
       "fields": {
-        "expression": "sin(30) + cos(60)",
-        "angle": "deg",
+        "expression": "sin(pi/6) + cos(pi/3)",
         "mode": "scientific"
       },
       "locale": "en"
@@ -153,9 +152,7 @@
       "fields": {},
       "locale": "en",
       "host": {
-        "permissions": [
-          "storage"
-        ],
+        "permissions": ["storage"],
         "storage": {
           "revision": 7,
           "values": {}
@@ -254,9 +251,7 @@
       "fields": {},
       "locale": "en",
       "host": {
-        "permissions": [
-          "storage"
-        ],
+        "permissions": ["storage"],
         "storage": {
           "revision": 7,
           "values": {
@@ -1013,9 +1008,7 @@
       },
       "locale": "en",
       "host": {
-        "permissions": [
-          "network:https"
-        ],
+        "permissions": ["network:https"],
         "storage": null
       }
     },

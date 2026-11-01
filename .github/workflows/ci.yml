@@ -24,6 +24,7 @@ jobs:
       - uses: ./.github/actions/plugin-check
       - uses: ./.github/actions/host-tool
         with:
+          # Managed by node scripts/repository-config.mjs sync.
           ref: ${{ vars.STARTER_HOST_REF || 'develop' }}
       - name: 编译全部插件、真实 Wasm 回归与离线验签
         env:

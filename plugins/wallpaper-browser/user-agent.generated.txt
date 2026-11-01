@@ -1,0 +1,1 @@
+TauriDesktopStarterWallpaper/2.0 (https://github.com/YanChao001/tauri-desktop-starter-extensions)

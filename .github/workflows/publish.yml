@@ -6,6 +6,8 @@ on:
       - plugins/**
       - scripts/**
       - listings.json
+      - repository.config.json
+      - repository.generated.json
       - public-key.txt
       - package.json
       - rust-toolchain.toml
